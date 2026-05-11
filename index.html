@@ -315,10 +315,15 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
         
+        // إجبار Google على عرض نافذة اختيار الحسابات
+        provider.setCustomParameters({ 
+            prompt: 'select_account'
+        });
+        
         // متغيرات
         let currentUser = null;
         let userData = null;
-        const API_URL = "https://ass-yygm.onrender.com"; // للتشغيل على Render، اتركها هكذا. للتشغيل المحلي: "http://localhost:3001"
+        const API_URL = "https://ass-yygm.onrender.com";
         
         // دوال مساعدة
         function showToast(msg, isError = false) {
@@ -443,7 +448,7 @@
             }
         }
         
-        // التعامل مع تسجيل الدخول
+        // التعامل مع تسجيل الدخول - تظهر نافذة اختيار الحسابات
         async function handleGoogleSignIn() {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -456,7 +461,11 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('app').classList.remove('hidden');
             } catch (error) {
-                showToast('فشل تسجيل الدخول', true);
+                if (error.code === 'auth/popup-blocked') {
+                    showToast('الرجاء السماح للنوافذ المنبثقة في المتصفح', true);
+                } else {
+                    showToast('فشل تسجيل الدخول: ' + error.message, true);
+                }
             }
         }
         
