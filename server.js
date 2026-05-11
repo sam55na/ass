@@ -38,14 +38,13 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(express.static('.'));
 
 // ============= إعدادات الجلسة =============
 app.use(session({
   secret: 'boomb_secret_key_2024',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000, secure: false }
+  cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
 // ============= منع التكرار =============
@@ -58,34 +57,34 @@ app.use('/api/', limiter);
 
 // ============= دوال مساعدة =============
 function generateUniqueId() {
-  return Math.floor(1000000000 + Math.random() 9000000000).toString();
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
 }
 
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح', code: 'NO_TOKEN' });
+  if (!token) return res.status(401).json({ error: 'غير مصرح' });
   try {
     req.user = await admin.auth().verifyIdToken(token);
     next();
   } catch (error) {
-    res.status(401).json({ error: 'جلسة غير صالحة', code: 'INVALID_TOKEN' });
+    res.status(401).json({ error: 'جلسة غير صالحة' });
   }
 };
 
 const requireAdmin = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح', code: 'NO_TOKEN' });
+  if (!token) return res.status(401).json({ error: 'غير مصرح' });
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     if (decoded.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'ليس لديك صلاحيات أدمن', code: 'FORBIDDEN' });
+      return res.status(403).json({ error: 'ليس لديك صلاحيات أدمن' });
     }
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ error: 'جلسة غير صالحة', code: 'INVALID_TOKEN' });
+    res.status(401).json({ error: 'جلسة غير صالحة' });
   }
 };
 
@@ -98,31 +97,38 @@ async function getSystemSettings() {
   const defaultSettings = {
     minDeposit: 1000,
     minWithdraw: 5000,
+    shamCashEnabled: true,
+    syriatelEnabled: true,
+    shamCashApiKey: '',
+    syriatelApiKey: '',
+    paymentAddresses: [
+      {
+        id: 'sham_001',
+        name: 'شام كاش',
+        type: 'sham_cash',
+        privateAddress: '',
+        publicAddress: '',
+        isActive: true
+      },
+      {
+        id: 'syri_001', 
+        name: 'سيرياتيل كاش',
+        type: 'syriatel_cash',
+        privateAddress: '',
+        publicAddress: '',
+        isActive: true
+      }
+    ],
     siteColors: {
       primary: '#ff0000',
       primaryDark: '#cc0000',
-      primaryLight: '#ff3333',
       background: '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#aaaaaa',
       surface: '#121212',
-      surfaceLight: '#1e1e1e',
-      border: '#333333',
-      error: '#ff4444',
-      success: '#00cc44'
-    },
-    paymentAddresses: [],
-    shamCashApiKey: '',
-    syriatelApiKey: ''
+      text: '#ffffff'
+    }
   };
   await settingsRef.set(defaultSettings);
   return defaultSettings;
-}
-
-async function updateSystemSettings(updates) {
-  const settingsRef = db.collection('system_settings').doc('config');
-  await settingsRef.update(updates);
-  return await getSystemSettings();
 }
 
 // ============= كلاس شام كاش =============
@@ -188,7 +194,7 @@ class SyriatelCashClient {
           return { success: true, amount: apiAmount, currency: "SYP" };
         }
       } catch (error) {
-        console.error(`Syriatel error for ${gsm}:`, error.message);
+        console.error(`Syriatel error:`, error.message);
       }
     }
     return { success: false, message: "رقم العملية غير موجود" };
@@ -209,10 +215,18 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     
     const newUser = {
       uniqueId: generateUniqueId(),
-      email, name: name || email.split('@')[0],
-      photoURL: picture || null, balance: 0, totalDeposited: 0, totalWithdrawn: 0,
-      referralEarnings: 0, referredBy: referrerId || null, referrals: [],
-      createdAt: new Date(), lastActive: new Date(), isBanned: false
+      email,
+      name: name || email.split('@')[0],
+      photoURL: picture || null,
+      balance: 0,
+      totalDeposited: 0,
+      totalWithdrawn: 0,
+      referralEarnings: 0,
+      referredBy: referrerId || null,
+      referrals: [],
+      createdAt: new Date(),
+      lastActive: new Date(),
+      isBanned: false
     };
     await userRef.set(newUser);
     
@@ -227,6 +241,7 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     }
     res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({ error: 'خطأ في التسجيل' });
   }
 });
@@ -237,6 +252,7 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
     if (!userDoc.exists) return res.status(404).json({ error: 'مستخدم غير موجود' });
     res.json({ success: true, user: userDoc.data(), isAdmin: req.user.email === ADMIN_EMAIL });
   } catch (error) {
+    console.error('Profile error:', error);
     res.status(500).json({ error: 'خطأ في جلب البيانات' });
   }
 });
@@ -245,15 +261,21 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     const data = userDoc.data();
+    if (!data) return res.status(404).json({ error: 'مستخدم غير موجود' });
     res.json({
-      success: true, stats: {
+      success: true,
+      stats: {
         referralCount: data.referrals?.length || 0,
         totalReferralEarnings: data.referralEarnings || 0,
-        balance: data.balance || 0, totalDeposited: data.totalDeposited || 0,
-        totalWithdrawn: data.totalWithdrawn || 0, uniqueId: data.uniqueId, joinDate: data.createdAt
+        balance: data.balance || 0,
+        totalDeposited: data.totalDeposited || 0,
+        totalWithdrawn: data.totalWithdrawn || 0,
+        uniqueId: data.uniqueId,
+        joinDate: data.createdAt
       }
     });
   } catch (error) {
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
@@ -262,17 +284,41 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSystemSettings();
-    const activeAddresses = (settings.paymentAddresses || []).filter(a => a.isActive).map(a => ({
-      id: a.id, name: a.name, address: a.privateAddress || a.address,
-      publicAddress: a.publicAddress || a.address, type: a.type
-    }));
+    const availableMethods = [];
+    
+    if (settings.shamCashEnabled && settings.paymentAddresses?.find(a => a.type === 'sham_cash' && a.isActive)) {
+      const shamAddr = settings.paymentAddresses.find(a => a.type === 'sham_cash' && a.isActive);
+      availableMethods.push({
+        id: 'sham_cash',
+        name: 'شام كاش',
+        type: 'sham_cash',
+        publicAddress: shamAddr?.publicAddress || 'يرجى إضافة عنوان من لوحة الأدمن',
+        privateAddress: shamAddr?.privateAddress || ''
+      });
+    }
+    
+    if (settings.syriatelEnabled && settings.paymentAddresses?.find(a => a.type === 'syriatel_cash' && a.isActive)) {
+      const syriAddr = settings.paymentAddresses.find(a => a.type === 'syriatel_cash' && a.isActive);
+      availableMethods.push({
+        id: 'syriatel_cash',
+        name: 'سيرياتيل كاش',
+        type: 'syriatel_cash',
+        publicAddress: syriAddr?.publicAddress || 'يرجى إضافة عنوان من لوحة الأدمن',
+        privateAddress: syriAddr?.privateAddress || ''
+      });
+    }
+    
     res.json({
-      success: true, settings: {
-        minDeposit: settings.minDeposit, minWithdraw: settings.minWithdraw,
-        paymentAddresses: activeAddresses, siteColors: settings.siteColors
+      success: true,
+      settings: {
+        minDeposit: settings.minDeposit,
+        minWithdraw: settings.minWithdraw,
+        paymentMethods: availableMethods,
+        siteColors: settings.siteColors
       }
     });
   } catch (error) {
+    console.error('Deposit settings error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
   }
 });
@@ -280,62 +326,99 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
-    const { addressId, amount, transactionId } = req.body;
-    if (!addressId || !amount || !transactionId) {
+    const { method, amount, transactionId } = req.body;
+    
+    if (!method || !amount || !transactionId) {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     }
     
+    const amountNum = Number(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'المبلغ غير صالح' });
+    }
+    
     const settings = await getSystemSettings();
-    const selectedAddress = settings.paymentAddresses?.find(a => a.id === addressId && a.isActive);
-    if (!selectedAddress) return res.status(400).json({ error: 'طريقة الدفع غير متاحة' });
-    if (amount < settings.minDeposit) {
+    
+    if (amountNum < settings.minDeposit) {
       return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
     }
     
-    let verification;
-    const privateAddress = selectedAddress.privateAddress || selectedAddress.address;
-    
-    if (selectedAddress.type === 'sham_cash') {
-      if (!settings.shamCashApiKey) return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
-      const client = new ShamCashClient(settings.shamCashApiKey, privateAddress);
-      verification = await client.verifyTransaction(transactionId, amount);
+    let selectedAddress = null;
+    if (method === 'sham_cash') {
+      if (!settings.shamCashEnabled) return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
+      selectedAddress = settings.paymentAddresses?.find(a => a.type === 'sham_cash' && a.isActive);
+      if (!selectedAddress || !selectedAddress.privateAddress) {
+        return res.status(400).json({ error: 'عناوين شام كاش غير مكتملة' });
+      }
+      if (!settings.shamCashApiKey) return res.status(400).json({ error: 'API Key شام كاش غير مضبوط' });
+      
+      const client = new ShamCashClient(settings.shamCashApiKey, selectedAddress.privateAddress);
+      const verification = await client.verifyTransaction(transactionId, amountNum);
+      if (!verification.success) return res.status(400).json({ error: verification.message });
+      
+      const userRef = db.collection('users').doc(uid);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(verification.amount),
+        totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
+      });
+      
+      await db.collection('deposits').add({
+        userId: uid, method, amount: verification.amount, transactionId,
+        status: 'completed', verifiedAt: new Date()
+      });
+      
+      const updated = await userRef.get();
+      res.json({ success: true, message: `تم إيداع ${verification.amount} SYP`, newBalance: updated.data().balance });
+      
+    } else if (method === 'syriatel_cash') {
+      if (!settings.syriatelEnabled) return res.status(400).json({ error: 'طريقة الدفع سيرياتيل كاش غير مفعلة' });
+      selectedAddress = settings.paymentAddresses?.find(a => a.type === 'syriatel_cash' && a.isActive);
+      if (!selectedAddress || !selectedAddress.privateAddress) {
+        return res.status(400).json({ error: 'عناوين سيرياتيل كاش غير مكتملة' });
+      }
+      if (!settings.syriatelApiKey) return res.status(400).json({ error: 'API Key سيرياتيل كاش غير مضبوط' });
+      
+      const client = new SyriatelCashClient(settings.syriatelApiKey, [selectedAddress.privateAddress]);
+      const verification = await client.verifyTransaction(transactionId, amountNum);
+      if (!verification.success) return res.status(400).json({ error: verification.message });
+      
+      const userRef = db.collection('users').doc(uid);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(verification.amount),
+        totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
+      });
+      
+      await db.collection('deposits').add({
+        userId: uid, method, amount: verification.amount, transactionId,
+        status: 'completed', verifiedAt: new Date()
+      });
+      
+      const updated = await userRef.get();
+      res.json({ success: true, message: `تم إيداع ${verification.amount} SYP`, newBalance: updated.data().balance });
     } else {
-      if (!settings.syriatelApiKey) return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
-      const client = new SyriatelCashClient(settings.syriatelApiKey, [privateAddress]);
-      verification = await client.verifyTransaction(transactionId, amount);
+      return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
     }
-    
-    if (!verification.success) return res.status(400).json({ error: verification.message });
-    
-    const existing = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
-    if (!existing.empty) return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
-    
-    const userRef = db.collection('users').doc(uid);
-    await userRef.update({
-      balance: admin.firestore.FieldValue.increment(verification.amount),
-      totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
-    });
-    
-    await db.collection('deposits').add({
-      userId: uid, addressId, addressName: selectedAddress.name,
-      transactionId, amount: verification.amount, status: 'completed', verifiedAt: new Date()
-    });
-    
-    const updated = await userRef.get();
-    res.json({ success: true, message: `تم إيداع ${verification.amount} SYP`, newBalance: updated.data().balance });
   } catch (error) {
     console.error('Deposit error:', error);
-    res.status(500).json({ error: 'حدث خطأ داخلي' });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 });
 
 app.get('/api/user/deposits', requireAuth, async (req, res) => {
   try {
-    const snapshot = await db.collection('deposits').where('userId', '==', req.user.uid)
-      .orderBy('verifiedAt', 'desc').limit(50).get();
-    const deposits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), verifiedAt: doc.data().verifiedAt?.toDate() }));
+    const snapshot = await db.collection('deposits')
+      .where('userId', '==', req.user.uid)
+      .orderBy('verifiedAt', 'desc')
+      .limit(50)
+      .get();
+    const deposits = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      verifiedAt: doc.data().verifiedAt?.toDate()
+    }));
     res.json({ success: true, deposits });
   } catch (error) {
+    console.error('Get deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
   }
 });
@@ -345,12 +428,18 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
     const { amount, address, method } = req.body;
-    if (!amount || !address) return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
+    
+    if (!amount || !address) {
+      return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
+    }
     
     const amountNum = Number(amount);
-    if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'المبلغ غير صالح' });
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'المبلغ غير صالح' });
+    }
     
     const settings = await getSystemSettings();
+    
     if (amountNum < settings.minWithdraw) {
       return res.status(400).json({ error: `الحد الأدنى للسحب ${settings.minWithdraw} SYP` });
     }
@@ -358,18 +447,36 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
+    
     if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
     if (userData.balance < amountNum) return res.status(400).json({ error: 'الرصيد غير كافٍ' });
     
-    await userRef.update({ balance: admin.firestore.FieldValue.increment(-amountNum), totalWithdrawn: admin.firestore.FieldValue.increment(amountNum) });
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(-amountNum),
+      totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
+    });
     
     const requestData = {
-      userId: uid, userEmail: userData.email, userName: userData.name, userUniqueId: userData.uniqueId,
-      amount: amountNum, address, method: method || 'sham_cash', status: 'pending',
-      createdAt: new Date(), previousBalance: userData.balance, newBalance: userData.balance - amountNum
+      userId: uid,
+      userEmail: userData.email,
+      userName: userData.name,
+      userUniqueId: userData.uniqueId,
+      amount: amountNum,
+      address: address,
+      method: method || 'sham_cash',
+      status: 'pending',
+      createdAt: new Date(),
+      previousBalance: userData.balance,
+      newBalance: userData.balance - amountNum
     };
+    
     const requestRef = await db.collection('withdraw_requests').add(requestData);
-    res.json({ success: true, message: `تم إنشاء طلب سحب بمبلغ ${amountNum} SYP، قيد المراجعة`, requestId: requestRef.id });
+    
+    res.json({
+      success: true,
+      message: `تم إنشاء طلب سحب بمبلغ ${amountNum} SYP، قيد المراجعة`,
+      requestId: requestRef.id
+    });
   } catch (error) {
     console.error('Withdraw error:', error);
     res.status(500).json({ error: 'فشل إنشاء طلب السحب' });
@@ -378,11 +485,19 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
 
 app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   try {
-    const snapshot = await db.collection('withdraw_requests').where('userId', '==', req.user.uid)
-      .orderBy('createdAt', 'desc').limit(50).get();
-    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
+    const snapshot = await db.collection('withdraw_requests')
+      .where('userId', '==', req.user.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    const requests = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate()
+    }));
     res.json({ success: true, requests });
   } catch (error) {
+    console.error('Get withdraw requests error:', error);
     res.status(500).json({ error: 'خطأ في جلب طلبات السحب' });
   }
 });
@@ -396,9 +511,11 @@ app.get('/api/admin/settings', requireAdmin, async (req, res) => {
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   try {
     const updates = req.body;
-    await updateSystemSettings(updates);
+    const settingsRef = db.collection('system_settings').doc('config');
+    await settingsRef.update(updates);
     res.json({ success: true, message: 'تم تحديث الإعدادات' });
   } catch (error) {
+    console.error('Save settings error:', error);
     res.status(500).json({ error: 'فشل تحديث الإعدادات' });
   }
 });
@@ -411,13 +528,23 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
     const totalDeposited = users.reduce((s, u) => s + (u.totalDeposited || 0), 0);
     const totalWithdrawn = users.reduce((s, u) => s + (u.totalWithdrawn || 0), 0);
     const pendingWithdrawals = await db.collection('withdraw_requests').where('status', '==', 'pending').get();
-    const today = new Date(); today.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const newToday = users.filter(u => u.createdAt?.toDate() > today).length;
-    res.json({ success: true, stats: {
-      totalUsers: usersSnapshot.size, newToday, totalBalance, totalDeposited, totalWithdrawn,
-      pendingWithdrawals: pendingWithdrawals.size
-    } });
+    
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: usersSnapshot.size,
+        newToday,
+        totalBalance,
+        totalDeposited,
+        totalWithdrawn,
+        pendingWithdrawals: pendingWithdrawals.size
+      }
+    });
   } catch (error) {
+    console.error('Dashboard error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
@@ -428,9 +555,14 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
     let query = db.collection('withdraw_requests').orderBy('createdAt', 'desc');
     if (status !== 'all') query = query.where('status', '==', status);
     const snapshot = await query.get();
-    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
+    const requests = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate()
+    }));
     res.json({ success: true, requests });
   } catch (error) {
+    console.error('Admin withdraws error:', error);
     res.status(500).json({ error: 'خطأ في جلب الطلبات' });
   }
 });
@@ -440,16 +572,27 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
     const { requestId, action, adminNotes } = req.body;
     const requestRef = db.collection('withdraw_requests').doc(requestId);
     const requestDoc = await requestRef.get();
+    
     if (!requestDoc.exists) return res.status(404).json({ error: 'طلب غير موجود' });
     const request = requestDoc.data();
     if (request.status !== 'pending') return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
     
     if (action === 'reject') {
-      await db.collection('users').doc(request.userId).update({ balance: admin.firestore.FieldValue.increment(request.amount) });
+      await db.collection('users').doc(request.userId).update({
+        balance: admin.firestore.FieldValue.increment(request.amount)
+      });
     }
-    await requestRef.update({ status: action === 'approve' ? 'approved' : 'rejected', processedAt: new Date(), processedBy: req.user.email, adminNotes: adminNotes || '' });
+    
+    await requestRef.update({
+      status: action === 'approve' ? 'approved' : 'rejected',
+      processedAt: new Date(),
+      processedBy: req.user.email,
+      adminNotes: adminNotes || ''
+    });
+    
     res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب` });
   } catch (error) {
+    console.error('Process withdraw error:', error);
     res.status(500).json({ error: 'فشل معالجة الطلب' });
   }
 });
@@ -460,10 +603,16 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
     const deposits = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('users').doc(data.userId).get();
-      return { id: doc.id, ...data, user: userDoc.exists ? userDoc.data() : null, verifiedAt: data.verifiedAt?.toDate() };
+      return {
+        id: doc.id,
+        ...data,
+        user: userDoc.exists ? userDoc.data() : null,
+        verifiedAt: data.verifiedAt?.toDate()
+      };
     }));
     res.json({ success: true, deposits });
   } catch (error) {
+    console.error('Admin deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
   }
 });
@@ -471,9 +620,14 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
+    const users = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate()
+    }));
     res.json({ success: true, users });
   } catch (error) {
+    console.error('Admin users error:', error);
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
   }
 });
@@ -481,9 +635,12 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
   try {
     const { userId, amount, reason } = req.body;
-    await db.collection('users').doc(userId).update({ balance: admin.firestore.FieldValue.increment(Number(amount)) });
+    await db.collection('users').doc(userId).update({
+      balance: admin.firestore.FieldValue.increment(Number(amount))
+    });
     res.json({ success: true });
   } catch (error) {
+    console.error('Update balance error:', error);
     res.status(500).json({ error: 'فشل تحديث الرصيد' });
   }
 });
@@ -496,19 +653,19 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
     await db.collection('users').doc(userId).update({ isBanned: !currentBan });
     res.json({ success: true, isBanned: !currentBan });
   } catch (error) {
+    console.error('Toggle ban error:', error);
     res.status(500).json({ error: 'فشل تحديث حالة الحظر' });
   }
 });
 
 // ============= نقطة صحة الخادم =============
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date(), uptime: process.uptime() });
+  res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // ============= تشغيل الخادم =============
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
-  console.log(`📍 Admin email: ${ADMIN_EMAIL}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📍 Admin: ${ADMIN_EMAIL}`);
 });

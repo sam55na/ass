@@ -12,12 +12,11 @@
             box-sizing: border-box;
         }
 
-        /* ========== متغيرات الألوان الأساسية ========== */
+        /* ========== متغيرات الألوان ========== */
         :root {
             --primary: #ff0000;
             --primary-dark: #cc0000;
             --primary-light: #ff3333;
-            --secondary: #1a1a1a;
             --background: #0a0a0a;
             --surface: #121212;
             --surface-light: #1e1e1e;
@@ -27,39 +26,25 @@
             --error: #ff4444;
             --success: #00cc44;
             --warning: #ffaa00;
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --radius-lg: 24px;
-            --radius-xl: 32px;
+            --radius: 12px;
+            --radius-lg: 20px;
             --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            --shadow-glow: 0 0 15px rgba(255, 0, 0, 0.3);
-            --transition: all 0.2s ease;
         }
 
-        /* ========== إعدادات عامة ========== */
         body {
-            font-family: 'Segoe UI', 'Tahoma', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Tahoma', system-ui, sans-serif;
             background: var(--background);
             color: var(--text);
             min-height: 100vh;
             padding: 12px;
         }
 
-        /* شريط التمرير المخصص */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--surface);
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
-        }
+        /* شريط التمرير */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* ========== الحاويات الرئيسية ========== */
+        /* ========== الحاويات ========== */
         .app-container {
             max-width: 500px;
             margin: 0 auto;
@@ -100,16 +85,15 @@
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ========== لودينغ داخلي للأزرار ========== */
+        /* ========== لودينغ الأزرار ========== */
         .btn-loading {
-            position: relative;
             pointer-events: none;
             opacity: 0.7;
+            position: relative;
         }
+        .btn-loading .btn-text { visibility: hidden; }
         .btn-loading::after {
             content: "";
             position: absolute;
@@ -122,9 +106,6 @@
             border-top: 2px solid white;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
-        }
-        .btn-loading .btn-text {
-            visibility: hidden;
         }
 
         /* ========== الشريط العلوي ========== */
@@ -144,13 +125,8 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.2s;
             border: 1px solid rgba(255, 50, 50, 0.4);
-        }
-
-        .avatar-btn:hover {
-            transform: scale(1.02);
-            border-color: var(--primary);
         }
 
         .balance-card {
@@ -164,7 +140,6 @@
         .balance-label {
             font-size: 11px;
             color: var(--primary-light);
-            letter-spacing: 1px;
         }
 
         .balance-value {
@@ -176,7 +151,7 @@
             color: transparent;
         }
 
-        /* ========== أزرار الإجراءات ========== */
+        /* ========== الأزرار ========== */
         .action-grid {
             display: flex;
             gap: 12px;
@@ -191,8 +166,7 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
-            position: relative;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -203,25 +177,12 @@
             background: linear-gradient(95deg, var(--primary-dark), var(--primary));
             color: white;
         }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-glow);
-        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 15px rgba(255,0,0,0.3); }
 
         .btn-secondary {
             background: var(--surface-light);
             border: 1px solid var(--primary);
             color: var(--primary-light);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: var(--surface);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
 
         /* ========== منطقة اللعب ========== */
@@ -241,13 +202,10 @@
             justify-content: center;
             font-size: 58px;
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: var(--shadow-glow);
+            transition: transform 0.2s;
+            box-shadow: 0 0 20px rgba(255,0,0,0.3);
         }
-
-        .game-sphere:active {
-            transform: scale(0.96);
-        }
+        .game-sphere:active { transform: scale(0.96); }
 
         /* ========== الشريط السفلي ========== */
         .bottom-nav {
@@ -267,11 +225,10 @@
             padding: 8px 4px;
             cursor: pointer;
             border-radius: 50px;
-            transition: var(--transition);
+            transition: all 0.2s;
             color: var(--text-secondary);
             font-size: 12px;
         }
-
         .nav-tab:hover {
             background: rgba(255, 60, 60, 0.15);
             color: var(--primary-light);
@@ -283,7 +240,6 @@
             backdrop-filter: blur(16px);
             border-radius: var(--radius-lg);
             padding: 20px;
-            margin-bottom: 16px;
         }
 
         .info-row {
@@ -291,11 +247,6 @@
             justify-content: space-between;
             padding: 12px 0;
             border-bottom: 1px solid rgba(255, 90, 90, 0.1);
-        }
-
-        .info-label {
-            color: var(--primary-light);
-            font-weight: 500;
         }
 
         .ref-code-block {
@@ -324,7 +275,7 @@
 
         .modal-content {
             background: var(--surface);
-            border-radius: var(--radius-xl);
+            border-radius: var(--radius-lg);
             max-width: 520px;
             width: 100%;
             padding: 24px 20px;
@@ -348,19 +299,99 @@
         .close-modal {
             font-size: 28px;
             cursor: pointer;
-            transition: var(--transition);
         }
 
-        .close-modal:hover {
-            color: var(--primary);
+        /* ========== طرق الدفع ========== */
+        .methods-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
-        /* ========== بطاقات الطلبات ========== */
+        .method-card {
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .method-card.selected {
+            border-color: var(--primary);
+            background: rgba(255, 0, 0, 0.1);
+        }
+        .method-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .method-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .address-box {
+            background: var(--surface);
+            padding: 12px;
+            border-radius: var(--radius);
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .address-box span {
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            flex: 1;
+        }
+        .copy-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* ========== حقول الإدخال ========== */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--primary-light);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        input, select {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 14px;
+            border-radius: var(--radius);
+            width: 100%;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ========== البطاقات ========== */
         .request-card {
             background: var(--surface-light);
             margin-bottom: 12px;
             padding: 12px;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius);
             border-right: 3px solid var(--primary);
         }
 
@@ -377,119 +408,10 @@
             text-align: center;
             z-index: 1200;
             animation: slideUp 0.25s ease;
-            font-weight: 500;
         }
-
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(50px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ========== طريقة الدفع ========== */
-        .method-selector {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .method-option {
-            background: var(--surface-light);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 14px 16px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .method-option.selected {
-            border-color: var(--primary);
-            background: rgba(255, 0, 0, 0.1);
-        }
-
-        .method-option.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .method-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .method-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .address-box {
-            background: var(--surface);
-            padding: 12px;
-            border-radius: var(--radius-md);
-            margin: 12px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .address-box span {
-            font-family: monospace;
-            font-size: 14px;
-            word-break: break-all;
-            flex: 1;
-        }
-
-        .copy-address {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: var(--transition);
-        }
-
-        .copy-address:hover {
-            background: var(--primary-dark);
-        }
-
-        /* ========== حقول الإدخال ========== */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--primary-light);
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        input, select, textarea {
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 12px 14px;
-            border-radius: var(--radius-md);
-            width: 100%;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .hint {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 4px;
         }
 
         /* ========== واجهة الأدمن ========== */
@@ -516,11 +438,10 @@
         .stat-card {
             background: var(--surface);
             padding: 16px;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius);
             text-align: center;
             border: 1px solid var(--border);
         }
-
         .stat-number {
             font-size: 28px;
             font-weight: bold;
@@ -532,23 +453,15 @@
             color: white;
             border: none;
             padding: 8px 16px;
-            border-radius: var(--radius-sm);
+            border-radius: 8px;
             cursor: pointer;
-            transition: var(--transition);
         }
-
-        .admin-btn-small {
-            padding: 4px 10px;
-            font-size: 12px;
-        }
-
-        .admin-btn:hover {
-            background: var(--primary-dark);
-        }
+        .admin-btn-small { padding: 4px 10px; font-size: 12px; }
+        .admin-btn:hover { background: var(--primary-dark); }
 
         .admin-table {
             background: var(--surface);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius);
             overflow-x: auto;
             padding: 16px;
         }
@@ -557,17 +470,12 @@
             width: 100%;
             border-collapse: collapse;
         }
-
         th, td {
             padding: 10px;
             text-align: right;
             border-bottom: 1px solid var(--border);
         }
-
-        th {
-            background: rgba(255, 0, 0, 0.1);
-            color: var(--primary-light);
-        }
+        th { background: rgba(255, 0, 0, 0.1); color: var(--primary-light); }
 
         .tabs-bar {
             display: flex;
@@ -576,67 +484,20 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-
         .tab {
             cursor: pointer;
             padding: 10px 20px;
             background: var(--surface);
-            border-radius: var(--radius-md);
-            text-align: center;
-            transition: var(--transition);
+            border-radius: var(--radius);
         }
+        .tab.active { background: var(--primary); }
 
-        .tab.active {
-            background: var(--primary);
-        }
+        .hidden { display: none; }
 
-        .hidden {
-            display: none;
-        }
-
-        .admin-badge {
-            background: var(--primary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .switch-view {
-            background: var(--surface-light);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-        }
-
-        /* ========== إعدادات الألوان ========== */
-        .color-preview {
-            width: 36px;
-            height: 36px;
-            border-radius: var(--radius-sm);
-            margin-top: 6px;
-        }
-
-        /* ========== استجابة للشاشات الصغيرة ========== */
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            .btn {
-                padding: 10px 6px;
-                font-size: 13px;
-            }
-            .balance-value {
-                font-size: 22px;
-            }
-            .stat-number {
-                font-size: 22px;
-            }
-            th, td {
-                padding: 8px;
-                font-size: 12px;
-            }
+            .btn { padding: 10px 6px; font-size: 13px; }
+            .balance-value { font-size: 22px; }
+            .stat-number { font-size: 22px; }
         }
     </style>
 </head>
@@ -681,7 +542,7 @@
                 <div class="info-row"><span class="info-label">إجمالي الإيداع</span><span id="profileTotalDeposit">0 NSP</span></div>
                 <div class="info-row"><span class="info-label">إجمالي السحب</span><span id="profileTotalWithdraw">0 NSP</span></div>
                 <div class="ref-code-block" id="refCodeBlock"></div>
-                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top: 16px;">تسجيل خروج</button>
+                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:16px">تسجيل خروج</button>
             </div>
         </div>
 
@@ -693,7 +554,7 @@
         </div>
     </div>
 
-    <!-- نوافذ المستخدم -->
+    <!-- النوافذ -->
     <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
     <div id="earnModal" class="modal"><div class="modal-content"><div class="modal-header"><span>دعوة الأصدقاء</span><span class="close-modal">&times;</span></div><div style="text-align:center;padding:20px"><p>قم بدعوة أصدقاءك بكودك الخاص</p><div id="earnCodeDisplay" class="ref-code-block" style="margin:16px 0"></div><p style="color:var(--primary-light)">كل مستخدم جديد يضيف 5 NSP</p></div></div></div>
     <div id="depositsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>سجل الإيداعات</span><span class="close-modal">&times;</span></div><div id="depositsList"></div></div></div>
@@ -702,13 +563,10 @@
     <!-- نافذة الإيداع -->
     <div id="depositModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>💰 إيداع</span>
-                <span class="close-modal" id="closeDepositModal">&times;</span>
-            </div>
+            <div class="modal-header"><span>💰 إيداع</span><span class="close-modal" id="closeDepositModal">&times;</span></div>
             <div class="form-group">
                 <label>اختر طريقة الدفع</label>
-                <div id="methodSelector" class="method-selector"></div>
+                <div id="methodsList" class="methods-list"></div>
             </div>
             <div id="addressInfo"></div>
             <div class="form-group">
@@ -720,9 +578,7 @@
                 <label>رقم العملية (Transaction ID)</label>
                 <input type="text" id="transactionId" placeholder="أدخل رقم العملية">
             </div>
-            <button class="btn btn-primary" id="submitDepositBtn" style="width:100%">
-                <span class="btn-text">تأكيد الإيداع</span>
-            </button>
+            <button class="btn btn-primary" id="submitDepositBtn" style="width:100%"><span class="btn-text">تأكيد الإيداع</span></button>
         </div>
     </div>
 
@@ -746,9 +602,7 @@
                     <option value="syriatel_cash">سيرياتيل كاش</option>
                 </select>
             </div>
-            <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%">
-                <span class="btn-text">تأكيد السحب</span>
-            </button>
+            <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%"><span class="btn-text">تأكيد السحب</span></button>
         </div>
     </div>
 
@@ -758,9 +612,9 @@
             <div class="admin-header">
                 <h2>🔧 لوحة التحكم</h2>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <span class="admin-badge">sam55nam@gmail.com</span>
-                    <button class="switch-view" id="switchToUserView">الموقع</button>
-                    <button class="switch-view" id="adminLogoutBtn">تسجيل خروج</button>
+                    <span class="admin-badge" style="background:var(--primary);padding:4px12px;border-radius:20px">sam55nam@gmail.com</span>
+                    <button class="admin-btn" id="switchToUserView">الموقع</button>
+                    <button class="admin-btn" id="adminLogoutBtn">تسجيل خروج</button>
                 </div>
             </div>
 
@@ -777,15 +631,12 @@
                 <div class="tab" data-tab="withdraws">طلبات السحب</div>
                 <div class="tab" data-tab="deposits">الإيداعات</div>
                 <div class="tab" data-tab="users">المستخدمين</div>
-                <div class="tab" data-tab="payments">عناوين الدفع</div>
-                <div class="tab" data-tab="colors">الألوان</div>
-                <div class="tab" data-tab="api">مفاتيح API</div>
+                <div class="tab" data-tab="settings">الإعدادات</div>
             </div>
 
-            <!-- طلبات السحب -->
             <div id="adminWithdrawsPanel" class="admin-table">
-                <div style="margin-bottom:15px;display:flex;gap:10px;">
-                    <select id="filterWithdrawStatus" style="width:auto;flex:1">
+                <div style="margin-bottom:15px;display:flex;gap:10px">
+                    <select id="filterWithdrawStatus" style="flex:1">
                         <option value="all">جميع الطلبات</option>
                         <option value="pending">قيد المراجعة</option>
                         <option value="approved">مقبولة</option>
@@ -796,50 +647,27 @@
                 <div id="withdrawsTable"></div>
             </div>
 
-            <!-- الإيداعات -->
             <div id="adminDepositsPanel" class="admin-table hidden"><div id="depositsTable"></div></div>
 
-            <!-- المستخدمين -->
             <div id="adminUsersPanel" class="admin-table hidden">
                 <input type="text" id="searchUsers" placeholder="بحث بالبريد أو الاسم" style="margin-bottom:15px">
                 <div id="usersTable"></div>
             </div>
 
-            <!-- عناوين الدفع -->
-            <div id="adminPaymentsPanel" class="admin-table hidden">
-                <div id="paymentAddressesList"></div>
-                <button class="admin-btn" id="addPaymentAddressBtn" style="width:100%;margin-top:15px">+ إضافة عنوان دفع</button>
+            <div id="adminSettingsPanel" class="admin-table hidden">
+                <h3 style="margin-bottom:20px">إعدادات النظام</h3>
+                <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
+                <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
+                <div class="form-group"><label>تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
+                <div class="form-group"><label>تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
+                <div class="form-group"><label>عنوان شام كاش (خاص للـ API)</label><input type="text" id="settingShamPrivateAddress" placeholder="رقم المحفظة الخاص"></div>
+                <div class="form-group"><label>عنوان شام كاش (عام للمستخدم)</label><input type="text" id="settingShamPublicAddress" placeholder="رقم التحويل العام"></div>
+                <div class="form-group"><label>عنوان سيرياتيل كاش (خاص للـ API)</label><input type="text" id="settingSyriPrivateAddress" placeholder="رقم الجوال الخاص"></div>
+                <div class="form-group"><label>عنوان سيرياتيل كاش (عام للمستخدم)</label><input type="text" id="settingSyriPublicAddress" placeholder="رقم التحويل العام"></div>
+                <div class="form-group"><label>API Key شام كاش</label><input type="text" id="settingShamApiKey"></div>
+                <div class="form-group"><label>API Key سيرياتيل كاش</label><input type="text" id="settingSyriApiKey"></div>
+                <button class="admin-btn" id="saveSettingsBtn" style="width:100%">حفظ الإعدادات</button>
             </div>
-
-            <!-- الألوان -->
-            <div id="adminColorsPanel" class="admin-table hidden">
-                <div class="form-group"><label>اللون الرئيسي</label><input type="color" id="colorPrimary"><div class="color-preview" id="previewPrimary"></div></div>
-                <div class="form-group"><label>اللون الثانوي (داكن)</label><input type="color" id="colorSecondary"></div>
-                <div class="form-group"><label>لون الخلفية</label><input type="color" id="colorBackground"></div>
-                <div class="form-group"><label>لون النص</label><input type="color" id="colorText"></div>
-                <div class="form-group"><label>لون السطح</label><input type="color" id="colorSurface"></div>
-                <div class="form-group"><label>لون الحدود</label><input type="color" id="colorBorder"></div>
-                <button class="admin-btn" id="saveColorsBtn" style="width:100%">حفظ الألوان</button>
-            </div>
-
-            <!-- مفاتيح API -->
-            <div id="adminApiPanel" class="admin-table hidden">
-                <div class="form-group"><label>API Key شام كاش (للمستخدم فقط)</label><input type="text" id="apiShamCashKey" placeholder="API Key"></div>
-                <div class="form-group"><label>API Key سيرياتيل كاش (للمستخدم فقط)</label><input type="text" id="apiSyriatelKey" placeholder="API Key"></div>
-                <button class="admin-btn" id="saveApiBtn" style="width:100%">حفظ المفاتيح</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- نافذة إضافة/تعديل عنوان دفع -->
-    <div id="paymentAddressModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span id="paymentModalTitle">إضافة عنوان دفع</span><span class="close-modal" id="closePaymentModal">&times;</span></div>
-            <div class="form-group"><label>الاسم الظاهر للمستخدم</label><input type="text" id="paymentName" placeholder="مثال: شام كاش - حساب رئيسي"></div>
-            <div class="form-group"><label>العنوان الخاص (لـ API فقط - لا يظهر للمستخدم)</label><input type="text" id="paymentPrivateAddress" placeholder="رقم المحفظة الخاص للـ API"></div>
-            <div class="form-group"><label>العنوان العام (يظهر للمستخدم للتحويل)</label><input type="text" id="paymentPublicAddress" placeholder="رقم المحفظة العام للتحويل"></div>
-            <div class="form-group"><label>نوع الدفع</label><select id="paymentType"><option value="sham_cash">شام كاش</option><option value="syriatel_cash">سيرياتيل كاش</option></select></div>
-            <button class="admin-btn" id="savePaymentAddressBtn" style="width:100%;margin-top:15px">حفظ</button>
         </div>
     </div>
 
@@ -864,12 +692,8 @@
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
 
-        let currentUser = null;
-        let userData = null;
-        let isAdmin = false;
-        let editingPaymentId = null;
+        let currentUser = null, userData = null, isAdmin = false;
 
-        // ============= دوال مساعدة =============
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -880,200 +704,66 @@
         }
 
         function setButtonLoading(btn, loading) {
-            if (loading) {
-                btn.classList.add('btn-loading');
-                btn.disabled = true;
-            } else {
-                btn.classList.remove('btn-loading');
-                btn.disabled = false;
-            }
+            if (loading) { btn.classList.add('btn-loading'); btn.disabled = true; }
+            else { btn.classList.remove('btn-loading'); btn.disabled = false; }
         }
 
-        async function apiCall(endpoint, options = {}, showLoading = true) {
+        async function apiCall(endpoint, options = {}) {
             const token = await auth.currentUser?.getIdToken();
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-            
             try {
                 const response = await fetch(`${API_URL}${endpoint}`, {
                     ...options,
-                    signal: controller.signal,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token && { 'Authorization': `Bearer ${token}` }),
-                        ...options.headers
-                    }
+                    headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers }
                 });
-                clearTimeout(timeoutId);
-                if (response.status === 401) {
-                    showMessage('انتهت الجلسة، سجل دخول مجدداً', true);
-                    await signOut(auth);
-                    return null;
-                }
+                if (response.status === 401) { showMessage('انتهت الجلسة، سجل دخول مجدداً', true); await signOut(auth); return null; }
                 return response;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') showMessage('انتهت مهلة الاتصال', true);
-                else showMessage('خطأ في الاتصال بالخادم', true);
-                return null;
-            }
+            } catch (error) { showMessage('خطأ في الاتصال', true); return null; }
         }
 
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            showMessage('تم نسخ العنوان');
-        }
-
-        function applyColors(colors) {
-            if (!colors) return;
-            if (colors.primary) document.documentElement.style.setProperty('--primary', colors.primary);
-            if (colors.primaryDark) document.documentElement.style.setProperty('--primary-dark', colors.primaryDark);
-            if (colors.background) document.documentElement.style.setProperty('--background', colors.background);
-            if (colors.text) document.documentElement.style.setProperty('--text', colors.text);
-            if (colors.surface) document.documentElement.style.setProperty('--surface', colors.surface);
-            if (colors.border) document.documentElement.style.setProperty('--border', colors.border);
-        }
-
-        // ============= دوال المستخدم =============
+        // دوال المستخدم
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    userData = data.user;
-                    document.getElementById('mainBalance').innerText = userData.balance || 0;
-                    document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
-                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP';
-                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP';
-                    isAdmin = data.isAdmin;
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; document.getElementById('mainBalance').innerText = userData.balance || 0; document.getElementById('profileName').innerText = userData.name || currentUser?.displayName; document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP'; document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP'; isAdmin = data.isAdmin; } }
         }
 
         async function loadStats() {
             const res = await apiCall('/api/user/stats');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('profileRefCode').innerText = stats.uniqueId || '---';
-                    document.getElementById('profileRefEarn').innerText = (stats.totalReferralEarnings || 0) + ' NSP';
-                    document.getElementById('profileRefCount').innerText = stats.referralCount || 0;
-                    document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${stats.uniqueId}`;
-                    document.getElementById('earnCodeDisplay').innerHTML = `كودك الخاص : ${stats.uniqueId}`;
-                    document.getElementById('statsInner').innerHTML = `
-                        <div class="info-row"><span>تاريخ التسجيل</span><span>${stats.joinDate ? new Date(stats.joinDate).toLocaleDateString('ar') : '-'}</span></div>
-                        <div class="info-row"><span>عدد الإحالات</span><span>${stats.referralCount}</span></div>
-                        <div class="info-row"><span>أرباح الإحالات</span><span>${stats.totalReferralEarnings} NSP</span></div>
-                        <div class="info-row"><span>إجمالي الإيداع</span><span>${stats.totalDeposited || 0} NSP</span></div>
-                        <div class="info-row"><span>إجمالي السحب</span><span>${stats.totalWithdrawn || 0} NSP</span></div>
-                        <div class="info-row"><span>الرصيد الحالي</span><span>${stats.balance} NSP</span></div>
-                    `;
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('profileRefCode').innerText = s.uniqueId || '---'; document.getElementById('profileRefEarn').innerText = (s.totalReferralEarnings || 0) + ' NSP'; document.getElementById('profileRefCount').innerText = s.referralCount || 0; document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`; document.getElementById('earnCodeDisplay').innerHTML = `كودك الخاص : ${s.uniqueId}`; document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>أرباح الإحالات</span><span>${s.totalReferralEarnings} NSP</span></div><div class="info-row"><span>إجمالي الإيداع</span><span>${s.totalDeposited || 0} NSP</span></div><div class="info-row"><span>إجمالي السحب</span><span>${s.totalWithdrawn || 0} NSP</span></div><div class="info-row"><span>الرصيد الحالي</span><span>${s.balance} NSP</span></div>`; } }
         }
 
         async function loadDeposits() {
             const res = await apiCall('/api/user/deposits');
-            if (res && res.ok) {
-                const data = await res.json();
-                const container = document.getElementById('depositsList');
-                if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات سابقة</p>'; return; }
-                container.innerHTML = data.deposits.map(d => `
-                    <div class="request-card">
-                        <div><strong>💰 ${d.amount} SYP</strong></div>
-                        <div>طريقة الدفع: ${d.addressName || 'غير محدد'}</div>
-                        <div>رقم العملية: ${d.transactionId}</div>
-                        <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
-                    </div>
-                `).join('');
-            }
+            if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsList'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات</p>'; return; } container.innerHTML = data.deposits.map(d => `<div class="request-card"><div><strong>💰 ${d.amount} SYP</strong></div><div>رقم العملية: ${d.transactionId}</div><div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div></div>`).join(''); }
         }
 
         async function loadWithdrawals() {
             const res = await apiCall('/api/user/withdraw-requests');
-            if (res && res.ok) {
-                const data = await res.json();
-                const container = document.getElementById('withdrawsList');
-                if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات سابقة</p>'; return; }
-                container.innerHTML = data.requests.map(r => `
-                    <div class="request-card">
-                        <div><strong>💸 ${r.amount} SYP</strong></div>
-                        <div>العنوان: ${r.address}</div>
-                        <div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div>
-                        <div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div>
-                    </div>
-                `).join('');
-            }
+            if (res?.ok) { const data = await res.json(); const container = document.getElementById('withdrawsList'); if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات</p>'; return; } container.innerHTML = data.requests.map(r => `<div class="request-card"><div><strong>💸 ${r.amount} SYP</strong></div><div>العنوان: ${r.address}</div><div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div><div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div></div>`).join(''); }
         }
 
         async function registerUser(refCode = null) {
             const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) });
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) { userData = data.user; isAdmin = data.isAdmin; await loadStats(); }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; isAdmin = data.isAdmin; await loadStats(); } }
         }
 
         async function loadDepositSettings() {
             const res = await apiCall('/api/user/deposit-settings');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const settings = data.settings;
-                    document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${settings.minDeposit} SYP`;
-                    document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${settings.minWithdraw} SYP`;
-                    if (settings.siteColors) applyColors(settings.siteColors);
-                    
-                    const methodsContainer = document.getElementById('methodSelector');
-                    methodsContainer.innerHTML = '';
-                    if (!settings.paymentAddresses?.length) { methodsContainer.innerHTML = '<div class="method-option disabled">لا توجد طرق دفع متاحة</div>'; return; }
-                    
-                    settings.paymentAddresses.forEach(addr => {
-                        const option = document.createElement('div');
-                        option.className = 'method-option';
-                        option.dataset.id = addr.id;
-                        option.dataset.address = addr.address;
-                        option.innerHTML = `<div class="method-name">${addr.name}</div><div class="method-desc">${addr.type === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>`;
-                        option.onclick = () => {
-                            document.querySelectorAll('.method-option').forEach(o => o.classList.remove('selected'));
-                            option.classList.add('selected');
-                            document.getElementById('addressInfo').innerHTML = `
-                                <div class="address-box">
-                                    <span>${addr.publicAddress || addr.address}</span>
-                                    <button class="copy-address" onclick="window.copyToClipboard('${addr.publicAddress || addr.address}')">📋 نسخ</button>
-                                </div>
-                            `;
-                        };
-                        methodsContainer.appendChild(option);
-                    });
-                    if (settings.paymentAddresses[0]) document.querySelector('.method-option')?.click();
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${s.minDeposit} SYP`; document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${s.minWithdraw} SYP`; const container = document.getElementById('methodsList'); container.innerHTML = ''; if (!s.paymentMethods?.length) { container.innerHTML = '<div class="method-card disabled">لا توجد طرق دفع متاحة</div>'; return; } s.paymentMethods.forEach(m => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = m.id; div.innerHTML = `<div class="method-name">${m.name}</div><div class="method-desc">تحويل عبر ${m.name}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${m.publicAddress}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${m.publicAddress}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>`; }; container.appendChild(div); }); if (s.paymentMethods[0]) document.querySelector('.method-card')?.click(); } }
         }
 
         async function deposit() {
-            const selected = document.querySelector('.method-option.selected');
+            const selected = document.querySelector('.method-card.selected');
             if (!selected) { showMessage('اختر طريقة الدفع أولاً', true); return; }
-            const addressId = selected.dataset.id;
+            const method = selected.dataset.method;
             const amount = document.getElementById('depositAmount').value;
             const transactionId = document.getElementById('transactionId').value;
             if (!amount || amount < 1000) { showMessage('المبلغ غير صالح', true); return; }
             if (!transactionId) { showMessage('أدخل رقم العملية', true); return; }
-            
             const btn = document.getElementById('submitDepositBtn');
             setButtonLoading(btn, true);
-            const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ addressId, amount: Number(amount), transactionId }) });
+            const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) });
             setButtonLoading(btn, false);
-            
-            if (res && res.ok) {
-                const data = await res.json();
-                showMessage(data.message);
-                document.getElementById('depositModal').style.display = 'none';
-                document.getElementById('depositAmount').value = '';
-                document.getElementById('transactionId').value = '';
-                await loadProfile(); await loadStats(); await loadDeposits();
-            } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل الإيداع', true); }
+            if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('depositModal').style.display = 'none'; document.getElementById('depositAmount').value = ''; document.getElementById('transactionId').value = ''; await loadProfile(); await loadStats(); await loadDeposits(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل الإيداع', true); }
         }
 
         async function withdraw() {
@@ -1083,194 +773,77 @@
             if (!amount || amount < 5000) { showMessage('المبلغ غير صالح (الحد الأدنى 5000)', true); return; }
             if (!address) { showMessage('أدخل عنوان السحب', true); return; }
             if (userData && amount > userData.balance) { showMessage('الرصيد غير كافٍ', true); return; }
-            
             const btn = document.getElementById('submitWithdrawBtn');
             setButtonLoading(btn, true);
             const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) });
             setButtonLoading(btn, false);
-            
-            if (res && res.ok) {
-                const data = await res.json();
-                showMessage(data.message);
-                document.getElementById('withdrawModal').style.display = 'none';
-                document.getElementById('withdrawAmount').value = '';
-                document.getElementById('withdrawAddress').value = '';
-                await loadProfile(); await loadStats(); await loadWithdrawals();
-            } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل السحب', true); }
+            if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('withdrawModal').style.display = 'none'; document.getElementById('withdrawAmount').value = ''; document.getElementById('withdrawAddress').value = ''; await loadProfile(); await loadStats(); await loadWithdrawals(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل السحب', true); }
         }
 
-        // ============= دوال الأدمن =============
+        // دوال الأدمن
+        let allUsers = [];
         async function loadAdminDashboard() {
             const res = await apiCall('/api/admin/dashboard');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('statTotalUsers').innerText = data.stats.totalUsers;
-                    document.getElementById('statNewToday').innerText = data.stats.newToday;
-                    document.getElementById('statTotalBalance').innerText = data.stats.totalBalance;
-                    document.getElementById('statTotalDeposited').innerText = data.stats.totalDeposited;
-                    document.getElementById('statTotalWithdrawn').innerText = data.stats.totalWithdrawn;
-                    document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals;
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('statTotalUsers').innerText = data.stats.totalUsers; document.getElementById('statNewToday').innerText = data.stats.newToday; document.getElementById('statTotalBalance').innerText = data.stats.totalBalance; document.getElementById('statTotalDeposited').innerText = data.stats.totalDeposited; document.getElementById('statTotalWithdrawn').innerText = data.stats.totalWithdrawn; document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals; } }
         }
 
         async function loadAdminWithdraws() {
             const status = document.getElementById('filterWithdrawStatus')?.value || 'all';
             const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`);
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const container = document.getElementById('withdrawsTable');
-                    if (!data.requests.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد طلبات</p>'; return; }
-                    container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
-                        ${data.requests.map(r => `<tr><td>${r.userName || r.userEmail || r.userId}</td><td>${r.amount} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? 'قيد المراجعة' : (r.status === 'approved' ? 'مقبول' : 'مرفوض')}</td><td>${new Date(r.createdAt).toLocaleString('ar')}</td>
-                        <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت'}</td></tr>`).join('')}
-                    </tbody></table>`;
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const container = document.getElementById('withdrawsTable'); if (!data.requests.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد طلبات</p>'; return; } container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr><td>${r.userName || r.userEmail || r.userId}</td><td>${r.amount} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? 'قيد المراجعة' : (r.status === 'approved' ? 'مقبول' : 'مرفوض')}</td><td>${new Date(r.createdAt).toLocaleString('ar')}</td><td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت'}</td></tr>`).join('')}</tbody></table>`; } }
         }
 
         async function loadAdminDeposits() {
             const res = await apiCall('/api/admin/deposits');
-            if (res && res.ok) {
-                const data = await res.json();
-                const container = document.getElementById('depositsTable');
-                if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد إيداعات</p>'; return; }
-                container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>طريقة الدفع</th><th>رقم العملية</th><th>التاريخ</th></tr></thead><tbody>
-                    ${data.deposits.map(d => `<tr><td>${d.user?.name || d.user?.email || d.userId}</td><td>${d.amount} SYP</td><td>${d.addressName || 'غير محدد'}</td><td>${d.transactionId}</td><td>${new Date(d.verifiedAt).toLocaleString('ar')}</td></tr>`).join('')}
-                </tbody></table>`;
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const container = document.getElementById('depositsTable'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد إيداعات</p>'; return; } container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>رقم العملية</th><th>التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr><td>${d.user?.name || d.user?.email || d.userId}</td><td>${d.amount} SYP</td><td>${d.transactionId}</td><td>${new Date(d.verifiedAt).toLocaleString('ar')}</td></tr>`).join('')}</tbody></table>`; } }
         }
 
-        let allUsers = [];
         async function loadAdminUsers() {
             const res = await apiCall('/api/admin/users');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) { allUsers = data.users; renderUsers(allUsers); }
-            }
-        }
-        function renderUsers(users) {
-            const container = document.getElementById('usersTable');
-            if (!users.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>'; return; }
-            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
-                ${users.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td>
-                <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td></tr>`).join('')}
-            </tbody></table>`;
+            if (res?.ok) { const data = await res.json(); if (data.success) { allUsers = data.users; const container = document.getElementById('usersTable'); if (!allUsers.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>'; return; } container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td><td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td></tr>`).join('')}</tbody></table>`; } }
         }
 
-        async function loadPaymentAddresses() {
+        async function loadAdminSettings() {
             const res = await apiCall('/api/admin/settings');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const addresses = data.settings.paymentAddresses || [];
-                    const container = document.getElementById('paymentAddressesList');
-                    container.innerHTML = addresses.map(a => `
-                        <div class="address-box" style="flex-direction:column;align-items:stretch;margin-bottom:12px">
-                            <div><strong>${a.name}</strong> <span style="font-size:12px;color:#aaa">(${a.type === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'})</span></div>
-                            <div style="font-size:12px">🔒 خاص (للـ API): ${a.privateAddress || a.address}</div>
-                            <div style="font-size:12px">🌐 عام (للمستخدم): ${a.publicAddress || a.address}</div>
-                            <div style="margin-top:8px"><button class="admin-btn admin-btn-small" onclick="editPaymentAddress('${a.id}','${a.name}','${a.privateAddress || a.address}','${a.publicAddress || a.address}','${a.type}')">تعديل</button>
-                            <button class="admin-btn admin-btn-small" onclick="deletePaymentAddress('${a.id}')">حذف</button></div>
-                        </div>
-                    `).join('');
-                }
-            }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; document.getElementById('settingMinDeposit').value = s.minDeposit; document.getElementById('settingMinWithdraw').value = s.minWithdraw; document.getElementById('settingShamCashEnabled').checked = s.shamCashEnabled; document.getElementById('settingSyriatelEnabled').checked = s.syriatelEnabled; const shamAddr = s.paymentAddresses?.find(a => a.type === 'sham_cash'); if (shamAddr) { document.getElementById('settingShamPrivateAddress').value = shamAddr.privateAddress || ''; document.getElementById('settingShamPublicAddress').value = shamAddr.publicAddress || ''; } const syriAddr = s.paymentAddresses?.find(a => a.type === 'syriatel_cash'); if (syriAddr) { document.getElementById('settingSyriPrivateAddress').value = syriAddr.privateAddress || ''; document.getElementById('settingSyriPublicAddress').value = syriAddr.publicAddress || ''; } document.getElementById('settingShamApiKey').value = s.shamCashApiKey || ''; document.getElementById('settingSyriApiKey').value = s.syriatelApiKey || ''; } }
         }
 
-        async function loadColorsSettings() {
-            const res = await apiCall('/api/admin/settings');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success && data.settings.siteColors) {
-                    const c = data.settings.siteColors;
-                    document.getElementById('colorPrimary').value = c.primary || '#ff0000';
-                    document.getElementById('colorSecondary').value = c.secondary || '#cc0000';
-                    document.getElementById('colorBackground').value = c.background || '#0a0a0a';
-                    document.getElementById('colorText').value = c.text || '#ffffff';
-                    document.getElementById('colorSurface').value = c.surface || '#121212';
-                    document.getElementById('colorBorder').value = c.border || '#333333';
-                }
-            }
-        }
-
-        async function loadApiKeys() {
-            const res = await apiCall('/api/admin/settings');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('apiShamCashKey').value = data.settings.shamCashApiKey || '';
-                    document.getElementById('apiSyriatelKey').value = data.settings.syriatelApiKey || '';
-                }
-            }
-        }
-
-        async function saveColors() {
-            const colors = {
-                primary: document.getElementById('colorPrimary').value,
-                secondary: document.getElementById('colorSecondary').value,
-                background: document.getElementById('colorBackground').value,
-                text: document.getElementById('colorText').value,
-                surface: document.getElementById('colorSurface').value,
-                border: document.getElementById('colorBorder').value
+        async function saveAdminSettings() {
+            const settings = {
+                minDeposit: Number(document.getElementById('settingMinDeposit').value),
+                minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
+                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
+                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
+                paymentAddresses: [
+                    { id: 'sham_001', name: 'شام كاش', type: 'sham_cash', isActive: true, privateAddress: document.getElementById('settingShamPrivateAddress').value, publicAddress: document.getElementById('settingShamPublicAddress').value },
+                    { id: 'syri_001', name: 'سيرياتيل كاش', type: 'syriatel_cash', isActive: true, privateAddress: document.getElementById('settingSyriPrivateAddress').value, publicAddress: document.getElementById('settingSyriPublicAddress').value }
+                ],
+                shamCashApiKey: document.getElementById('settingShamApiKey').value,
+                syriatelApiKey: document.getElementById('settingSyriApiKey').value
             };
-            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify({ siteColors: colors }) });
-            if (res && res.ok) { showMessage('تم حفظ الألوان'); applyColors(colors); }
-            else showMessage('فشل الحفظ', true);
-        }
-
-        async function saveApiKeys() {
-            const shamCashKey = document.getElementById('apiShamCashKey').value;
-            const syriatelKey = document.getElementById('apiSyriatelKey').value;
-            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify({ shamCashApiKey: shamCashKey, syriatelApiKey: syriatelKey }) });
-            if (res && res.ok) showMessage('تم حفظ المفاتيح');
-            else showMessage('فشل الحفظ', true);
+            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) });
+            if (res?.ok) { showMessage('تم حفظ الإعدادات'); loadAdminSettings(); loadDepositSettings(); } else showMessage('فشل الحفظ', true);
         }
 
         window.approveWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); if (res?.ok) { showMessage('تم القبول'); loadAdminWithdraws(); loadAdminDashboard(); } };
         window.rejectWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); if (res?.ok) { showMessage('تم الرفض'); loadAdminWithdraws(); loadAdminDashboard(); } };
         window.toggleBan = async (id) => { const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) }); if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); } };
-        window.editBalance = async (id, balance) => { const val = prompt(`الرصيد الحالي: ${balance}\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); if (val && val !== '0') { const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) }); if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); loadAdminDashboard(); } } };
-        window.copyToClipboard = copyToClipboard;
+        window.editBalance = async (id, bal) => { const val = prompt(`الرصيد الحالي: ${bal}\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); if (val && val !== '0') { const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) }); if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); loadAdminDashboard(); } } };
 
-        function addPaymentAddress() { editingPaymentId = null; document.getElementById('paymentModalTitle').innerText = 'إضافة عنوان دفع'; document.getElementById('paymentName').value = ''; document.getElementById('paymentPrivateAddress').value = ''; document.getElementById('paymentPublicAddress').value = ''; document.getElementById('paymentType').value = 'sham_cash'; document.getElementById('paymentAddressModal').style.display = 'flex'; }
-        function editPaymentAddress(id, name, privateAddr, publicAddr, type) { editingPaymentId = id; document.getElementById('paymentModalTitle').innerText = 'تعديل عنوان دفع'; document.getElementById('paymentName').value = name; document.getElementById('paymentPrivateAddress').value = privateAddr; document.getElementById('paymentPublicAddress').value = publicAddr; document.getElementById('paymentType').value = type; document.getElementById('paymentAddressModal').style.display = 'flex'; }
-        async function deletePaymentAddress(id) { if (confirm('حذف العنوان؟')) { const container = document.getElementById('paymentAddressesList'); const item = Array.from(container.children).find(el => el.querySelector(`button[onclick*="${id}"]`)); if (item) item.remove(); showMessage('تم الحذف (احفظ الإعدادات لتأكيد الحذف)'); } }
-        async function savePaymentAddress() { const name = document.getElementById('paymentName').value; const privateAddr = document.getElementById('paymentPrivateAddress').value; const publicAddr = document.getElementById('paymentPublicAddress').value || privateAddr; const type = document.getElementById('paymentType').value; if (!name || !privateAddr) { showMessage('الاسم والعنوان الخاص مطلوبان', true); return; } const container = document.getElementById('paymentAddressesList'); const newId = editingPaymentId || 'addr_' + Date.now(); const addressHtml = `<div class="address-box" style="flex-direction:column;align-items:stretch;margin-bottom:12px"><div><strong>${name}</strong> <span style="font-size:12px;color:#aaa">(${type === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'})</span></div><div style="font-size:12px">🔒 خاص (للـ API): ${privateAddr}</div><div style="font-size:12px">🌐 عام (للمستخدم): ${publicAddr}</div><div style="margin-top:8px"><button class="admin-btn admin-btn-small" onclick="editPaymentAddress('${newId}','${name}','${privateAddr}','${publicAddr}','${type}')">تعديل</button><button class="admin-btn admin-btn-small" onclick="deletePaymentAddress('${newId}')">حذف</button></div></div>`; if (editingPaymentId) { const existing = Array.from(container.children).find(el => el.querySelector(`button[onclick*="${editingPaymentId}"]`)); if (existing) existing.outerHTML = addressHtml; } else container.insertAdjacentHTML('beforeend', addressHtml); document.getElementById('paymentAddressModal').style.display = 'none'; showMessage('تم الحفظ (احفظ الإعدادات الرئيسية لتأكيد التغيير)'); }
-
-        function showAdminInterface() { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); loadAdminDashboard(); loadAdminWithdraws(); loadAdminDeposits(); loadAdminUsers(); loadPaymentAddresses(); loadColorsSettings(); loadApiKeys(); }
+        function showAdminInterface() { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); loadAdminDashboard(); loadAdminWithdraws(); loadAdminDeposits(); loadAdminUsers(); loadAdminSettings(); }
         function showUserInterface() { document.getElementById('adminApp').classList.add('hidden'); document.getElementById('userApp').classList.remove('hidden'); }
 
         async function handleGoogleSignIn() {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                currentUser = result.user;
-                const params = new URLSearchParams(window.location.search);
-                await registerUser(params.get('ref'));
-                await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings();
-                document.getElementById('loader').style.display = 'none';
-                if (isAdmin) showAdminInterface(); else showUserInterface();
-            } catch (err) { showMessage('فشل تسجيل الدخول', true); }
+            try { const result = await signInWithPopup(auth, provider); currentUser = result.user; const params = new URLSearchParams(window.location.search); await registerUser(params.get('ref')); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } catch (err) { showMessage('فشل تسجيل الدخول', true); }
         }
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                await registerUser();
-                await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings();
-                document.getElementById('loader').style.display = 'none';
-                if (isAdmin) showAdminInterface(); else showUserInterface();
-            } else {
-                document.getElementById('loader').innerHTML = `<div class="spinner"></div><button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px">🔐 تسجيل دخول Google</button>`;
-                document.getElementById('loader').style.display = 'flex';
-                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn);
-            }
+            if (user) { currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); }
+            else { document.getElementById('loader').innerHTML = `<div class="spinner"></div><button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px">🔐 تسجيل دخول Google</button>`; document.getElementById('loader').style.display = 'flex'; document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); }
         });
 
-        // أحداث الواجهة
-        document.getElementById('openProfileBtn')?.addEventListener('click', () => { document.getElementById('homeScreen').classList.add('hidden'); document.getElementById('profileScreen').classList.remove('hidden'); if (isAdmin) { const btn = document.createElement('button'); btn.className = 'switch-view'; btn.innerText = 'لوحة الأدمن'; btn.onclick = showAdminInterface; document.getElementById('adminSwitchContainer').innerHTML = ''; document.getElementById('adminSwitchContainer').appendChild(btn); } });
+        // الأحداث
+        document.getElementById('openProfileBtn')?.addEventListener('click', () => { document.getElementById('homeScreen').classList.add('hidden'); document.getElementById('profileScreen').classList.remove('hidden'); if (isAdmin) { const btn = document.createElement('button'); btn.className = 'admin-btn'; btn.innerText = 'لوحة الأدمن'; btn.onclick = showAdminInterface; document.getElementById('adminSwitchContainer').innerHTML = ''; document.getElementById('adminSwitchContainer').appendChild(btn); } });
         document.getElementById('backHomeBtn')?.addEventListener('click', () => { document.getElementById('profileScreen').classList.add('hidden'); document.getElementById('homeScreen').classList.remove('hidden'); });
         document.getElementById('depositAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('depositModal').style.display = 'flex'; });
         document.getElementById('withdrawAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('withdrawModal').style.display = 'flex'; });
@@ -1281,22 +854,15 @@
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
-        document.getElementById('addPaymentAddressBtn')?.addEventListener('click', addPaymentAddress);
-        document.getElementById('saveColorsBtn')?.addEventListener('click', saveColors);
-        document.getElementById('saveApiBtn')?.addEventListener('click', saveApiKeys);
-        document.getElementById('savePaymentAddressBtn')?.addEventListener('click', savePaymentAddress);
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); renderUsers(allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term))); });
-        
+        document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; } container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td><td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td></tr>`).join('')}</tbody></table>`; });
+
         document.querySelectorAll('.close-modal').forEach(btn => { btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; }); });
         document.querySelectorAll('.modal').forEach(modal => { modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; }); });
-        
-        document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const target = tab.dataset.tab; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminPaymentsPanel,#adminColorsPanel,#adminApiPanel').forEach(p => p.classList.add('hidden')); if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden'); if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden'); if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden'); if (target === 'payments') document.getElementById('adminPaymentsPanel').classList.remove('hidden'); if (target === 'colors') document.getElementById('adminColorsPanel').classList.remove('hidden'); if (target === 'api') document.getElementById('adminApiPanel').classList.remove('hidden'); }); });
-        
+
+        document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const target = tab.dataset.tab; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel').forEach(p => p.classList.add('hidden')); if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden'); if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden'); if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden'); if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden'); }); });
+
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => { tab.addEventListener('click', async () => { const target = tab.dataset.tab; if (target === 'deposits') await loadDeposits(); if (target === 'withdraws') await loadWithdrawals(); document.getElementById(`${target}Modal`).style.display = 'flex'; }); });
-        
-        window.copyToClipboard = copyToClipboard;
-        window.editPaymentAddress = editPaymentAddress;
-        window.deletePaymentAddress = deletePaymentAddress;
     </script>
 </body>
 </html>
