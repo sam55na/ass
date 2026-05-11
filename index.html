@@ -12,10 +12,20 @@
             box-sizing: border-box;
         }
 
+        /* ========== متغيرات الألوان (سيتم تحديثها من الخادم) ========== */
+        :root {
+            --primary-color: #ff0000;
+            --secondary-color: #cc0000;
+            --bg-color: #0a0a0a;
+            --text-color: #ffffff;
+            --card-bg: #1a1a1a;
+            --border-color: #ff3333;
+        }
+
         body {
             font-family: 'Segoe UI', 'Tahoma', system-ui, sans-serif;
-            background: radial-gradient(circle at 20% 30%, #0a0a0a, #000000);
-            color: #ffffff;
+            background: radial-gradient(circle at 20% 30%, var(--bg-color), #000000);
+            color: var(--text-color);
             min-height: 100vh;
             padding: 16px;
         }
@@ -36,7 +46,7 @@
         }
 
         .admin-header {
-            background: linear-gradient(135deg, #1a0000, #0a0000);
+            background: linear-gradient(135deg, var(--card-bg), #0a0000);
             padding: 20px;
             border-radius: 20px;
             margin-bottom: 25px;
@@ -45,7 +55,7 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
-            border-bottom: 2px solid #ff0000;
+            border-bottom: 2px solid var(--primary-color);
         }
 
         .admin-stats-grid {
@@ -56,21 +66,21 @@
         }
 
         .stat-card {
-            background: #1a1a1a;
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            border: 1px solid #ff3333;
+            border: 1px solid var(--border-color);
         }
 
         .stat-number {
             font-size: 32px;
             font-weight: bold;
-            color: #ff4444;
+            color: var(--primary-color);
         }
 
         .admin-table {
-            background: #1a1a1a;
+            background: var(--card-bg);
             border-radius: 15px;
             overflow-x: auto;
             padding: 15px;
@@ -88,12 +98,12 @@
         }
 
         th {
-            background: #ff000020;
+            background: rgba(255, 0, 0, 0.2);
             color: #ff8888;
         }
 
         .admin-btn {
-            background: #ff0000;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 8px 16px;
@@ -108,7 +118,7 @@
         }
 
         .admin-btn:hover {
-            background: #cc0000;
+            background: var(--secondary-color);
         }
 
         /* ========== الواجهة العادية ========== */
@@ -131,7 +141,7 @@
             width: 55px;
             height: 55px;
             border: 3px solid rgba(255, 51, 51, 0.2);
-            border-top: 3px solid #ff3333;
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -151,7 +161,7 @@
         .avatar-btn {
             width: 52px;
             height: 52px;
-            background: linear-gradient(145deg, #1f1f1f, #0a0a0a);
+            background: linear-gradient(145deg, var(--card-bg), #0a0a0a);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -196,13 +206,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(95deg, #cc2222, #ff3a3a);
+            background: linear-gradient(95deg, var(--secondary-color), var(--primary-color));
             color: white;
         }
 
         .btn-secondary {
             background: #181818;
-            border: 1px solid #ff4a4a;
+            border: 1px solid var(--primary-color);
             color: #ff6b6b;
         }
 
@@ -215,7 +225,7 @@
             width: 130px;
             height: 130px;
             margin: 0 auto 20px;
-            background: radial-gradient(circle at 35% 35%, #ff3a3a, #990000);
+            background: radial-gradient(circle at 35% 35%, var(--primary-color), var(--secondary-color));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -279,7 +289,7 @@
             font-family: monospace;
             font-size: 18px;
             margin: 20px 0 8px;
-            border: 1px solid #ff4f4f;
+            border: 1px solid var(--primary-color);
         }
 
         .modal-glass {
@@ -300,7 +310,7 @@
             max-width: 500px;
             width: 100%;
             padding: 24px 20px;
-            border: 1px solid #ff3a3a;
+            border: 1px solid var(--primary-color);
             max-height: 85vh;
             overflow-y: auto;
         }
@@ -309,7 +319,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #ff3a3a30;
+            border-bottom: 1px solid rgba(255, 60, 60, 0.3);
             padding-bottom: 14px;
             margin-bottom: 22px;
             font-size: 20px;
@@ -327,7 +337,7 @@
             margin-bottom: 12px;
             padding: 12px;
             border-radius: 24px;
-            border-right: 4px solid #ff4a4a;
+            border-right: 4px solid var(--primary-color);
         }
 
         .toast-pro {
@@ -335,7 +345,7 @@
             bottom: 100px;
             left: 20px;
             right: 20px;
-            background: #ff3030dd;
+            background: var(--primary-color);
             backdrop-filter: blur(8px);
             padding: 12px;
             border-radius: 50px;
@@ -356,7 +366,7 @@
         }
 
         .btn-google {
-            background: linear-gradient(100deg, #ce2727, #a51c1c);
+            background: linear-gradient(100deg, var(--secondary-color), var(--primary-color));
             border: none;
             padding: 14px;
             border-radius: 60px;
@@ -372,7 +382,7 @@
         }
 
         .admin-badge {
-            background: #ff0000;
+            background: var(--primary-color);
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -389,16 +399,9 @@
             cursor: pointer;
         }
 
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
         input, select, textarea {
             background: #2a2a2a;
-            border: 1px solid #ff4444;
+            border: 1px solid var(--primary-color);
             color: white;
             padding: 10px 12px;
             border-radius: 10px;
@@ -427,25 +430,14 @@
         }
 
         .method-card.selected {
-            border-color: #ff0000;
+            border-color: var(--primary-color);
             background: #2a0000;
-        }
-
-        .method-card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .method-name {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .method-desc {
-            font-size: 12px;
-            color: #888;
-            margin: 8px 0;
+            margin-bottom: 10px;
         }
 
         .method-address {
@@ -467,7 +459,7 @@
         }
 
         .copy-btn {
-            background: #ff0000;
+            background: var(--primary-color);
             border: none;
             color: white;
             padding: 5px 12px;
@@ -491,7 +483,7 @@
         }
 
         .admin-tab.active {
-            background: #ff0000;
+            background: var(--primary-color);
         }
 
         .address-item {
@@ -509,9 +501,12 @@
             margin-bottom: 10px;
         }
 
-        .address-actions {
-            display: flex;
-            gap: 8px;
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid #fff;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -702,6 +697,22 @@
                 </div>
                 
                 <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">ألوان الموقع</h4>
+                    <div class="form-group">
+                        <label>اللون الرئيسي</label>
+                        <input type="color" id="settingPrimaryColor" value="#ff0000">
+                    </div>
+                    <div class="form-group">
+                        <label>اللون الثانوي</label>
+                        <input type="color" id="settingSecondaryColor" value="#cc0000">
+                    </div>
+                    <div class="form-group">
+                        <label>لون الخلفية</label>
+                        <input type="color" id="settingBgColor" value="#0a0a0a">
+                    </div>
+                </div>
+                
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
                     <h4 style="color: #ff8888; margin-bottom: 10px;">عناوين الدفع</h4>
                     <div id="paymentAddressesList"></div>
                     <button class="admin-btn" id="addAddressBtn" style="margin-top: 10px; width: 100%;">+ إضافة عنوان دفع جديد</button>
@@ -813,6 +824,14 @@
             showMessage('تم نسخ العنوان');
         }
 
+        function applyColors(colors) {
+            if (!colors) return;
+            document.documentElement.style.setProperty('--primary-color', colors.primary || '#ff0000');
+            document.documentElement.style.setProperty('--secondary-color', colors.secondary || '#cc0000');
+            document.documentElement.style.setProperty('--bg-color', colors.background || '#0a0a0a');
+            document.documentElement.style.setProperty('--text-color', colors.text || '#ffffff');
+        }
+
         // ============= دوال المستخدم =============
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
@@ -864,7 +883,7 @@
                 container.innerHTML = data.deposits.map(d => `
                     <div class="request-item-card">
                         <div><strong>💰 ${d.amount} SYP</strong></div>
-                        <div>طريقة الدفع: ${d.addressName || d.method}</div>
+                        <div>طريقة الدفع: ${d.addressName || 'غير محدد'}</div>
                         <div>رقم العملية: ${d.transactionId}</div>
                         <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
                     </div>
@@ -916,6 +935,8 @@
                     document.getElementById('minDepositHint').innerHTML = `🔻 الحد الأدنى: ${settings.minDeposit} SYP`;
                     document.getElementById('minWithdrawHint').innerHTML = `🔻 الحد الأدنى: ${settings.minWithdraw} SYP`;
                     
+                    if (settings.siteColors) applyColors(settings.siteColors);
+                    
                     const methodsContainer = document.getElementById('paymentMethodsList');
                     methodsContainer.innerHTML = '';
                     
@@ -924,7 +945,7 @@
                         return;
                     }
                     
-                    let selectedMethodId = null;
+                    let selectedAddressId = null;
                     
                     settings.paymentAddresses.forEach(addr => {
                         const methodDiv = document.createElement('div');
@@ -944,7 +965,7 @@
                             if(e.target.classList.contains('copy-btn')) return;
                             document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
                             methodDiv.classList.add('selected');
-                            selectedMethodId = addr.id;
+                            selectedAddressId = addr.id;
                         });
                         
                         const copyBtn = methodDiv.querySelector('.copy-btn');
@@ -974,7 +995,6 @@
             const addressId = selectedMethodCard.dataset.addressId;
             const amount = document.getElementById('depositAmount').value;
             const transactionId = document.getElementById('transactionId').value;
-            const method = selectedMethodCard.querySelector('.method-name')?.innerText || 'unknown';
             
             if (!amount || amount < 1000) {
                 showMessage('المبلغ غير صالح', true);
@@ -987,7 +1007,7 @@
             
             const res = await apiCall('/api/user/deposit', {
                 method: 'POST',
-                body: JSON.stringify({ method, amount: Number(amount), transactionId, addressId })
+                body: JSON.stringify({ addressId, amount: Number(amount), transactionId })
             });
             
             if (res && res.ok) {
@@ -1061,7 +1081,7 @@
 
         async function loadAdminWithdraws() {
             const status = document.getElementById('filterWithdrawStatus')?.value || 'all';
-            const res = await apiCall(`/api/admin/withdraw-requests?status=${status}&limit=50`);
+            const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`);
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
@@ -1095,7 +1115,7 @@
         }
 
         async function loadAdminDeposits() {
-            const res = await apiCall('/api/admin/deposits?limit=50');
+            const res = await apiCall('/api/admin/deposits');
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
@@ -1112,7 +1132,7 @@
                                     <tr>
                                         <td>${d.user?.name || d.user?.email || d.userId}</td>
                                         <td>${d.amount} SYP</td>
-                                        <td>${d.addressName || d.method}</td>
+                                        <td>${d.addressName || 'غير محدد'}</td>
                                         <td>${d.transactionId}</td>
                                         <td>${new Date(d.verifiedAt).toLocaleString('ar')}</td>
                                     </tr>
@@ -1124,52 +1144,45 @@
             }
         }
 
-        let currentUsersPage = 1;
-        let usersSearchTerm = '';
-
-        async function loadAdminUsers(page = 1) {
-            const res = await apiCall(`/api/admin/users?page=${page}&limit=20`);
+        let allUsers = [];
+        
+        async function loadAdminUsers() {
+            const res = await apiCall('/api/admin/users');
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    const container = document.getElementById('usersTableContainer');
-                    if (!data.users.length) {
-                        container.innerHTML = '<p style="text-align:center; padding:40px;">لا يوجد مستخدمين</p>';
-                        return;
-                    }
-                    container.innerHTML = `
-                        <table>
-                            <thead><tr><th>البريد الإلكتروني</th><th>الاسم</th><th>كود الإحالة</th><th>الرصيد</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-                            <tbody>
-                                ${data.users.map(u => `
-                                    <tr>
-                                        <td>${u.email || '-'}</td>
-                                        <td>${u.name || '-'}</td>
-                                        <td>${u.uniqueId || '-'}</td>
-                                        <td>${u.balance || 0} NSP</td>
-                                        <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
-                                        <td>
-                                            <button class="admin-btn admin-btn-small" onclick="window.showEditBalance('${u.id}', ${u.balance})">تعديل الرصيد</button>
-                                            <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                    
-                    const pagination = document.getElementById('usersPagination');
-                    if (data.totalPages > 1) {
-                        let pages = '';
-                        for (let i = 1; i <= data.totalPages; i++) {
-                            pages += `<button class="admin-btn admin-btn-small" onclick="window.goToUsersPage(${i})" ${i === page ? 'disabled' : ''}>${i}</button>`;
-                        }
-                        pagination.innerHTML = pages;
-                    } else {
-                        pagination.innerHTML = '';
-                    }
+                    allUsers = data.users;
+                    renderUsersList(allUsers);
                 }
             }
+        }
+        
+        function renderUsersList(users) {
+            const container = document.getElementById('usersTableContainer');
+            if (!users.length) {
+                container.innerHTML = '<p style="text-align:center; padding:40px;">لا يوجد مستخدمين</p>';
+                return;
+            }
+            container.innerHTML = `
+                <table>
+                    <thead><tr><th>البريد الإلكتروني</th><th>الاسم</th><th>كود الإحالة</th><th>الرصيد</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                    <tbody>
+                        ${users.map(u => `
+                            <tr>
+                                <td>${u.email || '-'}</td>
+                                <td>${u.name || '-'}</td>
+                                <td>${u.uniqueId || '-'}</td>
+                                <td>${u.balance || 0} NSP</td>
+                                <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                                <td>
+                                    <button class="admin-btn admin-btn-small" onclick="window.showEditBalance('${u.id}', ${u.balance})">تعديل الرصيد</button>
+                                    <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button>
+                                 </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         async function loadAdminSettings() {
@@ -1181,6 +1194,12 @@
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
                     document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
                     document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
+                    
+                    if (data.settings.siteColors) {
+                        document.getElementById('settingPrimaryColor').value = data.settings.siteColors.primary || '#ff0000';
+                        document.getElementById('settingSecondaryColor').value = data.settings.siteColors.secondary || '#cc0000';
+                        document.getElementById('settingBgColor').value = data.settings.siteColors.background || '#0a0a0a';
+                    }
                     
                     const addressesContainer = document.getElementById('paymentAddressesList');
                     const addresses = data.settings.paymentAddresses || [];
@@ -1215,16 +1234,11 @@
                 const id = el.querySelector('.admin-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
                 const name = el.querySelector('strong')?.innerText;
                 const addressSpan = el.querySelector('.method-address span');
-                const typeSpan = el.querySelector('div:last-child');
+                const typeDiv = el.querySelector('div:last-child');
+                const type = typeDiv?.innerText.includes('شام كاش') ? 'sham_cash' : 'syriatel_cash';
                 
                 if (id && name && addressSpan) {
-                    addresses.push({
-                        id: id,
-                        name: name,
-                        address: addressSpan.innerText,
-                        type: typeSpan?.innerText.includes('شام كاش') ? 'sham_cash' : 'syriatel_cash',
-                        isActive: true
-                    });
+                    addresses.push({ id, name, address: addressSpan.innerText, type, isActive: true });
                 }
             });
             
@@ -1233,7 +1247,13 @@
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
                 paymentAddresses: addresses,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
-                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value
+                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
+                siteColors: {
+                    primary: document.getElementById('settingPrimaryColor').value,
+                    secondary: document.getElementById('settingSecondaryColor').value,
+                    background: document.getElementById('settingBgColor').value,
+                    text: '#ffffff'
+                }
             };
             
             const res = await apiCall('/api/admin/settings', {
@@ -1243,7 +1263,9 @@
             
             if (res && res.ok) {
                 showMessage('تم حفظ الإعدادات بنجاح');
+                applyColors(settings.siteColors);
                 await loadAdminSettings();
+                await loadDepositSettings();
             } else {
                 showMessage('فشل حفظ الإعدادات', true);
             }
@@ -1280,33 +1302,23 @@
             });
             if (res && res.ok) {
                 showMessage('تم تحديث حالة المستخدم');
-                loadAdminUsers(currentUsersPage);
+                loadAdminUsers();
             }
         };
 
         window.showEditBalance = async (userId, currentBalance) => {
-            const newBalance = prompt(`الرصيد الحالي: ${currentBalance} NSP\nأدخل المبلغ الجديد (استخدم + للإضافة أو - للخصم)`, "0");
-            if (newBalance !== null) {
+            const newBalance = prompt(`الرصيد الحالي: ${currentBalance} NSP\nأدخل المبلغ المراد إضافته (استخدم - للخصم)`, "0");
+            if (newBalance !== null && newBalance !== '0') {
                 const res = await apiCall('/api/admin/update-balance', {
                     method: 'POST',
-                    body: JSON.stringify({ userId, amount: Number(newBalance), reason: 'تعديل يدوي من الأدمن' })
+                    body: JSON.stringify({ userId, amount: Number(newBalance), reason: 'تعديل يدوي' })
                 });
                 if (res && res.ok) {
                     showMessage('تم تحديث الرصيد');
-                    loadAdminUsers(currentUsersPage);
+                    loadAdminUsers();
                     loadAdminDashboard();
                 }
             }
-        };
-
-        window.goToUsersPage = (page) => {
-            currentUsersPage = page;
-            loadAdminUsers(page);
-        };
-
-        window.copyToClipboard = (text) => {
-            navigator.clipboard.writeText(text);
-            showMessage('تم نسخ العنوان');
         };
 
         window.editAddress = (id, name, address, type) => {
@@ -1320,7 +1332,9 @@
 
         window.deleteAddress = (id) => {
             if (confirm('هل أنت متأكد من حذف هذا العنوان؟')) {
-                const addressDiv = document.querySelector(`.address-item button[onclick*="${id}"]`)?.closest('.address-item');
+                const addressDiv = Array.from(document.querySelectorAll('.address-item')).find(el => 
+                    el.querySelector('.admin-btn')?.getAttribute('onclick')?.includes(id)
+                );
                 if (addressDiv) addressDiv.remove();
                 showMessage('تم حذف العنوان (سيتم حفظ التغيير عند حفظ الإعدادات)');
             }
@@ -1381,6 +1395,16 @@
             document.getElementById('addressModal').style.display = 'none';
             showMessage('تم إضافة العنوان (سيتم حفظ التغيير عند حفظ الإعدادات)');
         }
+
+        document.getElementById('searchUsersBtn')?.addEventListener('click', () => {
+            const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
+            const filtered = allUsers.filter(u => 
+                u.email?.toLowerCase().includes(searchTerm) || 
+                u.name?.toLowerCase().includes(searchTerm) ||
+                u.uniqueId?.includes(searchTerm)
+            );
+            renderUsersList(filtered);
+        });
 
         function showAdminInterface() {
             document.getElementById('userApp').classList.add('hidden');
@@ -1488,10 +1512,6 @@
         document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
         document.getElementById('addAddressBtn')?.addEventListener('click', addNewAddress);
         document.getElementById('saveAddressBtn')?.addEventListener('click', saveAddress);
-        document.getElementById('searchUsersBtn')?.addEventListener('click', () => {
-            usersSearchTerm = document.getElementById('searchUsers').value;
-            loadAdminUsers(1);
-        });
 
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {

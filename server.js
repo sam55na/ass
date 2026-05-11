@@ -38,35 +38,22 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(express.static('.'));
 
-// ============= الجلسات =============
+// ============= إعدادات الجلسة =============
 app.use(session({
-  secret: 'boomb_admin_secret_2024',
+  secret: 'boomb_secret_key_2024',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: { maxAge: 24 * 60 * 60 * 1000, secure: false }
 }));
 
 // ============= منع التكرار =============
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 50,
+  max: 100,
   message: 'الرجاء الانتظار دقيقة'
 });
 app.use('/api/', limiter);
-
-const actionCooldown = new Map();
-function checkCooldown(userId, action, seconds = 60) {
-  const key = `${userId}:${action}`;
-  const last = actionCooldown.get(key);
-  const now = Date.now();
-  if (last && (now - last) < seconds * 1000) {
-    return { allowed: false, remaining: Math.ceil((seconds * 1000 - (now - last)) / 1000) };
-  }
-  actionCooldown.set(key, now);
-  return { allowed: true, remaining: 0 };
-}
 
 // ============= دوال مساعدة =============
 function generateUniqueId() {
@@ -75,31 +62,60 @@ function generateUniqueId() {
 
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
-const requireAdmin = async (req, res, next) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح' });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    if (decoded.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'ليس لديك صلاحيات أدمن' });
-    }
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: 'جلسة غير صالحة' });
-  }
-};
-
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح' });
+  if (!token) return res.status(401).json({ error: 'غير مصرح', code: 'NO_TOKEN' });
   try {
     req.user = await admin.auth().verifyIdToken(token);
     next();
-  } catch {
-    res.status(401).json({ error: 'جلسة غير صالحة' });
+  } catch (error) {
+    res.status(401).json({ error: 'جلسة غير صالحة', code: 'INVALID_TOKEN' });
   }
 };
+
+const requireAdmin = async (req, res, next) => {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) return res.status(401).json({ error: 'غير مصرح', code: 'NO_TOKEN' });
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    if (decoded.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'ليس لديك صلاحيات أدمن', code: 'FORBIDDEN' });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'جلسة غير صالحة', code: 'INVALID_TOKEN' });
+  }
+};
+
+// ============= إعدادات النظام =============
+async function getSystemSettings() {
+  const settingsRef = db.collection('system_settings').doc('config');
+  const doc = await settingsRef.get();
+  if (doc.exists) return doc.data();
+  
+  const defaultSettings = {
+    minDeposit: 1000,
+    minWithdraw: 5000,
+    siteColors: {
+      primary: '#ff0000',
+      secondary: '#cc0000',
+      background: '#0a0a0a',
+      text: '#ffffff'
+    },
+    paymentAddresses: [],
+    shamCashApiKey: '',
+    syriatelApiKey: ''
+  };
+  await settingsRef.set(defaultSettings);
+  return defaultSettings;
+}
+
+async function updateSystemSettings(updates) {
+  const settingsRef = db.collection('system_settings').doc('config');
+  await settingsRef.update(updates);
+  return await getSystemSettings();
+}
 
 // ============= كلاس شام كاش =============
 class ShamCashClient {
@@ -117,43 +133,27 @@ class ShamCashClient {
         account_address: this.accountAddress,
         api_key: this.apiKey
       };
-
       const response = await axios.get(this.baseUrl, { params, timeout: 30000 });
-
       if (response.status === 200 && response.data.success) {
         const items = response.data.data?.items || [];
-        
         for (const item of items) {
           if (String(item.tran_id) === String(txid)) {
             const apiAmount = parseFloat(item.amount);
-            const apiCurrency = item.currency?.toUpperCase() || "SYP";
-            
             const timestamp = item.created_at || Date.now() / 1000;
-            const timeDiff = Date.now() / 1000 - timestamp;
-            if (timeDiff > 86400) {
-              return { success: false, message: "العملية أقدم من 24 ساعة", code: "EXPIRED" };
+            if ((Date.now() / 1000 - timestamp) > 86400) {
+              return { success: false, message: "العملية أقدم من 24 ساعة" };
             }
-            
             if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}`, code: "AMOUNT_MISMATCH" };
+              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}` };
             }
-            
-            return {
-              success: true,
-              txid: txid,
-              amount: apiAmount,
-              currency: apiCurrency,
-              status: "completed",
-              timestamp: timestamp
-            };
+            return { success: true, amount: apiAmount, currency: item.currency || "SYP" };
           }
         }
-        return { success: false, message: "رقم العملية غير موجود", code: "NOT_FOUND" };
+        return { success: false, message: "رقم العملية غير موجود" };
       }
-      return { success: false, message: "فشل التحقق من العملية", code: "API_ERROR" };
+      return { success: false, message: "فشل التحقق من العملية" };
     } catch (error) {
-      console.error("ShamCash error:", error);
-      return { success: false, message: error.message, code: "EXCEPTION" };
+      return { success: false, message: error.message };
     }
   }
 }
@@ -169,74 +169,22 @@ class SyriatelCashClient {
   async verifyTransaction(txid, expectedAmount = null) {
     for (const gsm of this.gsmNumbers) {
       try {
-        const params = {
-          api_key: this.apiKey,
-          resource: "syriatel",
-          action: "find_tx",
-          tx: txid,
-          gsm: gsm
-        };
-
+        const params = { api_key: this.apiKey, resource: "syriatel", action: "find_tx", tx: txid, gsm: gsm };
         const response = await axios.get(this.baseUrl, { params, timeout: 30000 });
-
         if (response.status === 200 && response.data.success && response.data.data?.found) {
           const transaction = response.data.data.transaction || {};
           const apiAmount = parseFloat(transaction.amount || 0);
-          
           if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-            return { success: false, message: "المبلغ غير متطابق", code: "AMOUNT_MISMATCH" };
+            return { success: false, message: "المبلغ غير متطابق" };
           }
-          
-          return {
-            success: true,
-            txid: txid,
-            amount: apiAmount,
-            currency: "SYP",
-            status: "completed",
-            gsm: gsm,
-            timestamp: transaction.date || Date.now()
-          };
+          return { success: true, amount: apiAmount, currency: "SYP" };
         }
       } catch (error) {
         console.error(`Syriatel error for ${gsm}:`, error.message);
       }
     }
-    return { success: false, message: "رقم العملية غير موجود", code: "NOT_FOUND" };
+    return { success: false, message: "رقم العملية غير موجود" };
   }
-}
-
-// ============= إعدادات النظام =============
-async function getSystemSettings() {
-  const settingsRef = db.collection('system_settings').doc('config');
-  const doc = await settingsRef.get();
-  if (doc.exists) {
-    return doc.data();
-  }
-  // الإعدادات الافتراضية مع قائمة عناوين الدفع
-  const defaultSettings = {
-    minDeposit: 1000,
-    minWithdraw: 5000,
-    paymentAddresses: [
-      {
-        id: "address_1",
-        name: "دفع عبر شام كاش",
-        address: "0930000000",
-        isActive: true,
-        type: "sham_cash"
-      },
-      {
-        id: "address_2",
-        name: "دفع عبر سيرياتيل كاش",
-        address: "0944444444",
-        isActive: true,
-        type: "syriatel_cash"
-      }
-    ],
-    shamCashApiKey: "",
-    syriatelApiKey: ""
-  };
-  await settingsRef.set(defaultSettings);
-  return defaultSettings;
 }
 
 // ============= API المستخدمين =============
@@ -244,7 +192,6 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
   try {
     const { uid, email, name, picture } = req.user;
     const { referrerId } = req.body;
-    
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     
@@ -254,20 +201,11 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     
     const newUser = {
       uniqueId: generateUniqueId(),
-      email,
-      name: name || email.split('@')[0],
-      photoURL: picture || null,
-      balance: 0,
-      totalDeposited: 0,
-      totalWithdrawn: 0,
-      referralEarnings: 0,
-      referredBy: referrerId || null,
-      referrals: [],
-      createdAt: new Date(),
-      lastActive: new Date(),
-      isBanned: false
+      email, name: name || email.split('@')[0],
+      photoURL: picture || null, balance: 0, totalDeposited: 0, totalWithdrawn: 0,
+      referralEarnings: 0, referredBy: referrerId || null, referrals: [],
+      createdAt: new Date(), lastActive: new Date(), isBanned: false
     };
-    
     await userRef.set(newUser);
     
     if (referrerId) {
@@ -279,10 +217,8 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
         });
       }
     }
-    
     res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
   } catch (error) {
-    console.error('Register error:', error);
     res.status(500).json({ error: 'خطأ في التسجيل' });
   }
 });
@@ -302,15 +238,11 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     const data = userDoc.data();
     res.json({
-      success: true,
-      stats: {
+      success: true, stats: {
         referralCount: data.referrals?.length || 0,
         totalReferralEarnings: data.referralEarnings || 0,
-        balance: data.balance || 0,
-        totalDeposited: data.totalDeposited || 0,
-        totalWithdrawn: data.totalWithdrawn || 0,
-        uniqueId: data.uniqueId,
-        joinDate: data.createdAt
+        balance: data.balance || 0, totalDeposited: data.totalDeposited || 0,
+        totalWithdrawn: data.totalWithdrawn || 0, uniqueId: data.uniqueId, joinDate: data.createdAt
       }
     });
   } catch (error) {
@@ -322,25 +254,16 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSystemSettings();
-    const activeAddresses = (settings.paymentAddresses || [])
-      .filter(addr => addr.isActive === true)
-      .map(addr => ({
-        id: addr.id,
-        name: addr.name,
-        address: addr.address,
-        type: addr.type
-      }));
-
+    const activeAddresses = (settings.paymentAddresses || []).filter(a => a.isActive).map(a => ({
+      id: a.id, name: a.name, address: a.address, type: a.type
+    }));
     res.json({
-      success: true,
-      settings: {
-        minDeposit: settings.minDeposit,
-        minWithdraw: settings.minWithdraw,
-        paymentAddresses: activeAddresses
+      success: true, settings: {
+        minDeposit: settings.minDeposit, minWithdraw: settings.minWithdraw,
+        paymentAddresses: activeAddresses, siteColors: settings.siteColors
       }
     });
   } catch (error) {
-    console.error('Deposit settings error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
   }
 });
@@ -348,54 +271,33 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
-    const { method, amount, transactionId, addressId } = req.body;
-    
-    if (!method || !amount || !transactionId) {
+    const { addressId, amount, transactionId } = req.body;
+    if (!addressId || !amount || !transactionId) {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     }
     
     const settings = await getSystemSettings();
-    
-    // البحث عن عنوان الدفع المختار
-    const selectedAddress = settings.paymentAddresses?.find(addr => addr.id === addressId);
-    if (!selectedAddress || !selectedAddress.isActive) {
-      return res.status(400).json({ error: 'طريقة الدفع غير متاحة' });
-    }
-    
+    const selectedAddress = settings.paymentAddresses?.find(a => a.id === addressId && a.isActive);
+    if (!selectedAddress) return res.status(400).json({ error: 'طريقة الدفع غير متاحة' });
     if (amount < settings.minDeposit) {
       return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
     }
     
-    let verification = null;
-    
+    let verification;
     if (selectedAddress.type === 'sham_cash') {
-      if (!settings.shamCashApiKey) {
-        return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
-      }
-      const shamCash = new ShamCashClient(settings.shamCashApiKey, selectedAddress.address);
-      verification = await shamCash.verifyTransaction(transactionId, amount);
-    } else if (selectedAddress.type === 'syriatel_cash') {
-      if (!settings.syriatelApiKey) {
-        return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
-      }
-      const syriatel = new SyriatelCashClient(settings.syriatelApiKey, [selectedAddress.address]);
-      verification = await syriatel.verifyTransaction(transactionId, amount);
+      if (!settings.shamCashApiKey) return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
+      const client = new ShamCashClient(settings.shamCashApiKey, selectedAddress.address);
+      verification = await client.verifyTransaction(transactionId, amount);
     } else {
-      return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
+      if (!settings.syriatelApiKey) return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
+      const client = new SyriatelCashClient(settings.syriatelApiKey, [selectedAddress.address]);
+      verification = await client.verifyTransaction(transactionId, amount);
     }
     
-    if (!verification.success) {
-      return res.status(400).json({ error: verification.message });
-    }
+    if (!verification.success) return res.status(400).json({ error: verification.message });
     
-    const existingDeposit = await db.collection('deposits')
-      .where('transactionId', '==', transactionId)
-      .limit(1)
-      .get();
-    
-    if (!existingDeposit.empty) {
-      return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
-    }
+    const existing = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
+    if (!existing.empty) return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
@@ -404,68 +306,25 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     });
     
     await db.collection('deposits').add({
-      userId: uid,
-      transactionId: transactionId,
-      method: method,
-      addressId: addressId,
-      addressName: selectedAddress.name,
-      amount: verification.amount,
-      currency: verification.currency || 'SYP',
-      status: 'completed',
-      verifiedAt: new Date()
+      userId: uid, addressId, addressName: selectedAddress.name,
+      transactionId, amount: verification.amount, status: 'completed', verifiedAt: new Date()
     });
     
-    await db.collection('transactions').add({
-      userId: uid,
-      type: 'deposit',
-      amount: verification.amount,
-      method: method,
-      transactionId: transactionId,
-      status: 'completed',
-      createdAt: new Date()
-    });
-    
-    const updatedUser = await userRef.get();
-    
-    res.json({ 
-      success: true, 
-      message: `تم إيداع ${verification.amount} SYP بنجاح`,
-      amount: verification.amount,
-      newBalance: updatedUser.data().balance
-    });
-    
+    const updated = await userRef.get();
+    res.json({ success: true, message: `تم إيداع ${verification.amount} SYP`, newBalance: updated.data().balance });
   } catch (error) {
     console.error('Deposit error:', error);
-    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
+    res.status(500).json({ error: 'حدث خطأ داخلي' });
   }
 });
 
 app.get('/api/user/deposits', requireAuth, async (req, res) => {
   try {
-    const { uid } = req.user;
-    const deposits = await db.collection('deposits')
-      .where('userId', '==', uid)
-      .orderBy('verifiedAt', 'desc')
-      .limit(20)
-      .get();
-    
-    const depositsList = [];
-    for (const doc of deposits.docs) {
-      const data = doc.data();
-      depositsList.push({
-        id: doc.id,
-        amount: data.amount,
-        method: data.method,
-        addressName: data.addressName,
-        transactionId: data.transactionId,
-        status: data.status,
-        verifiedAt: data.verifiedAt?.toDate?.()
-      });
-    }
-    
-    res.json({ success: true, deposits: depositsList });
+    const snapshot = await db.collection('deposits').where('userId', '==', req.user.uid)
+      .orderBy('verifiedAt', 'desc').limit(50).get();
+    const deposits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), verifiedAt: doc.data().verifiedAt?.toDate() }));
+    res.json({ success: true, deposits });
   } catch (error) {
-    console.error('Get deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
   }
 });
@@ -475,18 +334,12 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
     const { amount, address, method } = req.body;
-    
-    if (!amount || !address) {
-      return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
-    }
+    if (!amount || !address) return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
     
     const amountNum = Number(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      return res.status(400).json({ error: 'المبلغ غير صالح' });
-    }
+    if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'المبلغ غير صالح' });
     
     const settings = await getSystemSettings();
-    
     if (amountNum < settings.minWithdraw) {
       return res.status(400).json({ error: `الحد الأدنى للسحب ${settings.minWithdraw} SYP` });
     }
@@ -494,52 +347,18 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
+    if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
+    if (userData.balance < amountNum) return res.status(400).json({ error: 'الرصيد غير كافٍ' });
     
-    if (!userData) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
+    await userRef.update({ balance: admin.firestore.FieldValue.increment(-amountNum), totalWithdrawn: admin.firestore.FieldValue.increment(amountNum) });
     
-    if (userData.balance < amountNum) {
-      return res.status(400).json({ error: 'الرصيد غير كافٍ' });
-    }
-    
-    await userRef.update({
-      balance: admin.firestore.FieldValue.increment(-amountNum),
-      totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
-    });
-    
-    const withdrawRequest = {
-      userId: uid,
-      userEmail: userData.email,
-      userName: userData.name,
-      userUniqueId: userData.uniqueId,
-      amount: amountNum,
-      address: address,
-      method: method || 'sham_cash',
-      status: 'pending',
-      createdAt: new Date(),
-      previousBalance: userData.balance,
-      newBalance: userData.balance - amountNum
+    const requestData = {
+      userId: uid, userEmail: userData.email, userName: userData.name, userUniqueId: userData.uniqueId,
+      amount: amountNum, address, method: method || 'sham_cash', status: 'pending',
+      createdAt: new Date(), previousBalance: userData.balance, newBalance: userData.balance - amountNum
     };
-    
-    const requestRef = await db.collection('withdraw_requests').add(withdrawRequest);
-    
-    await db.collection('transactions').add({
-      userId: uid,
-      type: 'withdraw_request',
-      amount: amountNum,
-      requestId: requestRef.id,
-      status: 'pending',
-      createdAt: new Date()
-    });
-    
-    res.json({ 
-      success: true, 
-      message: `تم إنشاء طلب سحب بمبلغ ${amountNum} SYP، قيد المراجعة`,
-      requestId: requestRef.id,
-      newBalance: userData.balance - amountNum
-    });
-    
+    const requestRef = await db.collection('withdraw_requests').add(requestData);
+    res.json({ success: true, message: `تم إنشاء طلب سحب بمبلغ ${amountNum} SYP، قيد المراجعة`, requestId: requestRef.id });
   } catch (error) {
     console.error('Withdraw error:', error);
     res.status(500).json({ error: 'فشل إنشاء طلب السحب' });
@@ -548,29 +367,11 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
 
 app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   try {
-    const { uid } = req.user;
-    const requests = await db.collection('withdraw_requests')
-      .where('userId', '==', uid)
-      .orderBy('createdAt', 'desc')
-      .limit(20)
-      .get();
-    
-    const requestsList = [];
-    for (const doc of requests.docs) {
-      const data = doc.data();
-      requestsList.push({
-        id: doc.id,
-        amount: data.amount,
-        address: data.address,
-        method: data.method,
-        status: data.status,
-        createdAt: data.createdAt?.toDate?.()
-      });
-    }
-    
-    res.json({ success: true, requests: requestsList });
+    const snapshot = await db.collection('withdraw_requests').where('userId', '==', req.user.uid)
+      .orderBy('createdAt', 'desc').limit(50).get();
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
+    res.json({ success: true, requests });
   } catch (error) {
-    console.error('Get withdraw requests error:', error);
     res.status(500).json({ error: 'خطأ في جلب طلبات السحب' });
   }
 });
@@ -584,19 +385,9 @@ app.get('/api/admin/settings', requireAdmin, async (req, res) => {
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   try {
     const updates = req.body;
-    const settingsRef = db.collection('system_settings').doc('config');
-    await settingsRef.update(updates);
-    
-    await db.collection('adminLogs').add({
-      adminEmail: req.user.email,
-      action: 'update_settings',
-      changes: updates,
-      timestamp: new Date()
-    });
-    
+    await updateSystemSettings(updates);
     res.json({ success: true, message: 'تم تحديث الإعدادات' });
   } catch (error) {
-    console.error('Save settings error:', error);
     res.status(500).json({ error: 'فشل تحديث الإعدادات' });
   }
 });
@@ -605,59 +396,30 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
   try {
     const usersSnapshot = await db.collection('users').get();
     const users = usersSnapshot.docs.map(doc => doc.data());
-    const totalBalance = users.reduce((sum, u) => sum + (u.balance || 0), 0);
-    const totalDeposited = users.reduce((sum, u) => sum + (u.totalDeposited || 0), 0);
-    const totalWithdrawn = users.reduce((sum, u) => sum + (u.totalWithdrawn || 0), 0);
-    
-    const pendingWithdrawals = await db.collection('withdraw_requests')
-      .where('status', '==', 'pending')
-      .get();
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const totalBalance = users.reduce((s, u) => s + (u.balance || 0), 0);
+    const totalDeposited = users.reduce((s, u) => s + (u.totalDeposited || 0), 0);
+    const totalWithdrawn = users.reduce((s, u) => s + (u.totalWithdrawn || 0), 0);
+    const pendingWithdrawals = await db.collection('withdraw_requests').where('status', '==', 'pending').get();
+    const today = new Date(); today.setHours(0,0,0,0);
     const newToday = users.filter(u => u.createdAt?.toDate() > today).length;
-    
-    res.json({
-      success: true,
-      stats: {
-        totalUsers: usersSnapshot.size,
-        newToday,
-        totalBalance,
-        totalDeposited,
-        totalWithdrawn,
-        pendingWithdrawals: pendingWithdrawals.size
-      }
-    });
+    res.json({ success: true, stats: {
+      totalUsers: usersSnapshot.size, newToday, totalBalance, totalDeposited, totalWithdrawn,
+      pendingWithdrawals: pendingWithdrawals.size
+    } });
   } catch (error) {
-    console.error('Dashboard error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
 
 app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
   try {
-    const { status = 'all', page = 1, limit = 50 } = req.query;
+    const { status = 'all' } = req.query;
     let query = db.collection('withdraw_requests').orderBy('createdAt', 'desc');
-    
-    if (status !== 'all') {
-      query = query.where('status', '==', status);
-    }
-    
+    if (status !== 'all') query = query.where('status', '==', status);
     const snapshot = await query.get();
-    let requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    const start = (page - 1) * limit;
-    const paginated = requests.slice(start, start + limit);
-    
-    res.json({
-      success: true,
-      requests: paginated,
-      total: requests.length,
-      page: Number(page),
-      totalPages: Math.ceil(requests.length / limit)
-    });
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
+    res.json({ success: true, requests });
   } catch (error) {
-    console.error('Admin withdraws error:', error);
     res.status(500).json({ error: 'خطأ في جلب الطلبات' });
   }
 });
@@ -665,175 +427,66 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
 app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
   try {
     const { requestId, action, adminNotes } = req.body;
-    
-    if (!requestId || !['approve', 'reject'].includes(action)) {
-      return res.status(400).json({ error: 'بيانات غير صالحة' });
-    }
-    
     const requestRef = db.collection('withdraw_requests').doc(requestId);
     const requestDoc = await requestRef.get();
-    
-    if (!requestDoc.exists) {
-      return res.status(404).json({ error: 'طلب غير موجود' });
-    }
-    
+    if (!requestDoc.exists) return res.status(404).json({ error: 'طلب غير موجود' });
     const request = requestDoc.data();
-    
-    if (request.status !== 'pending') {
-      return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
-    }
+    if (request.status !== 'pending') return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
     
     if (action === 'reject') {
-      const userRef = db.collection('users').doc(request.userId);
-      await userRef.update({
-        balance: admin.firestore.FieldValue.increment(request.amount)
-      });
+      await db.collection('users').doc(request.userId).update({ balance: admin.firestore.FieldValue.increment(request.amount) });
     }
-    
-    await requestRef.update({
-      status: action === 'approve' ? 'approved' : 'rejected',
-      processedAt: new Date(),
-      processedBy: req.user.email,
-      adminNotes: adminNotes || ''
-    });
-    
-    await db.collection('transactions').add({
-      userId: request.userId,
-      type: 'withdraw',
-      amount: request.amount,
-      requestId: requestId,
-      status: action === 'approve' ? 'completed' : 'rejected',
-      processedBy: req.user.email,
-      createdAt: new Date()
-    });
-    
+    await requestRef.update({ status: action === 'approve' ? 'approved' : 'rejected', processedAt: new Date(), processedBy: req.user.email, adminNotes: adminNotes || '' });
     res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب` });
   } catch (error) {
-    console.error('Process withdraw error:', error);
     res.status(500).json({ error: 'فشل معالجة الطلب' });
   }
 });
 
 app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const snapshot = await db.collection('deposits')
-      .orderBy('verifiedAt', 'desc')
-      .get();
-    
-    const deposits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const start = (page - 1) * limit;
-    
-    const depositsWithUser = await Promise.all(deposits.slice(start, start + limit).map(async (dep) => {
-      const userDoc = await db.collection('users').doc(dep.userId).get();
-      return { ...dep, user: userDoc.exists ? userDoc.data() : null };
+    const snapshot = await db.collection('deposits').orderBy('verifiedAt', 'desc').limit(100).get();
+    const deposits = await Promise.all(snapshot.docs.map(async doc => {
+      const data = doc.data();
+      const userDoc = await db.collection('users').doc(data.userId).get();
+      return { id: doc.id, ...data, user: userDoc.exists ? userDoc.data() : null, verifiedAt: data.verifiedAt?.toDate() };
     }));
-    
-    res.json({
-      success: true,
-      deposits: depositsWithUser,
-      total: deposits.length,
-      page: Number(page),
-      totalPages: Math.ceil(deposits.length / limit)
-    });
+    res.json({ success: true, deposits });
   } catch (error) {
-    console.error('Admin deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
   }
 });
 
-// جلب جميع المستخدمين للأدمن
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const snapshot = await db.collection('users')
-      .orderBy('createdAt', 'desc')
-      .get();
-    
+    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
     const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const start = (page - 1) * limit;
-    
-    res.json({
-      success: true,
-      users: users.slice(start, start + limit),
-      total: users.length,
-      page: Number(page),
-      totalPages: Math.ceil(users.length / limit)
-    });
+    res.json({ success: true, users });
   } catch (error) {
-    console.error('Admin users error:', error);
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
   }
 });
 
-// تحديث رصيد المستخدم يدوياً
 app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
   try {
     const { userId, amount, reason } = req.body;
-    
-    if (!userId || amount === undefined) {
-      return res.status(400).json({ error: 'بيانات ناقصة' });
-    }
-    
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
-    
-    await userRef.update({
-      balance: admin.firestore.FieldValue.increment(Number(amount))
-    });
-    
-    await db.collection('adminLogs').add({
-      adminEmail: req.user.email,
-      action: 'update_balance',
-      userId,
-      amount: Number(amount),
-      reason: reason || 'تعديل يدوي',
-      timestamp: new Date()
-    });
-    
-    res.json({ success: true, message: 'تم تحديث الرصيد' });
+    await db.collection('users').doc(userId).update({ balance: admin.firestore.FieldValue.increment(Number(amount)) });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Update balance error:', error);
     res.status(500).json({ error: 'فشل تحديث الرصيد' });
   }
 });
 
-// حظر أو إلغاء حظر مستخدم
 app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   try {
     const { userId } = req.body;
-    
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
-    
-    const currentBan = userDoc.data().isBanned || false;
-    await userRef.update({ isBanned: !currentBan });
-    
-    await db.collection('adminLogs').add({
-      adminEmail: req.user.email,
-      action: currentBan ? 'unban' : 'ban',
-      userId,
-      timestamp: new Date()
-    });
-    
+    const userDoc = await db.collection('users').doc(userId).get();
+    const currentBan = userDoc.data()?.isBanned || false;
+    await db.collection('users').doc(userId).update({ isBanned: !currentBan });
     res.json({ success: true, isBanned: !currentBan });
   } catch (error) {
-    console.error('Toggle ban error:', error);
     res.status(500).json({ error: 'فشل تحديث حالة الحظر' });
   }
-});
-
-// ============= نقاط الاختبار =============
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // ============= تشغيل الخادم =============
