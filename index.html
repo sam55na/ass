@@ -206,11 +206,6 @@
             color: #ff6b6b;
         }
 
-        .btn-success {
-            background: linear-gradient(95deg, #006600, #00aa00);
-            color: white;
-        }
-
         .play-zone {
             text-align: center;
             margin: 35px 0 30px;
@@ -416,25 +411,50 @@
             color: #ff8888;
         }
 
-        .method-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .method-btn {
-            flex: 1;
-            padding: 12px;
+        .method-card {
             background: #1a1a1a;
-            border: 1px solid #ff4444;
-            border-radius: 50px;
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
             cursor: pointer;
-            text-align: center;
+            transition: all 0.2s;
         }
 
-        .method-btn.active {
+        .method-card.selected {
+            border-color: #ff0000;
+            background: #2a0000;
+        }
+
+        .method-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .method-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .method-desc {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .method-badge {
+            display: inline-block;
             background: #ff0000;
-            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            margin-top: 8px;
+        }
+
+        .min-amount {
+            font-size: 12px;
+            color: #ff8888;
+            margin-top: 8px;
         }
 
         .admin-tab {
@@ -490,6 +510,8 @@
                 <div class="info-row-split"><span class="info-label">كود الإحالة</span><span class="info-value" id="profileRefCode">-</span></div>
                 <div class="info-row-split"><span class="info-label">أرباح الإحالات</span><span class="info-value" id="profileRefEarn">0 NSP</span></div>
                 <div class="info-row-split"><span class="info-label">عدد الإحالات</span><span class="info-value" id="profileRefCount">0</span></div>
+                <div class="info-row-split"><span class="info-label">إجمالي الإيداع</span><span class="info-value" id="profileTotalDeposit">0 NSP</span></div>
+                <div class="info-row-split"><span class="info-label">إجمالي السحب</span><span class="info-value" id="profileTotalWithdraw">0 NSP</span></div>
                 <div class="ref-code-block" id="refCodeBlock"></div>
                 <button class="btn-google" id="logoutMainBtn" style="background:#2a2a2a; margin-top: 14px;">تسجيل خروج</button>
             </div>
@@ -512,17 +534,24 @@
     <!-- نافذة الإيداع -->
     <div id="depositModal" class="modal-glass">
         <div class="modal-card">
-            <div class="modal-header"><span>إيداع</span><span class="close-modal" id="closeDepositModal">&times;</span></div>
+            <div class="modal-header">
+                <span>💰 إيداع</span>
+                <span class="close-modal" id="closeDepositModal">&times;</span>
+            </div>
             <div id="depositContent">
-                <div class="method-selector" id="methodSelector"></div>
+                <div class="form-group">
+                    <label>اختر طريقة الدفع</label>
+                    <div id="paymentMethodsList"></div>
+                </div>
+                <div id="methodInfo" style="margin-bottom: 15px;"></div>
                 <div class="form-group">
                     <label>المبلغ (SYP)</label>
-                    <input type="number" id="depositAmount" placeholder="أدخل المبلغ" min="1000">
+                    <input type="number" id="depositAmount" placeholder="أدخل المبلغ">
+                    <div id="minDepositHint" class="min-amount"></div>
                 </div>
-                <div id="methodDetails"></div>
                 <div class="form-group">
                     <label>رقم العملية (Transaction ID)</label>
-                    <input type="text" id="transactionId" placeholder="أدخل رقم العملية">
+                    <input type="text" id="transactionId" placeholder="أدخل رقم العملية من تطبيق الدفع">
                 </div>
                 <button class="btn btn-primary" id="submitDepositBtn" style="width:100%; margin-top:15px;">تأكيد الإيداع</button>
             </div>
@@ -536,7 +565,8 @@
             <div id="withdrawContent">
                 <div class="form-group">
                     <label>المبلغ (SYP)</label>
-                    <input type="number" id="withdrawAmount" placeholder="أدخل المبلغ" min="5000">
+                    <input type="number" id="withdrawAmount" placeholder="أدخل المبلغ">
+                    <div id="minWithdrawHint" class="min-amount"></div>
                 </div>
                 <div class="form-group">
                     <label>عنوان المحفظة / رقم الجوال</label>
@@ -603,31 +633,50 @@
             <!-- الإعدادات -->
             <div id="adminSettingsPanel" class="admin-table hidden">
                 <h3 style="margin-bottom: 20px;">إعدادات النظام</h3>
-                <div class="form-group">
-                    <label>الحد الأدنى للإيداع (SYP)</label>
-                    <input type="number" id="settingMinDeposit" placeholder="الحد الأدنى للإيداع">
+                
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">الحدود العامة</h4>
+                    <div class="form-group">
+                        <label>الحد الأدنى للإيداع (SYP)</label>
+                        <input type="number" id="settingMinDeposit">
+                    </div>
+                    <div class="form-group">
+                        <label>الحد الأدنى للسحب (SYP)</label>
+                        <input type="number" id="settingMinWithdraw">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>الحد الأدنى للسحب (SYP)</label>
-                    <input type="number" id="settingMinWithdraw" placeholder="الحد الأدنى للسحب">
+                
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">شام كاش</h4>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="settingShamCashEnabled"> تفعيل شام كاش
+                    </label>
+                    <div class="form-group">
+                        <label>عنوان المحفظة</label>
+                        <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
+                    </div>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="text" id="settingShamCashApiKey" placeholder="API Key">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>عنوان شام كاش</label>
-                    <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
+                
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">سيرياتيل كاش</h4>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="settingSyriatelEnabled"> تفعيل سيرياتيل كاش
+                    </label>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="text" id="settingSyriatelApiKey" placeholder="API Key">
+                    </div>
+                    <div class="form-group">
+                        <label>أرقام GSM (مفصولة بفواصل)</label>
+                        <input type="text" id="settingSyriatelNumbers" placeholder="0930000000,0931111111">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>API Key شام كاش</label>
-                    <input type="text" id="settingShamCashApiKey" placeholder="API Key">
-                </div>
-                <div class="form-group">
-                    <label>API Key سيرياتيل</label>
-                    <input type="text" id="settingSyriatelApiKey" placeholder="API Key">
-                </div>
-                <div class="form-group">
-                    <label>أرقام GSM سيرياتيل (مفصولة بفواصل)</label>
-                    <input type="text" id="settingSyriatelNumbers" placeholder="0930000000,0931111111">
-                </div>
-                <button class="admin-btn" id="saveSettingsBtn" style="width:100%;">حفظ الإعدادات</button>
+                
+                <button class="admin-btn" id="saveSettingsBtn" style="width:100%;">حفظ جميع الإعدادات</button>
             </div>
         </div>
     </div>
@@ -668,20 +717,25 @@
 
         async function apiCall(endpoint, options = {}) {
             const token = await auth.currentUser?.getIdToken();
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token && { 'Authorization': `Bearer ${token}` }),
-                    ...options.headers
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        ...options.headers
+                    }
+                });
+                if (response.status === 401) {
+                    showMessage('انتهت الجلسة، سجل دخول مجدداً', true);
+                    await signOut(auth);
+                    return null;
                 }
-            });
-            if (response.status === 401) {
-                showMessage('انتهت الجلسة، سجل دخول مجدداً', true);
-                await signOut(auth);
+                return response;
+            } catch (error) {
+                showMessage('خطأ في الاتصال بالخادم', true);
                 return null;
             }
-            return response;
         }
 
         // ============= دوال المستخدم =============
@@ -693,6 +747,8 @@
                     userData = data.user;
                     document.getElementById('mainBalance').innerText = userData.balance || 0;
                     document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
+                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP';
+                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP';
                     isAdmin = data.isAdmin;
                 }
             }
@@ -735,7 +791,7 @@
                         <div><strong>💰 ${d.amount} SYP</strong></div>
                         <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>
                         <div>رقم العملية: ${d.transactionId}</div>
-                        <div>التاريخ: ${new Date(d.verifiedAt).toLocaleString('ar')}</div>
+                        <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
                     </div>
                 `).join('');
             }
@@ -755,7 +811,7 @@
                         <div><strong>💸 ${r.amount} SYP</strong></div>
                         <div>العنوان: ${r.address}</div>
                         <div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div>
-                        <div>التاريخ: ${new Date(r.createdAt).toLocaleString('ar')}</div>
+                        <div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div>
                     </div>
                 `).join('');
             }
@@ -776,13 +832,69 @@
             }
         }
 
+        async function loadDepositSettings() {
+            const res = await apiCall('/api/user/deposit-settings');
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const settings = data.settings;
+                    document.getElementById('minDepositHint').innerHTML = `🔻 الحد الأدنى: ${settings.minDeposit} SYP`;
+                    document.getElementById('minWithdrawHint').innerHTML = `🔻 الحد الأدنى: ${settings.minWithdraw} SYP`;
+                    
+                    const methodsContainer = document.getElementById('paymentMethodsList');
+                    methodsContainer.innerHTML = '';
+                    
+                    settings.methods.forEach(method => {
+                        const methodDiv = document.createElement('div');
+                        methodDiv.className = `method-card ${!method.enabled ? 'disabled' : ''}`;
+                        methodDiv.dataset.method = method.id;
+                        
+                        methodDiv.innerHTML = `
+                            <div class="method-name">${method.name}</div>
+                            <div class="method-desc">${method.id === 'sham_cash' ? 'تحويل عبر شام كاش' : 'تحويل عبر سيرياتيل كاش'}</div>
+                            ${!method.enabled ? '<div class="method-badge">⚠️ معطل حالياً</div>' : ''}
+                            ${method.id === 'sham_cash' && method.address ? `<div class="method-desc">📱 المرسل إليه: ${method.address}</div>` : ''}
+                        `;
+                        
+                        if (method.enabled) {
+                            methodDiv.style.cursor = 'pointer';
+                            methodDiv.onclick = () => {
+                                document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                                methodDiv.classList.add('selected');
+                                document.getElementById('methodInfo').innerHTML = `
+                                    <div style="background: #0a0a0a; padding: 10px; border-radius: 10px;">
+                                        <div>✅ طريقة الدفع: ${method.name}</div>
+                                        ${method.id === 'sham_cash' && method.address ? `<div>📱 أرسل إلى: ${method.address}</div>` : ''}
+                                        ${method.id === 'syriatel_cash' && method.numbers ? `<div>📱 أرقام الاستلام: ${method.numbers.join(', ')}</div>` : ''}
+                                    </div>
+                                `;
+                            };
+                        }
+                        methodsContainer.appendChild(methodDiv);
+                    });
+                    
+                    const firstEnabled = settings.methods.find(m => m.enabled);
+                    if (firstEnabled) {
+                        const firstCard = document.querySelector('.method-card:not(.disabled)');
+                        if (firstCard) firstCard.click();
+                    }
+                }
+            }
+        }
+
         async function deposit() {
+            const selectedMethodCard = document.querySelector('.method-card.selected');
+            if (!selectedMethodCard) {
+                showMessage('الرجاء اختيار طريقة الدفع أولاً', true);
+                return;
+            }
+            
+            const method = selectedMethodCard.dataset.method;
             const amount = document.getElementById('depositAmount').value;
             const transactionId = document.getElementById('transactionId').value;
-            const method = document.querySelector('.method-btn.active')?.dataset.method || 'sham_cash';
             
             if (!amount || amount < 1000) {
-                showMessage('المبلغ غير صالح (الحد الأدنى 1000 SYP)', true);
+                showMessage('المبلغ غير صالح', true);
                 return;
             }
             if (!transactionId) {
@@ -799,6 +911,8 @@
                 const data = await res.json();
                 showMessage(data.message);
                 document.getElementById('depositModal').style.display = 'none';
+                document.getElementById('depositAmount').value = '';
+                document.getElementById('transactionId').value = '';
                 await loadProfile();
                 await loadStats();
                 await loadDeposits();
@@ -814,7 +928,7 @@
             const method = document.getElementById('withdrawMethod').value;
             
             if (!amount || amount < 5000) {
-                showMessage('المبلغ غير صالح (الحد الأدنى 5000 SYP)', true);
+                showMessage('المبلغ غير صالح', true);
                 return;
             }
             if (!address) {
@@ -835,6 +949,8 @@
                 const data = await res.json();
                 showMessage(data.message);
                 document.getElementById('withdrawModal').style.display = 'none';
+                document.getElementById('withdrawAmount').value = '';
+                document.getElementById('withdrawAddress').value = '';
                 await loadProfile();
                 await loadStats();
                 await loadWithdrawals();
@@ -932,9 +1048,11 @@
                 if (data.success) {
                     document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
-                    document.getElementById('settingShamCashAddress').value = data.settings.shamCashAddress;
-                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey;
-                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey;
+                    document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
+                    document.getElementById('settingShamCashAddress').value = data.settings.shamCashAddress || '';
+                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
+                    document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled;
+                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
                     document.getElementById('settingSyriatelNumbers').value = data.settings.syriatelNumbers?.join(',') || '';
                 }
             }
@@ -944,10 +1062,12 @@
             const settings = {
                 minDeposit: Number(document.getElementById('settingMinDeposit').value),
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
+                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
                 shamCashAddress: document.getElementById('settingShamCashAddress').value,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
+                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
                 syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
-                syriatelNumbers: document.getElementById('settingSyriatelNumbers').value.split(',').map(s => s.trim())
+                syriatelNumbers: document.getElementById('settingSyriatelNumbers').value.split(',').map(s => s.trim()).filter(s => s)
             };
             
             const res = await apiCall('/api/admin/settings', {
@@ -957,6 +1077,7 @@
             
             if (res && res.ok) {
                 showMessage('تم حفظ الإعدادات بنجاح');
+                await loadAdminSettings();
             } else {
                 showMessage('فشل حفظ الإعدادات', true);
             }
@@ -1013,6 +1134,7 @@
                 await loadStats();
                 await loadDeposits();
                 await loadWithdrawals();
+                await loadDepositSettings();
                 document.getElementById('loader').style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
@@ -1029,6 +1151,7 @@
                 await loadStats();
                 await loadDeposits();
                 await loadWithdrawals();
+                await loadDepositSettings();
                 document.getElementById('loader').style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
@@ -1062,10 +1185,12 @@
         });
 
         document.getElementById('depositAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
             document.getElementById('depositModal').style.display = 'flex';
         });
 
-        document.getElementById('withdrawAction')?.addEventListener('click', () => {
+        document.getElementById('withdrawAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
             document.getElementById('withdrawModal').style.display = 'flex';
         });
 
