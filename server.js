@@ -38,6 +38,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(express.static('.'));
 
 // ============= إعدادات الجلسة =============
 app.use(session({
@@ -57,7 +58,7 @@ app.use('/api/', limiter);
 
 // ============= دوال مساعدة =============
 function generateUniqueId() {
-  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+  return Math.floor(1000000000 + Math.random() 9000000000).toString();
 }
 
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
@@ -99,9 +100,16 @@ async function getSystemSettings() {
     minWithdraw: 5000,
     siteColors: {
       primary: '#ff0000',
-      secondary: '#cc0000',
+      primaryDark: '#cc0000',
+      primaryLight: '#ff3333',
       background: '#0a0a0a',
-      text: '#ffffff'
+      text: '#ffffff',
+      textSecondary: '#aaaaaa',
+      surface: '#121212',
+      surfaceLight: '#1e1e1e',
+      border: '#333333',
+      error: '#ff4444',
+      success: '#00cc44'
     },
     paymentAddresses: [],
     shamCashApiKey: '',
@@ -255,7 +263,8 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSystemSettings();
     const activeAddresses = (settings.paymentAddresses || []).filter(a => a.isActive).map(a => ({
-      id: a.id, name: a.name, address: a.address, type: a.type
+      id: a.id, name: a.name, address: a.privateAddress || a.address,
+      publicAddress: a.publicAddress || a.address, type: a.type
     }));
     res.json({
       success: true, settings: {
@@ -284,13 +293,15 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     }
     
     let verification;
+    const privateAddress = selectedAddress.privateAddress || selectedAddress.address;
+    
     if (selectedAddress.type === 'sham_cash') {
       if (!settings.shamCashApiKey) return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
-      const client = new ShamCashClient(settings.shamCashApiKey, selectedAddress.address);
+      const client = new ShamCashClient(settings.shamCashApiKey, privateAddress);
       verification = await client.verifyTransaction(transactionId, amount);
     } else {
       if (!settings.syriatelApiKey) return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
-      const client = new SyriatelCashClient(settings.syriatelApiKey, [selectedAddress.address]);
+      const client = new SyriatelCashClient(settings.syriatelApiKey, [privateAddress]);
       verification = await client.verifyTransaction(transactionId, amount);
     }
     
@@ -460,7 +471,7 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate() }));
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
@@ -489,9 +500,15 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= نقطة صحة الخادم =============
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date(), uptime: process.uptime() });
+});
+
 // ============= تشغيل الخادم =============
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin email: ${ADMIN_EMAIL}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
