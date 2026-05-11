@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="referrer" content="origin">
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="unsafe-none">
     <title>BOOMB - منصة الألعاب</title>
     <style>
         * {
@@ -29,7 +28,7 @@
             flex-direction: column;
         }
 
-        /* ========== واجهة الأدمن - نمط مختلف ========== */
+        /* ========== واجهة الأدمن ========== */
         .admin-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -51,7 +50,7 @@
 
         .admin-stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
@@ -207,6 +206,11 @@
             color: #ff6b6b;
         }
 
+        .btn-success {
+            background: linear-gradient(95deg, #006600, #00aa00);
+            color: white;
+        }
+
         .play-zone {
             text-align: center;
             margin: 35px 0 30px;
@@ -233,6 +237,7 @@
             padding: 10px 8px;
             border-radius: 80px;
             margin-top: auto;
+            gap: 5px;
         }
 
         .nav-tab {
@@ -243,6 +248,7 @@
             border-radius: 50px;
             transition: 0.2s;
             color: #aaaaaa;
+            font-size: 13px;
         }
 
         .nav-tab:hover {
@@ -280,7 +286,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(10px);
             z-index: 1100;
             justify-content: center;
@@ -291,10 +297,12 @@
         .modal-card {
             background: #121212;
             border-radius: 36px;
-            max-width: 440px;
+            max-width: 500px;
             width: 100%;
             padding: 24px 20px;
             border: 1px solid #ff3a3a;
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -392,20 +400,63 @@
             background: #2a2a2a;
             border: 1px solid #ff4444;
             color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 10px 12px;
+            border-radius: 10px;
             margin: 5px;
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ff8888;
+        }
+
+        .method-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .method-btn {
+            flex: 1;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #ff4444;
+            border-radius: 50px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .method-btn.active {
+            background: #ff0000;
+            color: white;
+        }
+
+        .admin-tab {
+            cursor: pointer;
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .admin-tab.active {
+            background: #ff0000;
         }
     </style>
 </head>
 <body>
-    <!-- شاشة التحميل -->
     <div id="loader" class="loading-overlay">
         <div class="spinner"></div>
         <div class="loading-text">BOOMB</div>
     </div>
 
-    <!-- ==================== واجهة المستخدم العادي ==================== -->
+    <!-- ==================== واجهة المستخدم ==================== -->
     <div id="userApp" class="app-container hidden">
         <div id="homeScreen">
             <div class="top-bar">
@@ -419,8 +470,8 @@
             </div>
 
             <div class="action-grid">
-                <button class="btn btn-primary" id="depositAction">إيداع</button>
-                <button class="btn btn-secondary" id="withdrawAction">سحب</button>
+                <button class="btn btn-primary" id="depositAction">💰 إيداع</button>
+                <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
             </div>
 
             <div class="play-zone">
@@ -447,8 +498,59 @@
         <div class="bottom-bar">
             <div class="nav-tab" data-tab="stats">إحصائياتي</div>
             <div class="nav-tab" data-tab="earn">اكسب مجانا</div>
-            <div class="nav-tab" data-tab="tasks">المهام</div>
-            <div class="nav-tab" data-tab="requests">طلباتي</div>
+            <div class="nav-tab" data-tab="deposits">إيداعاتي</div>
+            <div class="nav-tab" data-tab="withdraws">سحوباتي</div>
+        </div>
+    </div>
+
+    <!-- نوافذ المستخدم -->
+    <div id="statsModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
+    <div id="earnModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>دعوة الأصدقاء</span><span class="close-modal">&times;</span></div><div style="padding:6px 0; text-align:center"><p style="margin: 14px 0;">قم بدعوة أصدقاءك بكودك الخاص</p><div id="earnCodeDisplay" class="ref-code-block" style="background:#111;"></div><p style="margin: 18px 0; color:#ff8a8a;">كل مستخدم جديد يضيف 5 NSP</p></div></div></div>
+    <div id="depositsModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>سجل الإيداعات</span><span class="close-modal">&times;</span></div><div id="depositsList"></div></div></div>
+    <div id="withdrawsModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>سجل السحوبات</span><span class="close-modal">&times;</span></div><div id="withdrawsList"></div></div></div>
+
+    <!-- نافذة الإيداع -->
+    <div id="depositModal" class="modal-glass">
+        <div class="modal-card">
+            <div class="modal-header"><span>إيداع</span><span class="close-modal" id="closeDepositModal">&times;</span></div>
+            <div id="depositContent">
+                <div class="method-selector" id="methodSelector"></div>
+                <div class="form-group">
+                    <label>المبلغ (SYP)</label>
+                    <input type="number" id="depositAmount" placeholder="أدخل المبلغ" min="1000">
+                </div>
+                <div id="methodDetails"></div>
+                <div class="form-group">
+                    <label>رقم العملية (Transaction ID)</label>
+                    <input type="text" id="transactionId" placeholder="أدخل رقم العملية">
+                </div>
+                <button class="btn btn-primary" id="submitDepositBtn" style="width:100%; margin-top:15px;">تأكيد الإيداع</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة السحب -->
+    <div id="withdrawModal" class="modal-glass">
+        <div class="modal-card">
+            <div class="modal-header"><span>سحب</span><span class="close-modal" id="closeWithdrawModal">&times;</span></div>
+            <div id="withdrawContent">
+                <div class="form-group">
+                    <label>المبلغ (SYP)</label>
+                    <input type="number" id="withdrawAmount" placeholder="أدخل المبلغ" min="5000">
+                </div>
+                <div class="form-group">
+                    <label>عنوان المحفظة / رقم الجوال</label>
+                    <input type="text" id="withdrawAddress" placeholder="أدخل عنوان السحب">
+                </div>
+                <div class="form-group">
+                    <label>طريقة السحب</label>
+                    <select id="withdrawMethod">
+                        <option value="sham_cash">شام كاش</option>
+                        <option value="syriatel_cash">سيرياتيل كاش</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%; margin-top:15px;">تأكيد السحب</button>
+            </div>
         </div>
     </div>
 
@@ -457,77 +559,76 @@
         <div class="admin-container">
             <div class="admin-header">
                 <h2>🔧 لوحة تحكم الأدمن</h2>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <span class="admin-badge">sam55nam@gmail.com</span>
-                    <button class="switch-view-btn" id="switchToUserView">العودة للموقع</button>
+                    <button class="switch-view-btn" id="switchToUserView">الموقع</button>
                     <button class="switch-view-btn" id="adminLogoutBtn">تسجيل خروج</button>
                 </div>
             </div>
 
-            <!-- الإحصائيات -->
             <div class="admin-stats-grid" id="adminStatsGrid">
                 <div class="stat-card"><div class="stat-number" id="statTotalUsers">0</div><div>إجمالي المستخدمين</div></div>
                 <div class="stat-card"><div class="stat-number" id="statNewToday">0</div><div>جدد اليوم</div></div>
                 <div class="stat-card"><div class="stat-number" id="statTotalBalance">0</div><div>إجمالي الرصيد</div></div>
-                <div class="stat-card"><div class="stat-number" id="statPendingRequests">0</div><div>طلبات معلقة</div></div>
-                <div class="stat-card"><div class="stat-number" id="statReferralEarnings">0</div><div>أرباح الإحالات</div></div>
+                <div class="stat-card"><div class="stat-number" id="statTotalDeposited">0</div><div>إجمالي الإيداعات</div></div>
+                <div class="stat-card"><div class="stat-number" id="statTotalWithdrawn">0</div><div>إجمالي السحوبات</div></div>
+                <div class="stat-card"><div class="stat-number" id="statPendingWithdraws">0</div><div>سحوبات معلقة</div></div>
             </div>
 
-            <!-- تبويبات الأدمن -->
-            <div class="bottom-bar" style="margin-bottom: 20px;">
-                <div class="nav-tab admin-tab" data-admin-tab="users">المستخدمين</div>
-                <div class="nav-tab admin-tab" data-admin-tab="requests">الطلبات</div>
-                <div class="nav-tab admin-tab" data-admin-tab="logs">سجل العمليات</div>
+            <div class="bottom-bar" style="margin-bottom: 20px; justify-content: center; gap: 10px;">
+                <div class="admin-tab" data-admin-tab="withdraws">طلبات السحب</div>
+                <div class="admin-tab" data-admin-tab="deposits">الإيداعات</div>
+                <div class="admin-tab" data-admin-tab="settings">الإعدادات</div>
             </div>
 
-            <!-- قائمة المستخدمين -->
-            <div id="adminUsersPanel" class="admin-table">
-                <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="text" id="searchUsers" placeholder="بحث بالبريد أو الاسم أو الكود" style="flex:1">
-                    <button class="admin-btn" id="searchUsersBtn">بحث</button>
-                </div>
-                <div id="usersTableContainer"></div>
-                <div id="usersPagination" class="pagination"></div>
-            </div>
-
-            <!-- قائمة الطلبات -->
-            <div id="adminRequestsPanel" class="admin-table hidden">
+            <!-- طلبات السحب -->
+            <div id="adminWithdrawsPanel" class="admin-table">
                 <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-                    <select id="filterRequestStatus">
-                        <option value="all">جميع الحالات</option>
+                    <select id="filterWithdrawStatus">
+                        <option value="all">جميع الطلبات</option>
                         <option value="pending">قيد المراجعة</option>
                         <option value="approved">مقبولة</option>
                         <option value="rejected">مرفوضة</option>
                     </select>
-                    <select id="filterRequestType">
-                        <option value="all">جميع الأنواع</option>
-                        <option value="deposit">إيداع</option>
-                        <option value="withdraw">سحب</option>
-                    </select>
-                    <button class="admin-btn" id="refreshRequestsBtn">تحديث</button>
+                    <button class="admin-btn" id="refreshWithdrawsBtn">تحديث</button>
                 </div>
-                <div id="requestsTableContainer"></div>
-                <div id="requestsPagination" class="pagination"></div>
+                <div id="withdrawsTableContainer"></div>
             </div>
 
-            <!-- سجل العمليات -->
-            <div id="adminLogsPanel" class="admin-table hidden">
-                <div id="logsContainer"></div>
+            <!-- الإيداعات -->
+            <div id="adminDepositsPanel" class="admin-table hidden">
+                <div id="depositsTableContainer"></div>
             </div>
-        </div>
-    </div>
 
-    <!-- النوافذ المنبثقة للمستخدم -->
-    <div id="statsModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
-    <div id="earnModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>دعوة الأصدقاء</span><span class="close-modal">&times;</span></div><div style="padding:6px 0; text-align:center"><p style="margin: 14px 0;">قم بدعوة أصدقاءك بكودك الخاص</p><div id="earnCodeDisplay" class="ref-code-block" style="background:#111;"></div><p style="margin: 18px 0; color:#ff8a8a;">كل مستخدم جديد يضيف 5 NSP</p></div></div></div>
-    <div id="tasksModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>المهام اليومية</span><span class="close-modal">&times;</span></div><div><div class="request-item-card" style="display:flex; justify-content:space-between"><span>متابعة الحساب الرسمي</span><button class="btn-primary" style="padding:6px 16px">+10</button></div><div class="request-item-card" style="display:flex; justify-content:space-between"><span>مشاركة رابط الإحالة</span><button class="btn-primary" style="padding:6px 16px">+5</button></div></div></div></div>
-    <div id="requestsModal" class="modal-glass"><div class="modal-card"><div class="modal-header"><span>آخر الطلبات</span><span class="close-modal">&times;</span></div><div id="requestsListArea"></div></div></div>
-
-    <!-- نافذة تعديل المستخدم للأدمن -->
-    <div id="editUserModal" class="modal-glass">
-        <div class="modal-card" style="max-width: 500px;">
-            <div class="modal-header"><span>تعديل بيانات المستخدم</span><span class="close-modal" id="closeEditModal">&times;</span></div>
-            <div id="editUserContent"></div>
+            <!-- الإعدادات -->
+            <div id="adminSettingsPanel" class="admin-table hidden">
+                <h3 style="margin-bottom: 20px;">إعدادات النظام</h3>
+                <div class="form-group">
+                    <label>الحد الأدنى للإيداع (SYP)</label>
+                    <input type="number" id="settingMinDeposit" placeholder="الحد الأدنى للإيداع">
+                </div>
+                <div class="form-group">
+                    <label>الحد الأدنى للسحب (SYP)</label>
+                    <input type="number" id="settingMinWithdraw" placeholder="الحد الأدنى للسحب">
+                </div>
+                <div class="form-group">
+                    <label>عنوان شام كاش</label>
+                    <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
+                </div>
+                <div class="form-group">
+                    <label>API Key شام كاش</label>
+                    <input type="text" id="settingShamCashApiKey" placeholder="API Key">
+                </div>
+                <div class="form-group">
+                    <label>API Key سيرياتيل</label>
+                    <input type="text" id="settingSyriatelApiKey" placeholder="API Key">
+                </div>
+                <div class="form-group">
+                    <label>أرقام GSM سيرياتيل (مفصولة بفواصل)</label>
+                    <input type="text" id="settingSyriatelNumbers" placeholder="0930000000,0931111111">
+                </div>
+                <button class="admin-btn" id="saveSettingsBtn" style="width:100%;">حفظ الإعدادات</button>
+            </div>
         </div>
     </div>
 
@@ -544,24 +645,25 @@
             appId: "1:499624996530:web:235f71e450845c748523ab"
         };
 
+        const API_URL = "https://ass-yygm.onrender.com";
+        const ADMIN_EMAIL = "sam55nam@gmail.com";
+
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
 
-        let currentUserObj = null;
-        let userDbData = null;
-        let isAdminUser = false;
-        const API_URL = "https://ass-yygm.onrender.com";
+        let currentUser = null;
+        let userData = null;
+        let isAdmin = false;
 
-        // ============= دوال مساعدة =============
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
             toast.className = 'toast-pro';
             toast.style.background = isErr ? '#b91c1ccc' : '#2c7a2ccc';
             toast.textContent = msg;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2600);
+            setTimeout(() => toast.remove(), 3000);
         }
 
         async function apiCall(endpoint, options = {}) {
@@ -583,19 +685,20 @@
         }
 
         // ============= دوال المستخدم =============
-        async function fetchProfile() {
+        async function loadProfile() {
             const res = await apiCall('/api/user/profile');
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    userDbData = data.user;
-                    document.getElementById('mainBalance').innerText = userDbData.balance || 0;
-                    document.getElementById('profileName').innerText = userDbData.name || currentUserObj?.displayName || '---';
+                    userData = data.user;
+                    document.getElementById('mainBalance').innerText = userData.balance || 0;
+                    document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
+                    isAdmin = data.isAdmin;
                 }
             }
         }
 
-        async function fetchStats() {
+        async function loadStats() {
             const res = await apiCall('/api/user/stats');
             if (res && res.ok) {
                 const data = await res.json();
@@ -612,32 +715,53 @@
                         <div class="info-row-split"><span>أرباح الإحالات</span><span>${stats.totalReferralEarnings} NSP</span></div>
                         <div class="info-row-split"><span>إجمالي الإيداع</span><span>${stats.totalDeposited || 0} NSP</span></div>
                         <div class="info-row-split"><span>إجمالي السحب</span><span>${stats.totalWithdrawn || 0} NSP</span></div>
-                        <div class="info-row-split"><span>رصيد NSP</span><span>${stats.balance} NSP</span></div>
+                        <div class="info-row-split"><span>الرصيد الحالي</span><span>${stats.balance} NSP</span></div>
                     `;
                 }
             }
         }
 
-        async function loadUserRequests() {
-            const res = await apiCall('/api/user/requests');
+        async function loadDeposits() {
+            const res = await apiCall('/api/user/deposits');
             if (res && res.ok) {
                 const data = await res.json();
-                const container = document.getElementById('requestsListArea');
-                if (!data.success || data.requests.length === 0) {
-                    container.innerHTML = '<div style="padding:20px; text-align:center;">لا توجد طلبات سابقة</div>';
+                const container = document.getElementById('depositsList');
+                if (!data.deposits || data.deposits.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; padding:20px;">لا توجد إيداعات سابقة</p>';
                     return;
                 }
-                container.innerHTML = data.requests.map(req => `
+                container.innerHTML = data.deposits.map(d => `
                     <div class="request-item-card">
-                        <div><strong>${req.type === 'deposit' ? 'إيداع' : 'سحب'}</strong> - ${req.amount} NSP</div>
-                        <div>الحالة : ${req.status === 'pending' ? 'قيد المراجعة' : (req.status === 'approved' ? 'مقبول' : 'مرفوض')}</div>
-                        <div style="font-size:12px;">${req.createdAt ? new Date(req.createdAt).toLocaleString('ar') : ''}</div>
+                        <div><strong>💰 ${d.amount} SYP</strong></div>
+                        <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>
+                        <div>رقم العملية: ${d.transactionId}</div>
+                        <div>التاريخ: ${new Date(d.verifiedAt).toLocaleString('ar')}</div>
                     </div>
                 `).join('');
             }
         }
 
-        async function registerNewUser(refCode = null) {
+        async function loadWithdrawals() {
+            const res = await apiCall('/api/user/withdraw-requests');
+            if (res && res.ok) {
+                const data = await res.json();
+                const container = document.getElementById('withdrawsList');
+                if (!data.requests || data.requests.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; padding:20px;">لا توجد سحوبات سابقة</p>';
+                    return;
+                }
+                container.innerHTML = data.requests.map(r => `
+                    <div class="request-item-card">
+                        <div><strong>💸 ${r.amount} SYP</strong></div>
+                        <div>العنوان: ${r.address}</div>
+                        <div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div>
+                        <div>التاريخ: ${new Date(r.createdAt).toLocaleString('ar')}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function registerUser(refCode = null) {
             const res = await apiCall('/api/user/register', {
                 method: 'POST',
                 body: JSON.stringify({ referrerId: refCode })
@@ -645,24 +769,78 @@
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    userDbData = data.user;
-                    isAdminUser = data.isAdmin || false;
-                    await fetchStats();
-                    if (isAdminUser) showAdminInterface();
+                    userData = data.user;
+                    isAdmin = data.isAdmin;
+                    await loadStats();
                 }
             }
         }
 
-        async function sendRequest(type, amount) {
-            const res = await apiCall('/api/user/create-request', {
+        async function deposit() {
+            const amount = document.getElementById('depositAmount').value;
+            const transactionId = document.getElementById('transactionId').value;
+            const method = document.querySelector('.method-btn.active')?.dataset.method || 'sham_cash';
+            
+            if (!amount || amount < 1000) {
+                showMessage('المبلغ غير صالح (الحد الأدنى 1000 SYP)', true);
+                return;
+            }
+            if (!transactionId) {
+                showMessage('الرجاء إدخال رقم العملية', true);
+                return;
+            }
+            
+            const res = await apiCall('/api/user/deposit', {
                 method: 'POST',
-                body: JSON.stringify({ type, amount: Number(amount) })
+                body: JSON.stringify({ method, amount: Number(amount), transactionId })
             });
-            if (res) {
-                const response = await res.json();
-                if (res.status === 429) showMessage(response.error, true);
-                else if (response.success) showMessage(`تم إرسال طلب ${type === 'deposit' ? 'إيداع' : 'سحب'} بنجاح`);
-                else showMessage(response.error || 'خطأ', true);
+            
+            if (res && res.ok) {
+                const data = await res.json();
+                showMessage(data.message);
+                document.getElementById('depositModal').style.display = 'none';
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل الإيداع', true);
+            }
+        }
+
+        async function withdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            const address = document.getElementById('withdrawAddress').value;
+            const method = document.getElementById('withdrawMethod').value;
+            
+            if (!amount || amount < 5000) {
+                showMessage('المبلغ غير صالح (الحد الأدنى 5000 SYP)', true);
+                return;
+            }
+            if (!address) {
+                showMessage('الرجاء إدخال عنوان السحب', true);
+                return;
+            }
+            if (userData && amount > userData.balance) {
+                showMessage('الرصيد غير كافٍ', true);
+                return;
+            }
+            
+            const res = await apiCall('/api/user/withdraw', {
+                method: 'POST',
+                body: JSON.stringify({ amount: Number(amount), address, method })
+            });
+            
+            if (res && res.ok) {
+                const data = await res.json();
+                showMessage(data.message);
+                document.getElementById('withdrawModal').style.display = 'none';
+                await loadProfile();
+                await loadStats();
+                await loadWithdrawals();
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل السحب', true);
             }
         }
 
@@ -675,134 +853,39 @@
                     document.getElementById('statTotalUsers').innerText = data.stats.totalUsers;
                     document.getElementById('statNewToday').innerText = data.stats.newToday;
                     document.getElementById('statTotalBalance').innerText = data.stats.totalBalance;
-                    document.getElementById('statPendingRequests').innerText = data.stats.pendingRequests;
-                    document.getElementById('statReferralEarnings').innerText = data.stats.totalReferralEarnings;
+                    document.getElementById('statTotalDeposited').innerText = data.stats.totalDeposited;
+                    document.getElementById('statTotalWithdrawn').innerText = data.stats.totalWithdrawn;
+                    document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals;
                 }
             }
         }
 
-        let currentUsersPage = 1;
-        let currentRequestsPage = 1;
-        let usersSearchTerm = '';
-
-        async function loadAdminUsers(page = 1) {
-            const res = await apiCall(`/api/admin/users?page=${page}&limit=10&search=${encodeURIComponent(usersSearchTerm)}`);
+        async function loadAdminWithdraws() {
+            const status = document.getElementById('filterWithdrawStatus')?.value || 'all';
+            const res = await apiCall(`/api/admin/withdraw-requests?status=${status}&limit=50`);
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    renderUsersTable(data.users, data.page, data.totalPages);
-                    currentUsersPage = data.page;
-                }
-            }
-        }
-
-        function renderUsersTable(users, currentPage, totalPages) {
-            const container = document.getElementById('usersTableContainer');
-            if (!users.length) {
-                container.innerHTML = '<p style="text-align:center; padding:40px;">لا يوجد مستخدمين</p>';
-                return;
-            }
-            container.innerHTML = `
-                <table>
-                    <thead>
-                        <tr><th>البريد الإلكتروني</th><th>الاسم</th><th>كود الإحالة</th><th>الرصيد</th><th>الحالة</th><th>الإجراءات</th></tr>
-                    </thead>
-                    <tbody>
-                        ${users.map(user => `
-                            <tr>
-                                <td>${user.email || '-'}</td>
-                                <td>${user.name || '-'}</td>
-                                <td>${user.uniqueId || '-'}</td>
-                                <td>${user.balance || 0} NSP</td>
-                                <td>${user.isBanned ? 'محظور' : 'نشط'}</td>
-                                <td>
-                                    <button class="admin-btn admin-btn-small" onclick="window.editUser('${user.id}')">تعديل</button>
-                                    <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${user.id}')">${user.isBanned ? 'إلغاء الحظر' : 'حظر'}</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            const pagination = document.getElementById('usersPagination');
-            if (totalPages > 1) {
-                let pages = '';
-                for (let i = 1; i <= totalPages; i++) {
-                    pages += `<button class="admin-btn admin-btn-small" onclick="window.goToUsersPage(${i})" ${i === currentPage ? 'disabled' : ''}>${i}</button>`;
-                }
-                pagination.innerHTML = pages;
-            } else {
-                pagination.innerHTML = '';
-            }
-        }
-
-        async function loadAdminRequests(page = 1) {
-            const status = document.getElementById('filterRequestStatus')?.value || 'all';
-            const type = document.getElementById('filterRequestType')?.value || 'all';
-            const res = await apiCall(`/api/admin/requests?page=${page}&limit=10&status=${status}&type=${type}`);
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    renderRequestsTable(data.requests, data.page, data.totalPages);
-                    currentRequestsPage = data.page;
-                }
-            }
-        }
-
-        function renderRequestsTable(requests, currentPage, totalPages) {
-            const container = document.getElementById('requestsTableContainer');
-            if (!requests.length) {
-                container.innerHTML = '<p style="text-align:center; padding:40px;">لا توجد طلبات</p>';
-                return;
-            }
-            container.innerHTML = `
-                <table>
-                    <thead><tr><th>المستخدم</th><th>النوع</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
-                    <tbody>
-                        ${requests.map(req => `
-                            <tr>
-                                <td>${req.user?.email || req.userId}</td>
-                                <td>${req.type === 'deposit' ? 'إيداع' : 'سحب'}</td>
-                                <td>${req.amount} NSP</td>
-                                <td>${req.status === 'pending' ? '⏳ قيد المراجعة' : (req.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
-                                <td>${req.createdAt ? new Date(req.createdAt).toLocaleString('ar') : '-'}</td>
-                                <td>${req.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.processRequest('${req.id}', 'approve')">قبول</button>
-                                <button class="admin-btn admin-btn-small" onclick="window.processRequest('${req.id}', 'reject')">رفض</button>` : 'تمت المعالجة'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            const pagination = document.getElementById('requestsPagination');
-            if (totalPages > 1) {
-                let pages = '';
-                for (let i = 1; i <= totalPages; i++) {
-                    pages += `<button class="admin-btn admin-btn-small" onclick="window.goToRequestsPage(${i})" ${i === currentPage ? 'disabled' : ''}>${i}</button>`;
-                }
-                pagination.innerHTML = pages;
-            } else {
-                pagination.innerHTML = '';
-            }
-        }
-
-        async function loadAdminLogs() {
-            const res = await apiCall('/api/admin/logs?limit=50');
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const container = document.getElementById('logsContainer');
+                    const container = document.getElementById('withdrawsTableContainer');
+                    if (!data.requests.length) {
+                        container.innerHTML = '<p style="text-align:center; padding:40px;">لا توجد طلبات سحب</p>';
+                        return;
+                    }
                     container.innerHTML = `
                         <table>
-                            <thead><tr><th>التاريخ</th><th>الأدمن</th><th>الإجراء</th><th>التفاصيل</th></tr></thead>
+                            <thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
                             <tbody>
-                                ${data.logs.map(log => `
+                                ${data.requests.map(r => `
                                     <tr>
-                                        <td>${log.timestamp ? new Date(log.timestamp).toLocaleString('ar') : '-'}</td>
-                                        <td>${log.adminEmail || '-'}</td>
-                                        <td>${log.action || '-'}</td>
-                                        <td>${log.reason || JSON.stringify(log)}</td>
+                                        <td>${r.userName || r.userEmail || r.userId}</td>
+                                        <td>${r.amount} SYP</td>
+                                        <td>${r.address}</td>
+                                        <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
+                                        <td>${new Date(r.createdAt).toLocaleString('ar')}</td>
+                                        <td>${r.status === 'pending' ? `
+                                            <button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">قبول</button>
+                                            <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">رفض</button>
+                                        ` : 'تمت المعالجة'}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -812,76 +895,106 @@
             }
         }
 
-        async function editUser(userId) {
-            const res = await apiCall(`/api/admin/users/${userId}`);
+        async function loadAdminDeposits() {
+            const res = await apiCall('/api/admin/deposits?limit=50');
             if (res && res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    const user = data.user;
-                    document.getElementById('editUserContent').innerHTML = `
-                        <div class="info-row-split"><span>البريد</span><span>${user.email}</span></div>
-                        <div class="info-row-split"><span>الاسم</span><input type="text" id="editName" value="${user.name || ''}"></div>
-                        <div class="info-row-split"><span>الرصيد الحالي</span><span>${user.balance || 0} NSP</span></div>
-                        <div class="info-row-split"><span>تعديل الرصيد</span><input type="number" id="editBalance" placeholder="قيمة (+/-)"></div>
-                        <div class="info-row-split"><span>السبب</span><input type="text" id="editReason" placeholder="سبب التعديل"></div>
-                        <button class="admin-btn" id="saveUserChanges" style="width:100%; margin-top:15px;">حفظ التغييرات</button>
+                    const container = document.getElementById('depositsTableContainer');
+                    if (!data.deposits.length) {
+                        container.innerHTML = '<p style="text-align:center; padding:40px;">لا توجد إيداعات</p>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table>
+                            <thead><tr><th>المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>رقم العملية</th><th>التاريخ</th></tr></thead>
+                            <tbody>
+                                ${data.deposits.map(d => `
+                                    <tr>
+                                        <td>${d.user?.name || d.user?.email || d.userId}</td>
+                                        <td>${d.amount} SYP</td>
+                                        <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
+                                        <td>${d.transactionId}</td>
+                                        <td>${new Date(d.verifiedAt).toLocaleString('ar')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
                     `;
-                    document.getElementById('editUserModal').style.display = 'flex';
-                    
-                    document.getElementById('saveUserChanges').onclick = async () => {
-                        const balanceChange = document.getElementById('editBalance').value;
-                        const reason = document.getElementById('editReason').value;
-                        if (balanceChange && balanceChange !== '0') {
-                            const updateRes = await apiCall('/api/admin/update-balance', {
-                                method: 'POST',
-                                body: JSON.stringify({ userId, amount: Number(balanceChange), reason })
-                            });
-                            if (updateRes && updateRes.ok) {
-                                showMessage('تم تحديث الرصيد بنجاح');
-                                document.getElementById('editUserModal').style.display = 'none';
-                                loadAdminUsers(currentUsersPage);
-                                loadAdminDashboard();
-                            }
-                        }
-                    };
                 }
             }
         }
 
-        async function toggleBan(userId) {
-            const res = await apiCall('/api/admin/toggle-ban', {
-                method: 'POST',
-                body: JSON.stringify({ userId })
-            });
+        async function loadAdminSettings() {
+            const res = await apiCall('/api/admin/settings');
             if (res && res.ok) {
-                showMessage('تم تحديث حالة المستخدم');
-                loadAdminUsers(currentUsersPage);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
+                    document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
+                    document.getElementById('settingShamCashAddress').value = data.settings.shamCashAddress;
+                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey;
+                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey;
+                    document.getElementById('settingSyriatelNumbers').value = data.settings.syriatelNumbers?.join(',') || '';
+                }
             }
         }
 
-        async function processRequest(requestId, action) {
-            const res = await apiCall('/api/admin/process-request', {
+        async function saveAdminSettings() {
+            const settings = {
+                minDeposit: Number(document.getElementById('settingMinDeposit').value),
+                minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
+                shamCashAddress: document.getElementById('settingShamCashAddress').value,
+                shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
+                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
+                syriatelNumbers: document.getElementById('settingSyriatelNumbers').value.split(',').map(s => s.trim())
+            };
+            
+            const res = await apiCall('/api/admin/settings', {
                 method: 'POST',
-                body: JSON.stringify({ requestId, action })
+                body: JSON.stringify(settings)
             });
+            
             if (res && res.ok) {
-                showMessage(`تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب`);
-                loadAdminRequests(currentRequestsPage);
-                loadAdminDashboard();
-                if (action === 'approve') loadAdminUsers(currentUsersPage);
-            } else if (res) {
-                const err = await res.json();
-                showMessage(err.error || 'حدث خطأ', true);
+                showMessage('تم حفظ الإعدادات بنجاح');
+            } else {
+                showMessage('فشل حفظ الإعدادات', true);
             }
         }
+
+        window.approveWithdraw = async (requestId) => {
+            const res = await apiCall('/api/admin/process-withdraw', {
+                method: 'POST',
+                body: JSON.stringify({ requestId, action: 'approve' })
+            });
+            if (res && res.ok) {
+                showMessage('تم قبول الطلب');
+                loadAdminWithdraws();
+                loadAdminDashboard();
+                loadProfile();
+            }
+        };
+
+        window.rejectWithdraw = async (requestId) => {
+            const res = await apiCall('/api/admin/process-withdraw', {
+                method: 'POST',
+                body: JSON.stringify({ requestId, action: 'reject' })
+            });
+            if (res && res.ok) {
+                showMessage('تم رفض الطلب');
+                loadAdminWithdraws();
+                loadAdminDashboard();
+                loadProfile();
+            }
+        };
 
         function showAdminInterface() {
             document.getElementById('userApp').classList.add('hidden');
             document.getElementById('adminApp').classList.remove('hidden');
             loadAdminDashboard();
-            loadAdminUsers();
-            loadAdminRequests();
-            loadAdminLogs();
+            loadAdminWithdraws();
+            loadAdminDeposits();
+            loadAdminSettings();
         }
 
         function showUserInterface() {
@@ -890,42 +1003,34 @@
         }
 
         // ============= معالج تسجيل الدخول =============
-        let lastAction = 0;
-        function preventSpam(cb) {
-            const now = Date.now();
-            if (now - lastAction > 1000) {
-                lastAction = now;
-                cb();
-            } else {
-                showMessage('انتظر لحظة قبل المحاولة', true);
-            }
-        }
-
-        async function googleLoginHandler() {
+        async function handleGoogleSignIn() {
             try {
                 const result = await signInWithPopup(auth, provider);
-                currentUserObj = result.user;
+                currentUser = result.user;
                 const params = new URLSearchParams(window.location.search);
-                await registerNewUser(params.get('ref'));
-                await fetchProfile();
-                await fetchStats();
+                await registerUser(params.get('ref'));
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
                 document.getElementById('loader').style.display = 'none';
-                if (isAdminUser) showAdminInterface();
+                if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } catch (err) {
                 showMessage('فشل تسجيل الدخول', true);
             }
         }
 
-        // ============= مراقبة حالة الدخول =============
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUserObj = user;
-                await registerNewUser();
-                await fetchProfile();
-                await fetchStats();
+                currentUser = user;
+                await registerUser();
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
                 document.getElementById('loader').style.display = 'none';
-                if (isAdminUser) showAdminInterface();
+                if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } else {
                 document.getElementById('loader').innerHTML = `
@@ -933,23 +1038,15 @@
                     <button id="restartGoogleBtn" class="btn-google" style="margin-top: 20px; width: 200px;">🔐 تسجيل دخول Google</button>
                 `;
                 document.getElementById('loader').style.display = 'flex';
-                const googleBtn = document.getElementById('restartGoogleBtn');
-                if (googleBtn) googleBtn.addEventListener('click', googleLoginHandler);
+                document.getElementById('restartGoogleBtn')?.addEventListener('click', handleGoogleSignIn);
             }
         });
-
-        // ============= ربط الدوال العامة =============
-        window.editUser = editUser;
-        window.toggleBan = toggleBan;
-        window.processRequest = processRequest;
-        window.goToUsersPage = (page) => loadAdminUsers(page);
-        window.goToRequestsPage = (page) => loadAdminRequests(page);
 
         // ============= أحداث الواجهة =============
         document.getElementById('openProfileBtn')?.addEventListener('click', () => {
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('profileScreen').classList.remove('hidden');
-            if (isAdminUser) {
+            if (isAdmin) {
                 const switchBtn = document.createElement('button');
                 switchBtn.className = 'switch-view-btn';
                 switchBtn.innerText = 'لوحة الأدمن';
@@ -958,62 +1055,60 @@
                 document.getElementById('adminSwitchContainer').appendChild(switchBtn);
             }
         });
-        
+
         document.getElementById('backHomeBtn')?.addEventListener('click', () => {
             document.getElementById('profileScreen').classList.add('hidden');
             document.getElementById('homeScreen').classList.remove('hidden');
         });
-        
-        document.getElementById('depositAction')?.addEventListener('click', () => preventSpam(() => {
-            let amt = prompt('أدخل مبلغ الإيداع');
-            if (amt && +amt > 0) sendRequest('deposit', amt);
-        }));
-        
-        document.getElementById('withdrawAction')?.addEventListener('click', () => preventSpam(() => {
-            let amt = prompt('أدخل مبلغ السحب');
-            if (amt && +amt > 0) {
-                if (userDbData && +amt > (userDbData.balance || 0)) showMessage('الرصيد غير كافٍ', true);
-                else sendRequest('withdraw', amt);
-            }
-        }));
-        
+
+        document.getElementById('depositAction')?.addEventListener('click', async () => {
+            document.getElementById('depositModal').style.display = 'flex';
+        });
+
+        document.getElementById('withdrawAction')?.addEventListener('click', () => {
+            document.getElementById('withdrawModal').style.display = 'flex';
+        });
+
+        document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
+        document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
+        document.getElementById('closeDepositModal')?.addEventListener('click', () => {
+            document.getElementById('depositModal').style.display = 'none';
+        });
+        document.getElementById('closeWithdrawModal')?.addEventListener('click', () => {
+            document.getElementById('withdrawModal').style.display = 'none';
+        });
+
         document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
-        
-        document.getElementById('searchUsersBtn')?.addEventListener('click', () => {
-            usersSearchTerm = document.getElementById('searchUsers').value;
-            loadAdminUsers(1);
-        });
-        
-        document.getElementById('refreshRequestsBtn')?.addEventListener('click', () => loadAdminRequests(1));
-        
-        document.querySelectorAll('.admin-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const target = tab.getAttribute('data-admin-tab');
-                document.getElementById('adminUsersPanel').classList.add('hidden');
-                document.getElementById('adminRequestsPanel').classList.add('hidden');
-                document.getElementById('adminLogsPanel').classList.add('hidden');
-                if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
-                if (target === 'requests') document.getElementById('adminRequestsPanel').classList.remove('hidden');
-                if (target === 'logs') document.getElementById('adminLogsPanel').classList.remove('hidden');
-            });
-        });
-        
-        document.getElementById('closeEditModal')?.addEventListener('click', () => {
-            document.getElementById('editUserModal').style.display = 'none';
-        });
-        
+        document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
+        document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
+
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {
                 const target = tab.getAttribute('data-tab');
-                if (target === 'requests') await loadUserRequests();
+                if (target === 'deposits') await loadDeposits();
+                if (target === 'withdraws') await loadWithdrawals();
                 const modal = document.getElementById(`${target}Modal`);
                 if (modal) modal.style.display = 'flex';
             });
         });
-        
+
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-admin-tab');
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('adminWithdrawsPanel')?.classList.add('hidden');
+                document.getElementById('adminDepositsPanel')?.classList.add('hidden');
+                document.getElementById('adminSettingsPanel')?.classList.add('hidden');
+                if (target === 'withdraws') document.getElementById('adminWithdrawsPanel')?.classList.remove('hidden');
+                if (target === 'deposits') document.getElementById('adminDepositsPanel')?.classList.remove('hidden');
+                if (target === 'settings') document.getElementById('adminSettingsPanel')?.classList.remove('hidden');
+            });
+        });
+
         document.querySelectorAll('.close-modal').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.closest('.modal-glass').style.display = 'none';
