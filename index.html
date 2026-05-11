@@ -12,7 +12,6 @@
             box-sizing: border-box;
         }
 
-        /* ========== متغيرات الألوان ========== */
         :root {
             --primary: #ff0000;
             --primary-dark: #cc0000;
@@ -25,14 +24,12 @@
             --border: #333333;
             --error: #ff4444;
             --success: #00cc44;
-            --warning: #ffaa00;
             --radius: 12px;
             --radius-lg: 20px;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         body {
-            font-family: 'Segoe UI', 'Tahoma', system-ui, sans-serif;
+            font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
             background: var(--background);
             color: var(--text);
             min-height: 100vh;
@@ -44,7 +41,7 @@
         ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* ========== الحاويات ========== */
+        /* الحاويات */
         .app-container {
             max-width: 500px;
             margin: 0 auto;
@@ -60,7 +57,7 @@
             padding: 16px;
         }
 
-        /* ========== شاشة التحميل ========== */
+        /* شاشة التحميل */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -87,7 +84,7 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ========== لودينغ الأزرار ========== */
+        /* لودينغ الأزرار */
         .btn-loading {
             pointer-events: none;
             opacity: 0.7;
@@ -108,7 +105,7 @@
             animation: spin 0.6s linear infinite;
         }
 
-        /* ========== الشريط العلوي ========== */
+        /* الشريط العلوي */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -151,7 +148,7 @@
             color: transparent;
         }
 
-        /* ========== الأزرار ========== */
+        /* الأزرار */
         .action-grid {
             display: flex;
             gap: 12px;
@@ -185,7 +182,7 @@
             color: var(--primary-light);
         }
 
-        /* ========== منطقة اللعب ========== */
+        /* منطقة اللعب */
         .play-zone {
             text-align: center;
             margin: 20px 0;
@@ -207,7 +204,7 @@
         }
         .game-sphere:active { transform: scale(0.96); }
 
-        /* ========== الشريط السفلي ========== */
+        /* الشريط السفلي */
         .bottom-nav {
             display: flex;
             justify-content: space-around;
@@ -234,7 +231,7 @@
             color: var(--primary-light);
         }
 
-        /* ========== لوحة المعلومات ========== */
+        /* لوحة المعلومات */
         .info-panel {
             background: rgba(18, 18, 18, 0.9);
             backdrop-filter: blur(16px);
@@ -260,7 +257,7 @@
             border: 1px solid var(--primary);
         }
 
-        /* ========== النوافذ المنبثقة ========== */
+        /* النوافذ المنبثقة */
         .modal {
             display: none;
             position: fixed;
@@ -301,7 +298,7 @@
             cursor: pointer;
         }
 
-        /* ========== طرق الدفع ========== */
+        /* طرق الدفع */
         .methods-list {
             display: flex;
             flex-direction: column;
@@ -325,10 +322,6 @@
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 4px;
-        }
-        .method-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
         }
 
         .address-box {
@@ -358,7 +351,7 @@
             font-size: 12px;
         }
 
-        /* ========== حقول الإدخال ========== */
+        /* حقول الإدخال */
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -386,7 +379,7 @@
             margin-top: 4px;
         }
 
-        /* ========== البطاقات ========== */
+        /* البطاقات */
         .request-card {
             background: var(--surface-light);
             margin-bottom: 12px;
@@ -395,7 +388,7 @@
             border-right: 3px solid var(--primary);
         }
 
-        /* ========== التنبيهات ========== */
+        /* التنبيهات */
         .toast {
             position: fixed;
             bottom: 90px;
@@ -414,7 +407,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ========== واجهة الأدمن ========== */
+        /* واجهة الأدمن */
         .admin-header {
             background: var(--surface);
             padding: 16px 20px;
@@ -498,6 +491,7 @@
             .btn { padding: 10px 6px; font-size: 13px; }
             .balance-value { font-size: 22px; }
             .stat-number { font-size: 22px; }
+            th, td { padding: 8px; font-size: 12px; }
         }
     </style>
 </head>
@@ -612,7 +606,7 @@
             <div class="admin-header">
                 <h2>🔧 لوحة التحكم</h2>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <span class="admin-badge" style="background:var(--primary);padding:4px12px;border-radius:20px">sam55nam@gmail.com</span>
+                    <span class="admin-badge" style="background:var(--primary);padding:4px 12px;border-radius:20px">sam55nam@gmail.com</span>
                     <button class="admin-btn" id="switchToUserView">الموقع</button>
                     <button class="admin-btn" id="adminLogoutBtn">تسجيل خروج</button>
                 </div>
@@ -631,9 +625,10 @@
                 <div class="tab" data-tab="withdraws">طلبات السحب</div>
                 <div class="tab" data-tab="deposits">الإيداعات</div>
                 <div class="tab" data-tab="users">المستخدمين</div>
-                <div class="tab" data-tab="settings">الإعدادات</div>
+                <div class="tab" data-tab="limits">الحدود</div>
             </div>
 
+            <!-- طلبات السحب -->
             <div id="adminWithdrawsPanel" class="admin-table">
                 <div style="margin-bottom:15px;display:flex;gap:10px">
                     <select id="filterWithdrawStatus" style="flex:1">
@@ -647,26 +642,35 @@
                 <div id="withdrawsTable"></div>
             </div>
 
+            <!-- الإيداعات -->
             <div id="adminDepositsPanel" class="admin-table hidden"><div id="depositsTable"></div></div>
 
+            <!-- المستخدمين -->
             <div id="adminUsersPanel" class="admin-table hidden">
                 <input type="text" id="searchUsers" placeholder="بحث بالبريد أو الاسم" style="margin-bottom:15px">
                 <div id="usersTable"></div>
             </div>
 
-            <div id="adminSettingsPanel" class="admin-table hidden">
-                <h3 style="margin-bottom:20px">إعدادات النظام</h3>
-                <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
-                <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
-                <div class="form-group"><label>تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
-                <div class="form-group"><label>تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
-                <div class="form-group"><label>عنوان شام كاش (خاص للـ API)</label><input type="text" id="settingShamPrivateAddress" placeholder="رقم المحفظة الخاص"></div>
-                <div class="form-group"><label>عنوان شام كاش (عام للمستخدم)</label><input type="text" id="settingShamPublicAddress" placeholder="رقم التحويل العام"></div>
-                <div class="form-group"><label>عنوان سيرياتيل كاش (خاص للـ API)</label><input type="text" id="settingSyriPrivateAddress" placeholder="رقم الجوال الخاص"></div>
-                <div class="form-group"><label>عنوان سيرياتيل كاش (عام للمستخدم)</label><input type="text" id="settingSyriPublicAddress" placeholder="رقم التحويل العام"></div>
-                <div class="form-group"><label>API Key شام كاش</label><input type="text" id="settingShamApiKey"></div>
-                <div class="form-group"><label>API Key سيرياتيل كاش</label><input type="text" id="settingSyriApiKey"></div>
-                <button class="admin-btn" id="saveSettingsBtn" style="width:100%">حفظ الإعدادات</button>
+            <!-- الحدود -->
+            <div id="adminLimitsPanel" class="admin-table hidden">
+                <h3 style="margin-bottom:20px">تعديل الحدود</h3>
+                <div class="form-group">
+                    <label>الحد الأدنى للإيداع (SYP)</label>
+                    <input type="number" id="settingMinDeposit" value="1000">
+                </div>
+                <div class="form-group">
+                    <label>الحد الأدنى للسحب (SYP)</label>
+                    <input type="number" id="settingMinWithdraw" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>عنوان شام كاش</label>
+                    <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
+                </div>
+                <div class="form-group">
+                    <label>عنوان سيرياتيل كاش</label>
+                    <input type="text" id="settingSyriatelAddress" placeholder="رقم الجوال">
+                </div>
+                <button class="admin-btn" id="saveLimitsBtn" style="width:100%">حفظ الإعدادات</button>
             </div>
         </div>
     </div>
@@ -693,6 +697,7 @@
         provider.setCustomParameters({ prompt: 'select_account' });
 
         let currentUser = null, userData = null, isAdmin = false;
+        let currentMinDeposit = 1000, currentMinWithdraw = 5000;
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -713,140 +718,461 @@
             try {
                 const response = await fetch(`${API_URL}${endpoint}`, {
                     ...options,
-                    headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        ...options.headers
+                    }
                 });
-                if (response.status === 401) { showMessage('انتهت الجلسة، سجل دخول مجدداً', true); await signOut(auth); return null; }
+                if (response.status === 401) {
+                    showMessage('انتهت الجلسة، سجل دخول مجدداً', true);
+                    await signOut(auth);
+                    return null;
+                }
                 return response;
-            } catch (error) { showMessage('خطأ في الاتصال', true); return null; }
+            } catch (error) {
+                showMessage('خطأ في الاتصال', true);
+                return null;
+            }
         }
 
         // دوال المستخدم
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
-            if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; document.getElementById('mainBalance').innerText = userData.balance || 0; document.getElementById('profileName').innerText = userData.name || currentUser?.displayName; document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP'; document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP'; isAdmin = data.isAdmin; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    userData = data.user;
+                    document.getElementById('mainBalance').innerText = userData.balance || 0;
+                    document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
+                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP';
+                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP';
+                    isAdmin = data.isAdmin;
+                }
+            }
         }
 
         async function loadStats() {
             const res = await apiCall('/api/user/stats');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('profileRefCode').innerText = s.uniqueId || '---'; document.getElementById('profileRefEarn').innerText = (s.totalReferralEarnings || 0) + ' NSP'; document.getElementById('profileRefCount').innerText = s.referralCount || 0; document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`; document.getElementById('earnCodeDisplay').innerHTML = `كودك الخاص : ${s.uniqueId}`; document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>أرباح الإحالات</span><span>${s.totalReferralEarnings} NSP</span></div><div class="info-row"><span>إجمالي الإيداع</span><span>${s.totalDeposited || 0} NSP</span></div><div class="info-row"><span>إجمالي السحب</span><span>${s.totalWithdrawn || 0} NSP</span></div><div class="info-row"><span>الرصيد الحالي</span><span>${s.balance} NSP</span></div>`; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.stats;
+                    document.getElementById('profileRefCode').innerText = s.uniqueId || '---';
+                    document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0) + ' NSP';
+                    document.getElementById('profileRefCount').innerText = s.referralCount || 0;
+                    document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`;
+                    document.getElementById('earnCodeDisplay').innerHTML = `كودك الخاص : ${s.uniqueId}`;
+                    document.getElementById('statsInner').innerHTML = `
+                        <div class="info-row"><span>تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div>
+                        <div class="info-row"><span>عدد الإحالات</span><span>${s.referralCount}</span></div>
+                        <div class="info-row"><span>أرباح الإحالات</span><span>${s.referralEarnings} NSP</span></div>
+                        <div class="info-row"><span>إجمالي الإيداع</span><span>${s.totalDeposited || 0} NSP</span></div>
+                        <div class="info-row"><span>إجمالي السحب</span><span>${s.totalWithdrawn || 0} NSP</span></div>
+                        <div class="info-row"><span>الرصيد الحالي</span><span>${s.balance} NSP</span></div>
+                    `;
+                }
+            }
         }
 
         async function loadDeposits() {
             const res = await apiCall('/api/user/deposits');
-            if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsList'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات</p>'; return; } container.innerHTML = data.deposits.map(d => `<div class="request-card"><div><strong>💰 ${d.amount} SYP</strong></div><div>رقم العملية: ${d.transactionId}</div><div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div></div>`).join(''); }
+            if (res?.ok) {
+                const data = await res.json();
+                const container = document.getElementById('depositsList');
+                if (!data.deposits?.length) {
+                    container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات</p>';
+                    return;
+                }
+                container.innerHTML = data.deposits.map(d => `
+                    <div class="request-card">
+                        <div><strong>💰 ${d.amount} SYP</strong></div>
+                        <div>رقم العملية: ${d.transactionId}</div>
+                        <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
+                    </div>
+                `).join('');
+            }
         }
 
         async function loadWithdrawals() {
             const res = await apiCall('/api/user/withdraw-requests');
-            if (res?.ok) { const data = await res.json(); const container = document.getElementById('withdrawsList'); if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات</p>'; return; } container.innerHTML = data.requests.map(r => `<div class="request-card"><div><strong>💸 ${r.amount} SYP</strong></div><div>العنوان: ${r.address}</div><div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div><div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div></div>`).join(''); }
+            if (res?.ok) {
+                const data = await res.json();
+                const container = document.getElementById('withdrawsList');
+                if (!data.requests?.length) {
+                    container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات</p>';
+                    return;
+                }
+                container.innerHTML = data.requests.map(r => `
+                    <div class="request-card">
+                        <div><strong>💸 ${r.amount} SYP</strong></div>
+                        <div>العنوان: ${r.address}</div>
+                        <div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div>
+                        <div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div>
+                    </div>
+                `).join('');
+            }
         }
 
         async function registerUser(refCode = null) {
-            const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) });
-            if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; isAdmin = data.isAdmin; await loadStats(); } }
+            const res = await apiCall('/api/user/register', {
+                method: 'POST',
+                body: JSON.stringify({ referrerId: refCode })
+            });
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    userData = data.user;
+                    isAdmin = data.isAdmin;
+                    await loadStats();
+                }
+            }
         }
 
         async function loadDepositSettings() {
             const res = await apiCall('/api/user/deposit-settings');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${s.minDeposit} SYP`; document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${s.minWithdraw} SYP`; const container = document.getElementById('methodsList'); container.innerHTML = ''; if (!s.paymentMethods?.length) { container.innerHTML = '<div class="method-card disabled">لا توجد طرق دفع متاحة</div>'; return; } s.paymentMethods.forEach(m => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = m.id; div.innerHTML = `<div class="method-name">${m.name}</div><div class="method-desc">تحويل عبر ${m.name}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${m.publicAddress}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${m.publicAddress}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>`; }; container.appendChild(div); }); if (s.paymentMethods[0]) document.querySelector('.method-card')?.click(); } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.settings;
+                    currentMinDeposit = s.minDeposit;
+                    currentMinWithdraw = s.minWithdraw;
+                    document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${s.minDeposit} SYP`;
+                    document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${s.minWithdraw} SYP`;
+                    
+                    const container = document.getElementById('methodsList');
+                    container.innerHTML = '';
+                    
+                    // إضافة خيار شام كاش
+                    const shamDiv = document.createElement('div');
+                    shamDiv.className = 'method-card';
+                    shamDiv.dataset.method = 'sham_cash';
+                    shamDiv.innerHTML = `<div class="method-name">شام كاش</div>`;
+                    shamDiv.onclick = () => {
+                        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                        shamDiv.classList.add('selected');
+                        document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${s.shamCashAddress || '0930000000'}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${s.shamCashAddress || '0930000000'}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>`;
+                    };
+                    container.appendChild(shamDiv);
+                    
+                    // إضافة خيار سيرياتيل كاش
+                    const syriDiv = document.createElement('div');
+                    syriDiv.className = 'method-card';
+                    syriDiv.dataset.method = 'syriatel_cash';
+                    syriDiv.innerHTML = `<div class="method-name">سيرياتيل كاش</div>`;
+                    syriDiv.onclick = () => {
+                        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                        syriDiv.classList.add('selected');
+                        document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${s.syriatelAddress || '0930000000'}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${s.syriatelAddress || '0930000000'}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>`;
+                    };
+                    container.appendChild(syriDiv);
+                    
+                    // تحديد الأول
+                    document.querySelector('.method-card')?.click();
+                }
+            }
         }
 
         async function deposit() {
             const selected = document.querySelector('.method-card.selected');
-            if (!selected) { showMessage('اختر طريقة الدفع أولاً', true); return; }
+            if (!selected) {
+                showMessage('اختر طريقة الدفع أولاً', true);
+                return;
+            }
             const method = selected.dataset.method;
             const amount = document.getElementById('depositAmount').value;
             const transactionId = document.getElementById('transactionId').value;
-            if (!amount || amount < 1000) { showMessage('المبلغ غير صالح', true); return; }
-            if (!transactionId) { showMessage('أدخل رقم العملية', true); return; }
+            
+            if (!amount || amount < currentMinDeposit) {
+                showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinDeposit})`, true);
+                return;
+            }
+            if (!transactionId) {
+                showMessage('أدخل رقم العملية', true);
+                return;
+            }
+            
             const btn = document.getElementById('submitDepositBtn');
             setButtonLoading(btn, true);
-            const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) });
+            const res = await apiCall('/api/user/deposit', {
+                method: 'POST',
+                body: JSON.stringify({ method, amount: Number(amount), transactionId })
+            });
             setButtonLoading(btn, false);
-            if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('depositModal').style.display = 'none'; document.getElementById('depositAmount').value = ''; document.getElementById('transactionId').value = ''; await loadProfile(); await loadStats(); await loadDeposits(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل الإيداع', true); }
+            
+            if (res?.ok) {
+                const data = await res.json();
+                showMessage(data.message);
+                document.getElementById('depositModal').style.display = 'none';
+                document.getElementById('depositAmount').value = '';
+                document.getElementById('transactionId').value = '';
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل الإيداع', true);
+            }
         }
 
         async function withdraw() {
             const amount = document.getElementById('withdrawAmount').value;
             const address = document.getElementById('withdrawAddress').value;
             const method = document.getElementById('withdrawMethod').value;
-            if (!amount || amount < 5000) { showMessage('المبلغ غير صالح (الحد الأدنى 5000)', true); return; }
-            if (!address) { showMessage('أدخل عنوان السحب', true); return; }
-            if (userData && amount > userData.balance) { showMessage('الرصيد غير كافٍ', true); return; }
+            
+            if (!amount || amount < currentMinWithdraw) {
+                showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinWithdraw})`, true);
+                return;
+            }
+            if (!address) {
+                showMessage('أدخل عنوان السحب', true);
+                return;
+            }
+            if (userData && amount > userData.balance) {
+                showMessage('الرصيد غير كافٍ', true);
+                return;
+            }
+            
             const btn = document.getElementById('submitWithdrawBtn');
             setButtonLoading(btn, true);
-            const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) });
+            const res = await apiCall('/api/user/withdraw', {
+                method: 'POST',
+                body: JSON.stringify({ amount: Number(amount), address, method })
+            });
             setButtonLoading(btn, false);
-            if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('withdrawModal').style.display = 'none'; document.getElementById('withdrawAmount').value = ''; document.getElementById('withdrawAddress').value = ''; await loadProfile(); await loadStats(); await loadWithdrawals(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل السحب', true); }
+            
+            if (res?.ok) {
+                const data = await res.json();
+                showMessage(data.message);
+                document.getElementById('withdrawModal').style.display = 'none';
+                document.getElementById('withdrawAmount').value = '';
+                document.getElementById('withdrawAddress').value = '';
+                await loadProfile();
+                await loadStats();
+                await loadWithdrawals();
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل السحب', true);
+            }
         }
 
         // دوال الأدمن
         let allUsers = [];
+        
         async function loadAdminDashboard() {
             const res = await apiCall('/api/admin/dashboard');
-            if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('statTotalUsers').innerText = data.stats.totalUsers; document.getElementById('statNewToday').innerText = data.stats.newToday; document.getElementById('statTotalBalance').innerText = data.stats.totalBalance; document.getElementById('statTotalDeposited').innerText = data.stats.totalDeposited; document.getElementById('statTotalWithdrawn').innerText = data.stats.totalWithdrawn; document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('statTotalUsers').innerText = data.stats.totalUsers;
+                    document.getElementById('statNewToday').innerText = data.stats.newToday;
+                    document.getElementById('statTotalBalance').innerText = data.stats.totalBalance;
+                    document.getElementById('statTotalDeposited').innerText = data.stats.totalDeposited;
+                    document.getElementById('statTotalWithdrawn').innerText = data.stats.totalWithdrawn;
+                    document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals;
+                }
+            }
         }
 
         async function loadAdminWithdraws() {
             const status = document.getElementById('filterWithdrawStatus')?.value || 'all';
             const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`);
-            if (res?.ok) { const data = await res.json(); if (data.success) { const container = document.getElementById('withdrawsTable'); if (!data.requests.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد طلبات</p>'; return; } container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr><td>${r.userName || r.userEmail || r.userId}</td><td>${r.amount} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? 'قيد المراجعة' : (r.status === 'approved' ? 'مقبول' : 'مرفوض')}</td><td>${new Date(r.createdAt).toLocaleString('ar')}</td><td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت'}</td></tr>`).join('')}</tbody></table>`; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const container = document.getElementById('withdrawsTable');
+                    if (!data.requests.length) {
+                        container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد طلبات</p>';
+                        return;
+                    }
+                    container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
+                        ${data.requests.map(r => `<tr>
+                           <td>${r.userName || r.userEmail || r.userId}</td>
+                           <td>${r.amount} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
+                            <td>${new Date(r.createdAt).toLocaleString('ar')}</td>
+                            <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت'}</td>
+                        </tr>`).join('')}
+                    </tbody></table>`;
+                }
+            }
         }
 
         async function loadAdminDeposits() {
             const res = await apiCall('/api/admin/deposits');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const container = document.getElementById('depositsTable'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد إيداعات</p>'; return; } container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>رقم العملية</th><th>التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr><td>${d.user?.name || d.user?.email || d.userId}</td><td>${d.amount} SYP</td><td>${d.transactionId}</td><td>${new Date(d.verifiedAt).toLocaleString('ar')}</td></tr>`).join('')}</tbody></table>`; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const container = document.getElementById('depositsTable');
+                    if (!data.deposits?.length) {
+                        container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد إيداعات</p>';
+                        return;
+                    }
+                    container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>رقم العملية</th><th>التاريخ</th></tr></thead><tbody>
+                        ${data.deposits.map(d => `<tr><td>${d.userName || d.userEmail || d.userId}</td><td>${d.amount} SYP</td><td>${d.transactionId}</td><td>${new Date(d.verifiedAt).toLocaleString('ar')}</td></tr>`).join('')}
+                    </tbody></table>`;
+                }
+            }
         }
 
         async function loadAdminUsers() {
             const res = await apiCall('/api/admin/users');
-            if (res?.ok) { const data = await res.json(); if (data.success) { allUsers = data.users; const container = document.getElementById('usersTable'); if (!allUsers.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>'; return; } container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td><td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td></tr>`).join('')}</tbody></table>`; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    allUsers = data.users;
+                    const container = document.getElementById('usersTable');
+                    if (!allUsers.length) {
+                        container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>';
+                        return;
+                    }
+                    container.innerHTML = `</table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+                        ${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                        <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
+                        </tr>`).join('')}
+                    </tbody></table>`;
+                }
+            }
         }
 
         async function loadAdminSettings() {
             const res = await apiCall('/api/admin/settings');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; document.getElementById('settingMinDeposit').value = s.minDeposit; document.getElementById('settingMinWithdraw').value = s.minWithdraw; document.getElementById('settingShamCashEnabled').checked = s.shamCashEnabled; document.getElementById('settingSyriatelEnabled').checked = s.syriatelEnabled; const shamAddr = s.paymentAddresses?.find(a => a.type === 'sham_cash'); if (shamAddr) { document.getElementById('settingShamPrivateAddress').value = shamAddr.privateAddress || ''; document.getElementById('settingShamPublicAddress').value = shamAddr.publicAddress || ''; } const syriAddr = s.paymentAddresses?.find(a => a.type === 'syriatel_cash'); if (syriAddr) { document.getElementById('settingSyriPrivateAddress').value = syriAddr.privateAddress || ''; document.getElementById('settingSyriPublicAddress').value = syriAddr.publicAddress || ''; } document.getElementById('settingShamApiKey').value = s.shamCashApiKey || ''; document.getElementById('settingSyriApiKey').value = s.syriatelApiKey || ''; } }
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
+                    document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
+                    document.getElementById('settingShamCashAddress').value = data.settings.shamCashAddress || '';
+                    document.getElementById('settingSyriatelAddress').value = data.settings.syriatelAddress || '';
+                    currentMinDeposit = data.settings.minDeposit;
+                    currentMinWithdraw = data.settings.minWithdraw;
+                }
+            }
         }
 
         async function saveAdminSettings() {
-            const settings = {
-                minDeposit: Number(document.getElementById('settingMinDeposit').value),
-                minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
-                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
-                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
-                paymentAddresses: [
-                    { id: 'sham_001', name: 'شام كاش', type: 'sham_cash', isActive: true, privateAddress: document.getElementById('settingShamPrivateAddress').value, publicAddress: document.getElementById('settingShamPublicAddress').value },
-                    { id: 'syri_001', name: 'سيرياتيل كاش', type: 'syriatel_cash', isActive: true, privateAddress: document.getElementById('settingSyriPrivateAddress').value, publicAddress: document.getElementById('settingSyriPublicAddress').value }
-                ],
-                shamCashApiKey: document.getElementById('settingShamApiKey').value,
-                syriatelApiKey: document.getElementById('settingSyriApiKey').value
-            };
-            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) });
-            if (res?.ok) { showMessage('تم حفظ الإعدادات'); loadAdminSettings(); loadDepositSettings(); } else showMessage('فشل الحفظ', true);
+            const minDeposit = Number(document.getElementById('settingMinDeposit').value);
+            const minWithdraw = Number(document.getElementById('settingMinWithdraw').value);
+            const shamCashAddress = document.getElementById('settingShamCashAddress').value;
+            const syriatelAddress = document.getElementById('settingSyriatelAddress').value;
+            
+            const res = await apiCall('/api/admin/settings', {
+                method: 'POST',
+                body: JSON.stringify({ minDeposit, minWithdraw, shamCashAddress, syriatelAddress })
+            });
+            
+            if (res?.ok) {
+                showMessage('تم حفظ الإعدادات');
+                currentMinDeposit = minDeposit;
+                currentMinWithdraw = minWithdraw;
+                await loadDepositSettings();
+                await loadAdminSettings();
+            } else {
+                showMessage('فشل الحفظ', true);
+            }
         }
 
-        window.approveWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); if (res?.ok) { showMessage('تم القبول'); loadAdminWithdraws(); loadAdminDashboard(); } };
-        window.rejectWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); if (res?.ok) { showMessage('تم الرفض'); loadAdminWithdraws(); loadAdminDashboard(); } };
-        window.toggleBan = async (id) => { const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) }); if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); } };
-        window.editBalance = async (id, bal) => { const val = prompt(`الرصيد الحالي: ${bal}\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); if (val && val !== '0') { const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) }); if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); loadAdminDashboard(); } } };
+        window.approveWithdraw = async (id) => {
+            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) });
+            if (res?.ok) { showMessage('تم القبول'); loadAdminWithdraws(); loadAdminDashboard(); }
+        };
+        window.rejectWithdraw = async (id) => {
+            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) });
+            if (res?.ok) { showMessage('تم الرفض'); loadAdminWithdraws(); loadAdminDashboard(); }
+        };
+        window.toggleBan = async (id) => {
+            const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) });
+            if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); }
+        };
+        window.editBalance = async (id, bal) => {
+            const val = prompt(`الرصيد الحالي: ${bal}\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0");
+            if (val && val !== '0') {
+                const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) });
+                if (res?.ok) { showMessage('تم التحديث'); loadAdminUsers(); loadAdminDashboard(); }
+            }
+        };
 
-        function showAdminInterface() { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); loadAdminDashboard(); loadAdminWithdraws(); loadAdminDeposits(); loadAdminUsers(); loadAdminSettings(); }
-        function showUserInterface() { document.getElementById('adminApp').classList.add('hidden'); document.getElementById('userApp').classList.remove('hidden'); }
+        function showAdminInterface() {
+            document.getElementById('userApp').classList.add('hidden');
+            document.getElementById('adminApp').classList.remove('hidden');
+            loadAdminDashboard();
+            loadAdminWithdraws();
+            loadAdminDeposits();
+            loadAdminUsers();
+            loadAdminSettings();
+        }
+
+        function showUserInterface() {
+            document.getElementById('adminApp').classList.add('hidden');
+            document.getElementById('userApp').classList.remove('hidden');
+        }
 
         async function handleGoogleSignIn() {
-            try { const result = await signInWithPopup(auth, provider); currentUser = result.user; const params = new URLSearchParams(window.location.search); await registerUser(params.get('ref')); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } catch (err) { showMessage('فشل تسجيل الدخول', true); }
+            try {
+                const result = await signInWithPopup(auth, provider);
+                currentUser = result.user;
+                const params = new URLSearchParams(window.location.search);
+                await registerUser(params.get('ref'));
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
+                await loadDepositSettings();
+                document.getElementById('loader').style.display = 'none';
+                if (isAdmin) showAdminInterface();
+                else showUserInterface();
+            } catch (err) {
+                showMessage('فشل تسجيل الدخول', true);
+            }
         }
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) { currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); }
-            else { document.getElementById('loader').innerHTML = `<div class="spinner"></div><button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px">🔐 تسجيل دخول Google</button>`; document.getElementById('loader').style.display = 'flex'; document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); }
+            if (user) {
+                currentUser = user;
+                await registerUser();
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
+                await loadDepositSettings();
+                document.getElementById('loader').style.display = 'none';
+                if (isAdmin) showAdminInterface();
+                else showUserInterface();
+            } else {
+                document.getElementById('loader').innerHTML = `<div class="spinner"></div><button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px">🔐 تسجيل دخول Google</button>`;
+                document.getElementById('loader').style.display = 'flex';
+                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn);
+            }
         });
 
         // الأحداث
-        document.getElementById('openProfileBtn')?.addEventListener('click', () => { document.getElementById('homeScreen').classList.add('hidden'); document.getElementById('profileScreen').classList.remove('hidden'); if (isAdmin) { const btn = document.createElement('button'); btn.className = 'admin-btn'; btn.innerText = 'لوحة الأدمن'; btn.onclick = showAdminInterface; document.getElementById('adminSwitchContainer').innerHTML = ''; document.getElementById('adminSwitchContainer').appendChild(btn); } });
-        document.getElementById('backHomeBtn')?.addEventListener('click', () => { document.getElementById('profileScreen').classList.add('hidden'); document.getElementById('homeScreen').classList.remove('hidden'); });
-        document.getElementById('depositAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('depositModal').style.display = 'flex'; });
-        document.getElementById('withdrawAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('withdrawModal').style.display = 'flex'; });
+        document.getElementById('openProfileBtn')?.addEventListener('click', () => {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('profileScreen').classList.remove('hidden');
+            if (isAdmin) {
+                const btn = document.createElement('button');
+                btn.className = 'admin-btn';
+                btn.innerText = 'لوحة الأدمن';
+                btn.onclick = showAdminInterface;
+                document.getElementById('adminSwitchContainer').innerHTML = '';
+                document.getElementById('adminSwitchContainer').appendChild(btn);
+            }
+        });
+
+        document.getElementById('backHomeBtn')?.addEventListener('click', () => {
+            document.getElementById('profileScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+        });
+
+        document.getElementById('depositAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
+            document.getElementById('depositModal').style.display = 'flex';
+        });
+
+        document.getElementById('withdrawAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
+            document.getElementById('withdrawModal').style.display = 'flex';
+        });
+
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
         document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
@@ -854,15 +1180,49 @@
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
-        document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; } container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td><td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td></tr>`).join('')}</tbody></table>`; });
+        document.getElementById('saveLimitsBtn')?.addEventListener('click', saveAdminSettings);
 
-        document.querySelectorAll('.close-modal').forEach(btn => { btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; }); });
-        document.querySelectorAll('.modal').forEach(modal => { modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; }); });
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term));
+            const container = document.getElementById('usersTable');
+            if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; }
+            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+                ${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
+                </tr>`).join('')}
+            </tbody></table>`;
+        });
 
-        document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const target = tab.dataset.tab; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel').forEach(p => p.classList.add('hidden')); if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden'); if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden'); if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden'); if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden'); }); });
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; });
+        });
+        
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+        });
 
-        document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => { tab.addEventListener('click', async () => { const target = tab.dataset.tab; if (target === 'deposits') await loadDeposits(); if (target === 'withdraws') await loadWithdrawals(); document.getElementById(`${target}Modal`).style.display = 'flex'; }); });
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminLimitsPanel').forEach(p => p.classList.add('hidden'));
+                if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
+                if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
+                if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
+                if (target === 'limits') document.getElementById('adminLimitsPanel').classList.remove('hidden');
+            });
+        });
+
+        document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
+            tab.addEventListener('click', async () => {
+                const target = tab.dataset.tab;
+                if (target === 'deposits') await loadDeposits();
+                if (target === 'withdraws') await loadWithdrawals();
+                document.getElementById(`${target}Modal`).style.display = 'flex';
+            });
+        });
     </script>
 </body>
 </html>
