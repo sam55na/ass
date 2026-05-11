@@ -212,15 +212,28 @@ async function getSystemSettings() {
   if (doc.exists) {
     return doc.data();
   }
+  // الإعدادات الافتراضية مع قائمة عناوين الدفع
   const defaultSettings = {
     minDeposit: 1000,
     minWithdraw: 5000,
-    shamCashAddress: "",
+    paymentAddresses: [
+      {
+        id: "address_1",
+        name: "دفع عبر شام كاش",
+        address: "0930000000",
+        isActive: true,
+        type: "sham_cash"
+      },
+      {
+        id: "address_2",
+        name: "دفع عبر سيرياتيل كاش",
+        address: "0944444444",
+        isActive: true,
+        type: "syriatel_cash"
+      }
+    ],
     shamCashApiKey: "",
-    shamCashEnabled: true,
-    syriatelApiKey: "",
-    syriatelNumbers: [],
-    syriatelEnabled: true
+    syriatelApiKey: ""
   };
   await settingsRef.set(defaultSettings);
   return defaultSettings;
@@ -309,28 +322,25 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSystemSettings();
+    const activeAddresses = (settings.paymentAddresses || [])
+      .filter(addr => addr.isActive === true)
+      .map(addr => ({
+        id: addr.id,
+        name: addr.name,
+        address: addr.address,
+        type: addr.type
+      }));
+
     res.json({
       success: true,
       settings: {
         minDeposit: settings.minDeposit,
         minWithdraw: settings.minWithdraw,
-        methods: [
-          {
-            id: 'sham_cash',
-            name: 'شام كاش',
-            enabled: settings.shamCashEnabled,
-            address: settings.shamCashAddress
-          },
-          {
-            id: 'syriatel_cash',
-            name: 'سيرياتيل كاش',
-            enabled: settings.syriatelEnabled,
-            numbers: settings.syriatelNumbers
-          }
-        ]
+        paymentAddresses: activeAddresses
       }
     });
   } catch (error) {
+    console.error('Deposit settings error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
   }
 });
@@ -338,7 +348,7 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
-    const { method, amount, transactionId } = req.body;
+    const { method, amount, transactionId, addressId } = req.body;
     
     if (!method || !amount || !transactionId) {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
@@ -346,11 +356,10 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     const settings = await getSystemSettings();
     
-    if (method === 'sham_cash' && !settings.shamCashEnabled) {
-      return res.status(400).json({ error: 'طريقة الدفع شام كاش معطلة حالياً' });
-    }
-    if (method === 'syriatel_cash' && !settings.syriatelEnabled) {
-      return res.status(400).json({ error: 'طريقة الدفع سيرياتيل كاش معطلة حالياً' });
+    // البحث عن عنوان الدفع المختار
+    const selectedAddress = settings.paymentAddresses?.find(addr => addr.id === addressId);
+    if (!selectedAddress || !selectedAddress.isActive) {
+      return res.status(400).json({ error: 'طريقة الدفع غير متاحة' });
     }
     
     if (amount < settings.minDeposit) {
@@ -359,17 +368,17 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     let verification = null;
     
-    if (method === 'sham_cash') {
-      if (!settings.shamCashApiKey || !settings.shamCashAddress) {
+    if (selectedAddress.type === 'sham_cash') {
+      if (!settings.shamCashApiKey) {
         return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
       }
-      const shamCash = new ShamCashClient(settings.shamCashApiKey, settings.shamCashAddress);
+      const shamCash = new ShamCashClient(settings.shamCashApiKey, selectedAddress.address);
       verification = await shamCash.verifyTransaction(transactionId, amount);
-    } else if (method === 'syriatel_cash') {
-      if (!settings.syriatelApiKey || !settings.syriatelNumbers.length) {
+    } else if (selectedAddress.type === 'syriatel_cash') {
+      if (!settings.syriatelApiKey) {
         return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
       }
-      const syriatel = new SyriatelCashClient(settings.syriatelApiKey, settings.syriatelNumbers);
+      const syriatel = new SyriatelCashClient(settings.syriatelApiKey, [selectedAddress.address]);
       verification = await syriatel.verifyTransaction(transactionId, amount);
     } else {
       return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
@@ -398,6 +407,8 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       userId: uid,
       transactionId: transactionId,
       method: method,
+      addressId: addressId,
+      addressName: selectedAddress.name,
       amount: verification.amount,
       currency: verification.currency || 'SYP',
       status: 'completed',
@@ -445,6 +456,7 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
         id: doc.id,
         amount: data.amount,
         method: data.method,
+        addressName: data.addressName,
         transactionId: data.transactionId,
         status: data.status,
         verifiedAt: data.verifiedAt?.toDate?.()
@@ -468,9 +480,14 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
     }
     
+    const amountNum = Number(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'المبلغ غير صالح' });
+    }
+    
     const settings = await getSystemSettings();
     
-    if (amount < settings.minWithdraw) {
+    if (amountNum < settings.minWithdraw) {
       return res.status(400).json({ error: `الحد الأدنى للسحب ${settings.minWithdraw} SYP` });
     }
     
@@ -482,13 +499,13 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'مستخدم غير موجود' });
     }
     
-    if (userData.balance < amount) {
+    if (userData.balance < amountNum) {
       return res.status(400).json({ error: 'الرصيد غير كافٍ' });
     }
     
     await userRef.update({
-      balance: admin.firestore.FieldValue.increment(-amount),
-      totalWithdrawn: admin.firestore.FieldValue.increment(amount)
+      balance: admin.firestore.FieldValue.increment(-amountNum),
+      totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
     });
     
     const withdrawRequest = {
@@ -496,13 +513,13 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
       userEmail: userData.email,
       userName: userData.name,
       userUniqueId: userData.uniqueId,
-      amount: amount,
+      amount: amountNum,
       address: address,
       method: method || 'sham_cash',
       status: 'pending',
       createdAt: new Date(),
       previousBalance: userData.balance,
-      newBalance: userData.balance - amount
+      newBalance: userData.balance - amountNum
     };
     
     const requestRef = await db.collection('withdraw_requests').add(withdrawRequest);
@@ -510,7 +527,7 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     await db.collection('transactions').add({
       userId: uid,
       type: 'withdraw_request',
-      amount: amount,
+      amount: amountNum,
       requestId: requestRef.id,
       status: 'pending',
       createdAt: new Date()
@@ -518,8 +535,9 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: `تم إنشاء طلب سحب بمبلغ ${amount} SYP، قيد المراجعة`,
-      requestId: requestRef.id
+      message: `تم إنشاء طلب سحب بمبلغ ${amountNum} SYP، قيد المراجعة`,
+      requestId: requestRef.id,
+      newBalance: userData.balance - amountNum
     });
     
   } catch (error) {
@@ -721,6 +739,95 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Admin deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
+  }
+});
+
+// جلب جميع المستخدمين للأدمن
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const snapshot = await db.collection('users')
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const start = (page - 1) * limit;
+    
+    res.json({
+      success: true,
+      users: users.slice(start, start + limit),
+      total: users.length,
+      page: Number(page),
+      totalPages: Math.ceil(users.length / limit)
+    });
+  } catch (error) {
+    console.error('Admin users error:', error);
+    res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
+  }
+});
+
+// تحديث رصيد المستخدم يدوياً
+app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
+  try {
+    const { userId, amount, reason } = req.body;
+    
+    if (!userId || amount === undefined) {
+      return res.status(400).json({ error: 'بيانات ناقصة' });
+    }
+    
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(Number(amount))
+    });
+    
+    await db.collection('adminLogs').add({
+      adminEmail: req.user.email,
+      action: 'update_balance',
+      userId,
+      amount: Number(amount),
+      reason: reason || 'تعديل يدوي',
+      timestamp: new Date()
+    });
+    
+    res.json({ success: true, message: 'تم تحديث الرصيد' });
+  } catch (error) {
+    console.error('Update balance error:', error);
+    res.status(500).json({ error: 'فشل تحديث الرصيد' });
+  }
+});
+
+// حظر أو إلغاء حظر مستخدم
+app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    const currentBan = userDoc.data().isBanned || false;
+    await userRef.update({ isBanned: !currentBan });
+    
+    await db.collection('adminLogs').add({
+      adminEmail: req.user.email,
+      action: currentBan ? 'unban' : 'ban',
+      userId,
+      timestamp: new Date()
+    });
+    
+    res.json({ success: true, isBanned: !currentBan });
+  } catch (error) {
+    console.error('Toggle ban error:', error);
+    res.status(500).json({ error: 'فشل تحديث حالة الحظر' });
   }
 });
 

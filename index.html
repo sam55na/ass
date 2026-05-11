@@ -222,6 +222,11 @@
             justify-content: center;
             font-size: 68px;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .game-sphere:active {
+            transform: scale(0.95);
         }
 
         .bottom-bar {
@@ -440,15 +445,35 @@
         .method-desc {
             font-size: 12px;
             color: #888;
+            margin: 8px 0;
         }
 
-        .method-badge {
-            display: inline-block;
+        .method-address {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .method-address span {
+            font-family: monospace;
+            font-size: 14px;
+            direction: ltr;
+            word-break: break-all;
+        }
+
+        .copy-btn {
             background: #ff0000;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 10px;
-            margin-top: 8px;
+            border: none;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
         }
 
         .min-amount {
@@ -467,6 +492,26 @@
 
         .admin-tab.active {
             background: #ff0000;
+        }
+
+        .address-item {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+
+        .address-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .address-actions {
+            display: flex;
+            gap: 8px;
         }
     </style>
 </head>
@@ -543,7 +588,6 @@
                     <label>اختر طريقة الدفع</label>
                     <div id="paymentMethodsList"></div>
                 </div>
-                <div id="methodInfo" style="margin-bottom: 15px;"></div>
                 <div class="form-group">
                     <label>المبلغ (SYP)</label>
                     <input type="number" id="depositAmount" placeholder="أدخل المبلغ">
@@ -561,7 +605,7 @@
     <!-- نافذة السحب -->
     <div id="withdrawModal" class="modal-glass">
         <div class="modal-card">
-            <div class="modal-header"><span>سحب</span><span class="close-modal" id="closeWithdrawModal">&times;</span></div>
+            <div class="modal-header"><span>💸 سحب</span><span class="close-modal" id="closeWithdrawModal">&times;</span></div>
             <div id="withdrawContent">
                 <div class="form-group">
                     <label>المبلغ (SYP)</label>
@@ -608,6 +652,7 @@
             <div class="bottom-bar" style="margin-bottom: 20px; justify-content: center; gap: 10px;">
                 <div class="admin-tab" data-admin-tab="withdraws">طلبات السحب</div>
                 <div class="admin-tab" data-admin-tab="deposits">الإيداعات</div>
+                <div class="admin-tab" data-admin-tab="users">المستخدمين</div>
                 <div class="admin-tab" data-admin-tab="settings">الإعدادات</div>
             </div>
 
@@ -630,6 +675,16 @@
                 <div id="depositsTableContainer"></div>
             </div>
 
+            <!-- المستخدمين -->
+            <div id="adminUsersPanel" class="admin-table hidden">
+                <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                    <input type="text" id="searchUsers" placeholder="بحث بالبريد أو الاسم" style="flex:1">
+                    <button class="admin-btn" id="searchUsersBtn">بحث</button>
+                </div>
+                <div id="usersTableContainer"></div>
+                <div id="usersPagination" class="pagination"></div>
+            </div>
+
             <!-- الإعدادات -->
             <div id="adminSettingsPanel" class="admin-table hidden">
                 <h3 style="margin-bottom: 20px;">إعدادات النظام</h3>
@@ -647,37 +702,51 @@
                 </div>
                 
                 <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                    <h4 style="color: #ff8888; margin-bottom: 10px;">شام كاش</h4>
-                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <input type="checkbox" id="settingShamCashEnabled"> تفعيل شام كاش
-                    </label>
-                    <div class="form-group">
-                        <label>عنوان المحفظة</label>
-                        <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
-                    </div>
-                    <div class="form-group">
-                        <label>API Key</label>
-                        <input type="text" id="settingShamCashApiKey" placeholder="API Key">
-                    </div>
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">عناوين الدفع</h4>
+                    <div id="paymentAddressesList"></div>
+                    <button class="admin-btn" id="addAddressBtn" style="margin-top: 10px; width: 100%;">+ إضافة عنوان دفع جديد</button>
                 </div>
                 
                 <div style="background: #0a0a0a; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                    <h4 style="color: #ff8888; margin-bottom: 10px;">سيرياتيل كاش</h4>
-                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <input type="checkbox" id="settingSyriatelEnabled"> تفعيل سيرياتيل كاش
-                    </label>
+                    <h4 style="color: #ff8888; margin-bottom: 10px;">مفاتيح API</h4>
                     <div class="form-group">
-                        <label>API Key</label>
-                        <input type="text" id="settingSyriatelApiKey" placeholder="API Key">
+                        <label>API Key شام كاش</label>
+                        <input type="text" id="settingShamCashApiKey" placeholder="API Key">
                     </div>
                     <div class="form-group">
-                        <label>أرقام GSM (مفصولة بفواصل)</label>
-                        <input type="text" id="settingSyriatelNumbers" placeholder="0930000000,0931111111">
+                        <label>API Key سيرياتيل كاش</label>
+                        <input type="text" id="settingSyriatelApiKey" placeholder="API Key">
                     </div>
                 </div>
                 
                 <button class="admin-btn" id="saveSettingsBtn" style="width:100%;">حفظ جميع الإعدادات</button>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة/تعديل عنوان دفع -->
+    <div id="addressModal" class="modal-glass">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span id="addressModalTitle">إضافة عنوان دفع</span>
+                <span class="close-modal" id="closeAddressModal">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>اسم طريقة الدفع (يظهر للمستخدم)</label>
+                <input type="text" id="addressName" placeholder="مثال: شام كاش - حساب رئيسي">
+            </div>
+            <div class="form-group">
+                <label>رقم الحساب / العنوان</label>
+                <input type="text" id="addressValue" placeholder="مثال: 0930000000">
+            </div>
+            <div class="form-group">
+                <label>نوع الدفع</label>
+                <select id="addressType">
+                    <option value="sham_cash">شام كاش</option>
+                    <option value="syriatel_cash">سيرياتيل كاش</option>
+                </select>
+            </div>
+            <button class="admin-btn" id="saveAddressBtn" style="width:100%; margin-top:15px;">حفظ</button>
         </div>
     </div>
 
@@ -705,6 +774,7 @@
         let currentUser = null;
         let userData = null;
         let isAdmin = false;
+        let editingAddressId = null;
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -736,6 +806,11 @@
                 showMessage('خطأ في الاتصال بالخادم', true);
                 return null;
             }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            showMessage('تم نسخ العنوان');
         }
 
         // ============= دوال المستخدم =============
@@ -789,7 +864,7 @@
                 container.innerHTML = data.deposits.map(d => `
                     <div class="request-item-card">
                         <div><strong>💰 ${d.amount} SYP</strong></div>
-                        <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>
+                        <div>طريقة الدفع: ${d.addressName || d.method}</div>
                         <div>رقم العملية: ${d.transactionId}</div>
                         <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
                     </div>
@@ -844,38 +919,45 @@
                     const methodsContainer = document.getElementById('paymentMethodsList');
                     methodsContainer.innerHTML = '';
                     
-                    settings.methods.forEach(method => {
+                    if (!settings.paymentAddresses || settings.paymentAddresses.length === 0) {
+                        methodsContainer.innerHTML = '<div class="method-card disabled">لا توجد طرق دفع متاحة حالياً</div>';
+                        return;
+                    }
+                    
+                    let selectedMethodId = null;
+                    
+                    settings.paymentAddresses.forEach(addr => {
                         const methodDiv = document.createElement('div');
-                        methodDiv.className = `method-card ${!method.enabled ? 'disabled' : ''}`;
-                        methodDiv.dataset.method = method.id;
+                        methodDiv.className = `method-card`;
+                        methodDiv.dataset.addressId = addr.id;
+                        methodDiv.dataset.address = addr.address;
                         
                         methodDiv.innerHTML = `
-                            <div class="method-name">${method.name}</div>
-                            <div class="method-desc">${method.id === 'sham_cash' ? 'تحويل عبر شام كاش' : 'تحويل عبر سيرياتيل كاش'}</div>
-                            ${!method.enabled ? '<div class="method-badge">⚠️ معطل حالياً</div>' : ''}
-                            ${method.id === 'sham_cash' && method.address ? `<div class="method-desc">📱 المرسل إليه: ${method.address}</div>` : ''}
+                            <div class="method-name">${addr.name}</div>
+                            <div class="method-address">
+                                <span>${addr.address}</span>
+                                <button class="copy-btn" data-address="${addr.address}">📋 نسخ</button>
+                            </div>
                         `;
                         
-                        if (method.enabled) {
-                            methodDiv.style.cursor = 'pointer';
-                            methodDiv.onclick = () => {
-                                document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
-                                methodDiv.classList.add('selected');
-                                document.getElementById('methodInfo').innerHTML = `
-                                    <div style="background: #0a0a0a; padding: 10px; border-radius: 10px;">
-                                        <div>✅ طريقة الدفع: ${method.name}</div>
-                                        ${method.id === 'sham_cash' && method.address ? `<div>📱 أرسل إلى: ${method.address}</div>` : ''}
-                                        ${method.id === 'syriatel_cash' && method.numbers ? `<div>📱 أرقام الاستلام: ${method.numbers.join(', ')}</div>` : ''}
-                                    </div>
-                                `;
-                            };
-                        }
+                        methodDiv.addEventListener('click', (e) => {
+                            if(e.target.classList.contains('copy-btn')) return;
+                            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                            methodDiv.classList.add('selected');
+                            selectedMethodId = addr.id;
+                        });
+                        
+                        const copyBtn = methodDiv.querySelector('.copy-btn');
+                        copyBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            copyToClipboard(addr.address);
+                        });
+                        
                         methodsContainer.appendChild(methodDiv);
                     });
                     
-                    const firstEnabled = settings.methods.find(m => m.enabled);
-                    if (firstEnabled) {
-                        const firstCard = document.querySelector('.method-card:not(.disabled)');
+                    if (settings.paymentAddresses.length > 0) {
+                        const firstCard = methodsContainer.firstChild;
                         if (firstCard) firstCard.click();
                     }
                 }
@@ -889,9 +971,10 @@
                 return;
             }
             
-            const method = selectedMethodCard.dataset.method;
+            const addressId = selectedMethodCard.dataset.addressId;
             const amount = document.getElementById('depositAmount').value;
             const transactionId = document.getElementById('transactionId').value;
+            const method = selectedMethodCard.querySelector('.method-name')?.innerText || 'unknown';
             
             if (!amount || amount < 1000) {
                 showMessage('المبلغ غير صالح', true);
@@ -904,7 +987,7 @@
             
             const res = await apiCall('/api/user/deposit', {
                 method: 'POST',
-                body: JSON.stringify({ method, amount: Number(amount), transactionId })
+                body: JSON.stringify({ method, amount: Number(amount), transactionId, addressId })
             });
             
             if (res && res.ok) {
@@ -928,7 +1011,7 @@
             const method = document.getElementById('withdrawMethod').value;
             
             if (!amount || amount < 5000) {
-                showMessage('المبلغ غير صالح', true);
+                showMessage('المبلغ غير صالح (الحد الأدنى 5000 SYP)', true);
                 return;
             }
             if (!address) {
@@ -1023,13 +1106,13 @@
                     }
                     container.innerHTML = `
                         <table>
-                            <thead><tr><th>المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>رقم العملية</th><th>التاريخ</th></tr></thead>
+                            <thead><tr><th>المستخدم</th><th>المبلغ</th><th>طريقة الدفع</th><th>رقم العملية</th><th>التاريخ</th></tr></thead>
                             <tbody>
                                 ${data.deposits.map(d => `
                                     <tr>
                                         <td>${d.user?.name || d.user?.email || d.userId}</td>
                                         <td>${d.amount} SYP</td>
-                                        <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
+                                        <td>${d.addressName || d.method}</td>
                                         <td>${d.transactionId}</td>
                                         <td>${new Date(d.verifiedAt).toLocaleString('ar')}</td>
                                     </tr>
@@ -1041,6 +1124,54 @@
             }
         }
 
+        let currentUsersPage = 1;
+        let usersSearchTerm = '';
+
+        async function loadAdminUsers(page = 1) {
+            const res = await apiCall(`/api/admin/users?page=${page}&limit=20`);
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const container = document.getElementById('usersTableContainer');
+                    if (!data.users.length) {
+                        container.innerHTML = '<p style="text-align:center; padding:40px;">لا يوجد مستخدمين</p>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table>
+                            <thead><tr><th>البريد الإلكتروني</th><th>الاسم</th><th>كود الإحالة</th><th>الرصيد</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                            <tbody>
+                                ${data.users.map(u => `
+                                    <tr>
+                                        <td>${u.email || '-'}</td>
+                                        <td>${u.name || '-'}</td>
+                                        <td>${u.uniqueId || '-'}</td>
+                                        <td>${u.balance || 0} NSP</td>
+                                        <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                                        <td>
+                                            <button class="admin-btn admin-btn-small" onclick="window.showEditBalance('${u.id}', ${u.balance})">تعديل الرصيد</button>
+                                            <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    
+                    const pagination = document.getElementById('usersPagination');
+                    if (data.totalPages > 1) {
+                        let pages = '';
+                        for (let i = 1; i <= data.totalPages; i++) {
+                            pages += `<button class="admin-btn admin-btn-small" onclick="window.goToUsersPage(${i})" ${i === page ? 'disabled' : ''}>${i}</button>`;
+                        }
+                        pagination.innerHTML = pages;
+                    } else {
+                        pagination.innerHTML = '';
+                    }
+                }
+            }
+        }
+
         async function loadAdminSettings() {
             const res = await apiCall('/api/admin/settings');
             if (res && res.ok) {
@@ -1048,26 +1179,61 @@
                 if (data.success) {
                     document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
-                    document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
-                    document.getElementById('settingShamCashAddress').value = data.settings.shamCashAddress || '';
                     document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
-                    document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled;
                     document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
-                    document.getElementById('settingSyriatelNumbers').value = data.settings.syriatelNumbers?.join(',') || '';
+                    
+                    const addressesContainer = document.getElementById('paymentAddressesList');
+                    const addresses = data.settings.paymentAddresses || [];
+                    
+                    addressesContainer.innerHTML = addresses.map((addr, index) => `
+                        <div class="address-item">
+                            <div class="address-header">
+                                <strong>${addr.name}</strong>
+                                <div class="address-actions">
+                                    <button class="admin-btn admin-btn-small" onclick="window.editAddress('${addr.id}', '${addr.name}', '${addr.address}', '${addr.type}')">تعديل</button>
+                                    <button class="admin-btn admin-btn-small" onclick="window.deleteAddress('${addr.id}')">حذف</button>
+                                </div>
+                            </div>
+                            <div class="method-address">
+                                <span>${addr.address}</span>
+                                <button class="copy-btn" onclick="window.copyToClipboard('${addr.address}')">📋 نسخ</button>
+                            </div>
+                            <div style="font-size: 12px; color: #888; margin-top: 8px;">
+                                النوع: ${addr.type === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'} | الحالة: ${addr.isActive ? 'مفعل ✅' : 'معطل ❌'}
+                            </div>
+                        </div>
+                    `).join('');
                 }
             }
         }
 
         async function saveAdminSettings() {
+            const addresses = [];
+            const addressElements = document.querySelectorAll('#paymentAddressesList .address-item');
+            
+            addressElements.forEach(el => {
+                const id = el.querySelector('.admin-btn')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+                const name = el.querySelector('strong')?.innerText;
+                const addressSpan = el.querySelector('.method-address span');
+                const typeSpan = el.querySelector('div:last-child');
+                
+                if (id && name && addressSpan) {
+                    addresses.push({
+                        id: id,
+                        name: name,
+                        address: addressSpan.innerText,
+                        type: typeSpan?.innerText.includes('شام كاش') ? 'sham_cash' : 'syriatel_cash',
+                        isActive: true
+                    });
+                }
+            });
+            
             const settings = {
                 minDeposit: Number(document.getElementById('settingMinDeposit').value),
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
-                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
-                shamCashAddress: document.getElementById('settingShamCashAddress').value,
+                paymentAddresses: addresses,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
-                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
-                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
-                syriatelNumbers: document.getElementById('settingSyriatelNumbers').value.split(',').map(s => s.trim()).filter(s => s)
+                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value
             };
             
             const res = await apiCall('/api/admin/settings', {
@@ -1092,7 +1258,6 @@
                 showMessage('تم قبول الطلب');
                 loadAdminWithdraws();
                 loadAdminDashboard();
-                loadProfile();
             }
         };
 
@@ -1105,9 +1270,117 @@
                 showMessage('تم رفض الطلب');
                 loadAdminWithdraws();
                 loadAdminDashboard();
-                loadProfile();
             }
         };
+
+        window.toggleBan = async (userId) => {
+            const res = await apiCall('/api/admin/toggle-ban', {
+                method: 'POST',
+                body: JSON.stringify({ userId })
+            });
+            if (res && res.ok) {
+                showMessage('تم تحديث حالة المستخدم');
+                loadAdminUsers(currentUsersPage);
+            }
+        };
+
+        window.showEditBalance = async (userId, currentBalance) => {
+            const newBalance = prompt(`الرصيد الحالي: ${currentBalance} NSP\nأدخل المبلغ الجديد (استخدم + للإضافة أو - للخصم)`, "0");
+            if (newBalance !== null) {
+                const res = await apiCall('/api/admin/update-balance', {
+                    method: 'POST',
+                    body: JSON.stringify({ userId, amount: Number(newBalance), reason: 'تعديل يدوي من الأدمن' })
+                });
+                if (res && res.ok) {
+                    showMessage('تم تحديث الرصيد');
+                    loadAdminUsers(currentUsersPage);
+                    loadAdminDashboard();
+                }
+            }
+        };
+
+        window.goToUsersPage = (page) => {
+            currentUsersPage = page;
+            loadAdminUsers(page);
+        };
+
+        window.copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text);
+            showMessage('تم نسخ العنوان');
+        };
+
+        window.editAddress = (id, name, address, type) => {
+            editingAddressId = id;
+            document.getElementById('addressModalTitle').innerText = 'تعديل عنوان دفع';
+            document.getElementById('addressName').value = name;
+            document.getElementById('addressValue').value = address;
+            document.getElementById('addressType').value = type;
+            document.getElementById('addressModal').style.display = 'flex';
+        };
+
+        window.deleteAddress = (id) => {
+            if (confirm('هل أنت متأكد من حذف هذا العنوان؟')) {
+                const addressDiv = document.querySelector(`.address-item button[onclick*="${id}"]`)?.closest('.address-item');
+                if (addressDiv) addressDiv.remove();
+                showMessage('تم حذف العنوان (سيتم حفظ التغيير عند حفظ الإعدادات)');
+            }
+        };
+
+        function addNewAddress() {
+            editingAddressId = null;
+            document.getElementById('addressModalTitle').innerText = 'إضافة عنوان دفع';
+            document.getElementById('addressName').value = '';
+            document.getElementById('addressValue').value = '';
+            document.getElementById('addressType').value = 'sham_cash';
+            document.getElementById('addressModal').style.display = 'flex';
+        }
+
+        function saveAddress() {
+            const name = document.getElementById('addressName').value;
+            const address = document.getElementById('addressValue').value;
+            const type = document.getElementById('addressType').value;
+            
+            if (!name || !address) {
+                showMessage('الرجاء ملء جميع الحقول', true);
+                return;
+            }
+            
+            const addressesContainer = document.getElementById('paymentAddressesList');
+            const newId = editingAddressId || 'addr_' + Date.now();
+            
+            const addressHtml = `
+                <div class="address-item">
+                    <div class="address-header">
+                        <strong>${name}</strong>
+                        <div class="address-actions">
+                            <button class="admin-btn admin-btn-small" onclick="window.editAddress('${newId}', '${name}', '${address}', '${type}')">تعديل</button>
+                            <button class="admin-btn admin-btn-small" onclick="window.deleteAddress('${newId}')">حذف</button>
+                        </div>
+                    </div>
+                    <div class="method-address">
+                        <span>${address}</span>
+                        <button class="copy-btn" onclick="window.copyToClipboard('${address}')">📋 نسخ</button>
+                    </div>
+                    <div style="font-size: 12px; color: #888; margin-top: 8px;">
+                        النوع: ${type === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'} | الحالة: مفعل ✅
+                    </div>
+                </div>
+            `;
+            
+            if (editingAddressId) {
+                const existingDiv = Array.from(addressesContainer.children).find(el => 
+                    el.querySelector('.admin-btn')?.getAttribute('onclick')?.includes(editingAddressId)
+                );
+                if (existingDiv) {
+                    existingDiv.outerHTML = addressHtml;
+                }
+            } else {
+                addressesContainer.insertAdjacentHTML('beforeend', addressHtml);
+            }
+            
+            document.getElementById('addressModal').style.display = 'none';
+            showMessage('تم إضافة العنوان (سيتم حفظ التغيير عند حفظ الإعدادات)');
+        }
 
         function showAdminInterface() {
             document.getElementById('userApp').classList.add('hidden');
@@ -1115,6 +1388,7 @@
             loadAdminDashboard();
             loadAdminWithdraws();
             loadAdminDeposits();
+            loadAdminUsers();
             loadAdminSettings();
         }
 
@@ -1202,6 +1476,9 @@
         document.getElementById('closeWithdrawModal')?.addEventListener('click', () => {
             document.getElementById('withdrawModal').style.display = 'none';
         });
+        document.getElementById('closeAddressModal')?.addEventListener('click', () => {
+            document.getElementById('addressModal').style.display = 'none';
+        });
 
         document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
@@ -1209,6 +1486,12 @@
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
         document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
+        document.getElementById('addAddressBtn')?.addEventListener('click', addNewAddress);
+        document.getElementById('saveAddressBtn')?.addEventListener('click', saveAddress);
+        document.getElementById('searchUsersBtn')?.addEventListener('click', () => {
+            usersSearchTerm = document.getElementById('searchUsers').value;
+            loadAdminUsers(1);
+        });
 
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {
@@ -1227,9 +1510,11 @@
                 tab.classList.add('active');
                 document.getElementById('adminWithdrawsPanel')?.classList.add('hidden');
                 document.getElementById('adminDepositsPanel')?.classList.add('hidden');
+                document.getElementById('adminUsersPanel')?.classList.add('hidden');
                 document.getElementById('adminSettingsPanel')?.classList.add('hidden');
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel')?.classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel')?.classList.remove('hidden');
+                if (target === 'users') document.getElementById('adminUsersPanel')?.classList.remove('hidden');
                 if (target === 'settings') document.getElementById('adminSettingsPanel')?.classList.remove('hidden');
             });
         });
@@ -1237,6 +1522,12 @@
         document.querySelectorAll('.close-modal').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.closest('.modal-glass').style.display = 'none';
+            });
+        });
+        
+        document.querySelectorAll('.modal-glass').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
             });
         });
     </script>
