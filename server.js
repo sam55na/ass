@@ -41,6 +41,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// ============= كلمة المرور لتهيئة قاعدة البيانات =============
+const RESET_PASSWORD = '2613857';
+
 // ============= دوال مساعدة =============
 function generateUniqueId() {
   return Math.floor(1000000000 + Math.random() * 9000000000).toString();
@@ -90,6 +93,91 @@ async function getSettings() {
   await db.collection('settings').doc('config').set(defaultSettings);
   return defaultSettings;
 }
+
+// ============= API تهيئة قاعدة البيانات (مسح كل شيء) =============
+app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    // التحقق من كلمة المرور
+    if (password !== RESET_PASSWORD) {
+      return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
+    }
+    
+    console.log('⚠️ بدء تهيئة قاعدة البيانات...');
+    
+    // 1. حذف جميع المستخدمين
+    const usersSnapshot = await db.collection('users').get();
+    const usersDeletions = [];
+    usersSnapshot.forEach(doc => {
+      usersDeletions.push(db.collection('users').doc(doc.id).delete());
+    });
+    await Promise.all(usersDeletions);
+    console.log(`✅ تم حذف ${usersDeletions.length} مستخدم`);
+    
+    // 2. حذف جميع طلبات السحب
+    const withdrawsSnapshot = await db.collection('withdraw_requests').get();
+    const withdrawsDeletions = [];
+    withdrawsSnapshot.forEach(doc => {
+      withdrawsDeletions.push(db.collection('withdraw_requests').doc(doc.id).delete());
+    });
+    await Promise.all(withdrawsDeletions);
+    console.log(`✅ تم حذف ${withdrawsDeletions.length} طلب سحب`);
+    
+    // 3. حذف جميع الإيداعات
+    const depositsSnapshot = await db.collection('deposits').get();
+    const depositsDeletions = [];
+    depositsSnapshot.forEach(doc => {
+      depositsDeletions.push(db.collection('deposits').doc(doc.id).delete());
+    });
+    await Promise.all(depositsDeletions);
+    console.log(`✅ تم حذف ${depositsDeletions.length} إيداع`);
+    
+    // 4. حذف سجل المعاملات
+    const transactionsSnapshot = await db.collection('transactions').get();
+    const transactionsDeletions = [];
+    transactionsSnapshot.forEach(doc => {
+      transactionsDeletions.push(db.collection('transactions').doc(doc.id).delete());
+    });
+    await Promise.all(transactionsDeletions);
+    console.log(`✅ تم حذف ${transactionsDeletions.length} معاملة`);
+    
+    // 5. إعادة تعيين الإعدادات إلى القيم الافتراضية
+    const defaultSettings = {
+      minDeposit: 1000,
+      minWithdraw: 5000,
+      shamCashAddress: '0930000000',
+      shamCashApiKey: '',
+      syriatelAddress: '0930000000',
+      syriatelApiKey: ''
+    };
+    await db.collection('settings').doc('config').set(defaultSettings);
+    console.log('✅ تم إعادة تعيين الإعدادات');
+    
+    // تسجيل عملية التهيئة
+    await db.collection('admin_logs').add({
+      adminEmail: req.user.email,
+      action: 'DATABASE_RESET',
+      timestamp: new Date(),
+      message: 'تم تهيئة قاعدة البيانات بالكامل'
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'تم تهيئة قاعدة البيانات بالكامل بنجاح',
+      deleted: {
+        users: usersDeletions.length,
+        withdraws: withdrawsDeletions.length,
+        deposits: depositsDeletions.length,
+        transactions: transactionsDeletions.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Reset database error:', error);
+    res.status(500).json({ error: 'فشل تهيئة قاعدة البيانات' });
+  }
+});
 
 // ============= API المستخدمين =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
@@ -188,7 +276,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     const { uid } = req.user;
     const { method, amount, transactionId } = req.body;
     
-    // التحقق من البيانات
     if (!method || !amount || !transactionId) {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     }
@@ -204,20 +291,17 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
     }
     
-    // التحقق من عدم تكرار العملية
     const existing = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
     if (!existing.empty) {
       return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     }
     
-    // تحديث رصيد المستخدم
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(amountNum),
       totalDeposited: admin.firestore.FieldValue.increment(amountNum)
     });
     
-    // تسجيل الإيداع
     await db.collection('deposits').add({
       userId: uid,
       method,
@@ -296,13 +380,11 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
     if (userData.balance < amountNum) return res.status(400).json({ error: 'الرصيد غير كافٍ' });
     
-    // خصم الرصيد فوراً
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(-amountNum),
       totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
     });
     
-    // إنشاء طلب السحب
     await db.collection('withdraw_requests').add({
       userId: uid,
       userEmail: userData.email,
@@ -359,16 +441,6 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
 app.get('/api/admin/settings', requireAdmin, async (req, res) => {
   const settings = await getSettings();
   res.json({ success: true, settings });
-});
-
-app.post('/api/admin/update-limits', requireAdmin, async (req, res) => {
-  try {
-    const { minDeposit, minWithdraw } = req.body;
-    await db.collection('settings').doc('config').update({ minDeposit, minWithdraw });
-    res.json({ success: true, message: 'تم تحديث الحدود' });
-  } catch (error) {
-    res.status(500).json({ error: 'فشل تحديث الحدود' });
-  }
 });
 
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
@@ -552,4 +624,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
+  console.log(`🔐 Reset password: ${RESET_PASSWORD}`);
 });

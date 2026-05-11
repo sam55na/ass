@@ -24,6 +24,7 @@
             --border: #333333;
             --error: #ff4444;
             --success: #00cc44;
+            --warning: #ffaa00;
             --radius: 12px;
             --radius-lg: 20px;
         }
@@ -36,12 +37,10 @@
             padding: 12px;
         }
 
-        /* شريط التمرير */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* الحاويات */
         .app-container {
             max-width: 500px;
             margin: 0 auto;
@@ -57,7 +56,6 @@
             padding: 16px;
         }
 
-        /* شاشة التحميل */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -84,7 +82,6 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* لودينغ الأزرار */
         .btn-loading {
             pointer-events: none;
             opacity: 0.7;
@@ -105,7 +102,6 @@
             animation: spin 0.6s linear infinite;
         }
 
-        /* الشريط العلوي */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -148,7 +144,6 @@
             color: transparent;
         }
 
-        /* الأزرار */
         .action-grid {
             display: flex;
             gap: 12px;
@@ -182,7 +177,13 @@
             color: var(--primary-light);
         }
 
-        /* منطقة اللعب */
+        .btn-danger {
+            background: linear-gradient(95deg, #8b0000, #cc0000);
+            color: white;
+            border: 1px solid #ff4444;
+        }
+        .btn-danger:hover { background: linear-gradient(95deg, #660000, #990000); }
+
         .play-zone {
             text-align: center;
             margin: 20px 0;
@@ -204,7 +205,6 @@
         }
         .game-sphere:active { transform: scale(0.96); }
 
-        /* الشريط السفلي */
         .bottom-nav {
             display: flex;
             justify-content: space-around;
@@ -231,7 +231,6 @@
             color: var(--primary-light);
         }
 
-        /* لوحة المعلومات */
         .info-panel {
             background: rgba(18, 18, 18, 0.9);
             backdrop-filter: blur(16px);
@@ -257,7 +256,6 @@
             border: 1px solid var(--primary);
         }
 
-        /* النوافذ المنبثقة */
         .modal {
             display: none;
             position: fixed;
@@ -298,7 +296,6 @@
             cursor: pointer;
         }
 
-        /* طرق الدفع */
         .methods-list {
             display: flex;
             flex-direction: column;
@@ -351,7 +348,6 @@
             font-size: 12px;
         }
 
-        /* حقول الإدخال */
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -379,7 +375,6 @@
             margin-top: 4px;
         }
 
-        /* البطاقات */
         .request-card {
             background: var(--surface-light);
             margin-bottom: 12px;
@@ -388,7 +383,6 @@
             border-right: 3px solid var(--primary);
         }
 
-        /* التنبيهات */
         .toast {
             position: fixed;
             bottom: 90px;
@@ -407,7 +401,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* واجهة الأدمن */
         .admin-header {
             background: var(--surface);
             padding: 16px 20px;
@@ -485,6 +478,21 @@
         }
         .tab.active { background: var(--primary); }
 
+        .section-title {
+            color: var(--primary-light);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .reset-section {
+            background: rgba(139, 0, 0, 0.2);
+            border: 1px solid var(--error);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
         .hidden { display: none; }
 
         @media (max-width: 480px) {
@@ -501,7 +509,7 @@
         <div>BOOMB</div>
     </div>
 
-    <!-- ==================== واجهة المستخدم ==================== -->
+    <!-- واجهة المستخدم -->
     <div id="userApp" class="app-container hidden">
         <div id="homeScreen">
             <div class="top-bar">
@@ -600,7 +608,29 @@
         </div>
     </div>
 
-    <!-- ==================== واجهة الأدمن ==================== -->
+    <!-- نافذة تأكيد تهيئة قاعدة البيانات -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><span>⚠️ تهيئة قاعدة البيانات</span><span class="close-modal" id="closeResetModal">&times;</span></div>
+            <div style="text-align:center; margin-bottom:20px">
+                <p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء سيؤدي إلى حذف كافة البيانات بشكل نهائي!</p>
+                <p>سيتم حذف:</p>
+                <ul style="text-align:right; margin:16px 20px; color:var(--text-secondary)">
+                    <li>جميع المستخدمين</li>
+                    <li>جميع طلبات السحب والإيداع</li>
+                    <li>جميع المعاملات</li>
+                    <li>إعادة تعيين الإعدادات إلى القيم الافتراضية</li>
+                </ul>
+            </div>
+            <div class="form-group">
+                <label>أدخل كلمة المرور</label>
+                <input type="password" id="resetPassword" placeholder="أدخل كلمة المرور">
+            </div>
+            <button class="btn btn-danger" id="confirmResetBtn" style="width:100%"><span class="btn-text">تأكيد تهيئة قاعدة البيانات</span></button>
+        </div>
+    </div>
+
+    <!-- واجهة الأدمن -->
     <div id="adminApp" class="hidden">
         <div class="admin-container">
             <div class="admin-header">
@@ -616,6 +646,7 @@
                 <div class="stat-card"><div class="stat-number" id="statTotalUsers">0</div><div>المستخدمين</div></div>
                 <div class="stat-card"><div class="stat-number" id="statNewToday">0</div><div>جدد اليوم</div></div>
                 <div class="stat-card"><div class="stat-number" id="statTotalBalance">0</div><div>إجمالي الرصيد</div></div>
+                <div class="stat-card"><div class="stat-number" id="statTotalDeposited">0
                 <div class="stat-card"><div class="stat-number" id="statTotalDeposited">0</div><div>الإيداعات</div></div>
                 <div class="stat-card"><div class="stat-number" id="statTotalWithdrawn">0</div><div>السحوبات</div></div>
                 <div class="stat-card"><div class="stat-number" id="statPendingWithdraws">0</div><div>طلبات معلقة</div></div>
@@ -625,7 +656,8 @@
                 <div class="tab" data-tab="withdraws">طلبات السحب</div>
                 <div class="tab" data-tab="deposits">الإيداعات</div>
                 <div class="tab" data-tab="users">المستخدمين</div>
-                <div class="tab" data-tab="limits">الحدود</div>
+                <div class="tab" data-tab="limits">الإعدادات</div>
+                <div class="tab" data-tab="reset" style="background:#8b0000;">تهيئة قاعدة البيانات</div>
             </div>
 
             <!-- طلبات السحب -->
@@ -651,9 +683,9 @@
                 <div id="usersTable"></div>
             </div>
 
-            <!-- الحدود -->
+            <!-- الإعدادات -->
             <div id="adminLimitsPanel" class="admin-table hidden">
-                <h3 style="margin-bottom:20px">تعديل الحدود</h3>
+                <h3 class="section-title">إعدادات النظام</h3>
                 <div class="form-group">
                     <label>الحد الأدنى للإيداع (SYP)</label>
                     <input type="number" id="settingMinDeposit" value="1000">
@@ -663,14 +695,30 @@
                     <input type="number" id="settingMinWithdraw" value="5000">
                 </div>
                 <div class="form-group">
-                    <label>عنوان شام كاش</label>
+                    <label>عنوان شام كاش (يظهر للمستخدم)</label>
                     <input type="text" id="settingShamCashAddress" placeholder="رقم المحفظة">
                 </div>
                 <div class="form-group">
-                    <label>عنوان سيرياتيل كاش</label>
+                    <label>عنوان سيرياتيل كاش (يظهر للمستخدم)</label>
                     <input type="text" id="settingSyriatelAddress" placeholder="رقم الجوال">
                 </div>
                 <button class="admin-btn" id="saveLimitsBtn" style="width:100%">حفظ الإعدادات</button>
+            </div>
+
+            <!-- تهيئة قاعدة البيانات -->
+            <div id="adminResetPanel" class="admin-table hidden">
+                <div class="reset-section">
+                    <h3 class="section-title" style="color:var(--error)">⚠️ تهيئة قاعدة البيانات بالكامل</h3>
+                    <p style="margin-bottom:16px; color:var(--text-secondary)">هذا الإجراء سيقوم بحذف جميع البيانات التالية بشكل نهائي:</p>
+                    <ul style="margin:16px 20px; color:var(--text-secondary)">
+                        <li>جميع المستخدمين المسجلين</li>
+                        <li>جميع طلبات السحب والإيداع</li>
+                        <li>جميع سجلات المعاملات</li>
+                        <li>إعادة تعيين الإعدادات إلى القيم الافتراضية</li>
+                    </ul>
+                    <p style="margin:16px 0; color:var(--warning)"><strong>⚠️ لا يمكن التراجع عن هذا الإجراء!</strong></p>
+                    <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
+                </div>
             </div>
         </div>
     </div>
@@ -690,6 +738,7 @@
 
         const API_URL = "https://ass-yygm.onrender.com";
         const ADMIN_EMAIL = "sam55nam@gmail.com";
+        const RESET_PASSWORD = "2613857";
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
@@ -736,7 +785,40 @@
             }
         }
 
-        // دوال المستخدم
+        // ============= دوال تهيئة قاعدة البيانات =============
+        async function resetDatabase() {
+            const password = document.getElementById('resetPassword').value;
+            if (!password) {
+                showMessage('الرجاء إدخال كلمة المرور', true);
+                return;
+            }
+            
+            const btn = document.getElementById('confirmResetBtn');
+            setButtonLoading(btn, true);
+            
+            const res = await apiCall('/api/admin/reset-database', {
+                method: 'POST',
+                body: JSON.stringify({ password })
+            });
+            
+            setButtonLoading(btn, false);
+            
+            if (res && res.ok) {
+                const data = await res.json();
+                showMessage(`✅ ${data.message}\nتم حذف: ${data.deleted.users} مستخدم، ${data.deleted.withdraws} طلب سحب، ${data.deleted.deposits} إيداع`);
+                document.getElementById('resetModal').style.display = 'none';
+                document.getElementById('resetPassword').value = '';
+                // إعادة تحميل جميع البيانات
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل تهيئة قاعدة البيانات', true);
+            }
+        }
+
+        // ============= دوال المستخدم =============
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
             if (res?.ok) {
@@ -867,8 +949,7 @@
                     };
                     container.appendChild(syriDiv);
                     
-                    // تحديد الأول
-                    document.querySelector('.method-card')?.click();
+                    if (document.querySelector('.method-card')) document.querySelector('.method-card').click();
                 }
             }
         }
@@ -956,7 +1037,7 @@
             }
         }
 
-        // دوال الأدمن
+        // ============= دوال الأدمن =============
         let allUsers = [];
         
         async function loadAdminDashboard() {
@@ -987,8 +1068,10 @@
                     }
                     container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
                         ${data.requests.map(r => `<tr>
-                           <td>${r.userName || r.userEmail || r.userId}</td>
-                           <td>${r.amount} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
+                            <td>${r.userName || r.userEmail || r.userId}</td>
+                            <td>${r.amount} SYP</td>
+                            <td>${r.address}</td>
+                            <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
                             <td>${new Date(r.createdAt).toLocaleString('ar')}</td>
                             <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت'}</td>
                         </tr>`).join('')}
@@ -1025,9 +1108,14 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>';
                         return;
                     }
-                    container.innerHTML = `</table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
-                        ${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td>
-                        <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
+                    container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+                        ${allUsers.map(u => `<tr>
+                            <td>${u.email || '-'}</td>
+                            <td>${u.name || '-'}</td>
+                            <td>${u.uniqueId || '-'}</td>
+                            <td>${u.balance || 0} NSP</td>
+                            <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                            <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
                         </tr>`).join('')}
                     </tbody></table>`;
                 }
@@ -1144,7 +1232,7 @@
             }
         });
 
-        // الأحداث
+        // ============= الأحداث =============
         document.getElementById('openProfileBtn')?.addEventListener('click', () => {
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('profileScreen').classList.remove('hidden');
@@ -1181,6 +1269,14 @@
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
         document.getElementById('saveLimitsBtn')?.addEventListener('click', saveAdminSettings);
+        document.getElementById('openResetModalBtn')?.addEventListener('click', () => {
+            document.getElementById('resetModal').style.display = 'flex';
+        });
+        document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
+        document.getElementById('closeResetModal')?.addEventListener('click', () => {
+            document.getElementById('resetModal').style.display = 'none';
+            document.getElementById('resetPassword').value = '';
+        });
 
         document.getElementById('searchUsers')?.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
@@ -1188,8 +1284,13 @@
             const container = document.getElementById('usersTable');
             if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; }
             container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
-                ${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${u.balance || 0} NSP</td><td>${u.isBanned ? 'محظور' : 'نشط'}</td>
-                <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
+                ${filtered.map(u => `<tr>
+                    <td>${u.email || '-'}</td>
+                    <td>${u.name || '-'}</td>
+                    <td>${u.uniqueId || '-'}</td>
+                    <td>${u.balance || 0} NSP</td>
+                    <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
+                    <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
                 </tr>`).join('')}
             </tbody></table>`;
         });
@@ -1207,11 +1308,12 @@
                 const target = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminLimitsPanel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminLimitsPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
                 if (target === 'limits') document.getElementById('adminLimitsPanel').classList.remove('hidden');
+                if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden');
             });
         });
 
