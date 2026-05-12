@@ -26,12 +26,15 @@ admin.initializeApp({
 const db = admin.firestore();
 const app = express();
 
-// ============= إعدادات CORS =============
+// ============= إعدادات CORS المحسنة =============
 app.use(cors({
-  origin: ['https://sam55na.github.io', 'http://localhost:3000', 'http://localhost:5500'],
-  credentials: true
+  origin: ['https://sam55na.github.io', 'http://localhost:3000', 'http://localhost:5500', '*'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+app.use(express.json({ limit: '10mb' }));
 
 // ============= منع التكرار =============
 const limiter = rateLimit({
@@ -53,50 +56,73 @@ const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح' });
+  if (!token) {
+    return res.status(401).json({ error: 'غير مصرح - الرجاء تسجيل الدخول' });
+  }
   try {
     req.user = await admin.auth().verifyIdToken(token);
     next();
   } catch (error) {
+    console.error('Auth error:', error);
     res.status(401).json({ error: 'جلسة غير صالحة' });
   }
 };
 
 const requireAdmin = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح' });
+  if (!token) {
+    return res.status(401).json({ error: 'غير مصرح' });
+  }
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     if (decoded.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'غير مصرح' });
+      return res.status(403).json({ error: 'غير مصرح - هذه المنطقة للمشرف فقط' });
     }
     req.user = decoded;
     next();
   } catch (error) {
+    console.error('Admin auth error:', error);
     res.status(401).json({ error: 'جلسة غير صالحة' });
   }
 };
 
 // ============= إعدادات النظام =============
 async function getSettings() {
-  const doc = await db.collection('settings').doc('config').get();
-  if (doc.exists) return doc.data();
-  
-  const defaultSettings = {
-    minDeposit: 1000,
-    minWithdraw: 5000,
-    shamCashEnabled: true,
-    syriatelEnabled: true,
-    shamCashApiKey: '',
-    shamCashPrivateAddress: '',
-    shamCashPublicAddress: '0930000000',
-    syriatelApiKey: '',
-    syriatelPrivateAddress: '',
-    syriatelPublicAddress: '0930000000',
-    gameImageUrl: '' // إضافة رابط صورة اللعبة
-  };
-  await db.collection('settings').doc('config').set(defaultSettings);
-  return defaultSettings;
+  try {
+    const doc = await db.collection('settings').doc('config').get();
+    if (doc.exists) return doc.data();
+    
+    const defaultSettings = {
+      minDeposit: 1000,
+      minWithdraw: 5000,
+      shamCashEnabled: true,
+      syriatelEnabled: true,
+      shamCashApiKey: '',
+      shamCashPrivateAddress: '',
+      shamCashPublicAddress: '0930000000',
+      syriatelApiKey: '',
+      syriatelPrivateAddress: '',
+      syriatelPublicAddress: '0930000000',
+      gameImageUrl: ''
+    };
+    await db.collection('settings').doc('config').set(defaultSettings);
+    return defaultSettings;
+  } catch (error) {
+    console.error('Error getting settings:', error);
+    return {
+      minDeposit: 1000,
+      minWithdraw: 5000,
+      shamCashEnabled: true,
+      syriatelEnabled: true,
+      shamCashApiKey: '',
+      shamCashPrivateAddress: '',
+      shamCashPublicAddress: '0930000000',
+      syriatelApiKey: '',
+      syriatelPrivateAddress: '',
+      syriatelPublicAddress: '0930000000',
+      gameImageUrl: ''
+    };
+  }
 }
 
 // ============= كلاس شام كاش للتحقق الحقيقي =============
@@ -136,7 +162,8 @@ class ShamCashClient {
       }
       return { success: false, message: "فشل التحقق من العملية" };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error('ShamCash verification error:', error.message);
+      return { success: false, message: "خطأ في الاتصال بخدمة شام كاش" };
     }
   }
 }
@@ -170,7 +197,7 @@ class SyriatelCashClient {
           return { success: true, amount: apiAmount, currency: "SYP" };
         }
       } catch (error) {
-        console.error(`Syriatel error:`, error.message);
+        console.error(`Syriatel error for GSM ${gsm}:`, error.message);
       }
     }
     return { success: false, message: "رقم العملية غير موجود" };
@@ -216,6 +243,7 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     }
     res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({ error: 'خطأ في التسجيل' });
   }
 });
@@ -223,9 +251,12 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
 app.get('/api/user/profile', requireAuth, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
-    if (!userDoc.exists) return res.status(404).json({ error: 'مستخدم غير موجود' });
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
     res.json({ success: true, user: userDoc.data(), isAdmin: req.user.email === ADMIN_EMAIL });
   } catch (error) {
+    console.error('Profile error:', error);
     res.status(500).json({ error: 'خطأ في جلب البيانات' });
   }
 });
@@ -233,6 +264,9 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
 app.get('/api/user/stats', requireAuth, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
     const data = userDoc.data();
     res.json({
       success: true,
@@ -247,6 +281,7 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
@@ -281,10 +316,11 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         minDeposit: settings.minDeposit,
         minWithdraw: settings.minWithdraw,
         methods: methods,
-        gameImageUrl: settings.gameImageUrl || '' // إرسال رابط الصورة للمستخدم
+        gameImageUrl: settings.gameImageUrl || ''
       }
     });
   } catch (error) {
+    console.error('Deposit settings error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
   }
 });
@@ -311,6 +347,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     let verification = null;
     
+    // التحقق من العملية حسب طريقة الدفع
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled) {
         return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
@@ -338,17 +375,24 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: verification.message });
     }
     
-    const existing = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
+    // التحقق من عدم تكرار العملية
+    const existing = await db.collection('deposits')
+      .where('transactionId', '==', transactionId)
+      .limit(1)
+      .get();
+      
     if (!existing.empty) {
       return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     }
     
+    // تحديث رصيد المستخدم
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(verification.amount),
       totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
     });
     
+    // تسجيل الإيداع
     await db.collection('deposits').add({
       userId: uid,
       method,
@@ -423,14 +467,20 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
     const userDoc = await userRef.get();
     const userData = userDoc.data();
     
-    if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
-    if (userData.balance < amountNum) return res.status(400).json({ error: 'الرصيد غير كافٍ' });
+    if (!userData) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    if (userData.balance < amountNum) {
+      return res.status(400).json({ error: 'الرصيد غير كافٍ' });
+    }
     
+    // خصم الرصيد فوراً
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(-amountNum),
       totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
     });
     
+    // إنشاء طلب السحب
     await db.collection('withdraw_requests').add({
       userId: uid,
       userEmail: userData.email,
@@ -544,8 +594,13 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
 
 // ============= APIs الأدمن =============
 app.get('/api/admin/settings', requireAdmin, async (req, res) => {
-  const settings = await getSettings();
-  res.json({ success: true, settings });
+  try {
+    const settings = await getSettings();
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error('Get admin settings error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
+  }
 });
 
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
@@ -554,6 +609,7 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
     await db.collection('settings').doc('config').update(updates);
     res.json({ success: true, message: 'تم تحديث الإعدادات' });
   } catch (error) {
+    console.error('Save admin settings error:', error);
     res.status(500).json({ error: 'فشل تحديث الإعدادات' });
   }
 });
@@ -586,6 +642,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Dashboard error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
@@ -614,6 +671,7 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
     
     res.json({ success: true, requests });
   } catch (error) {
+    console.error('Get withdraw requests error:', error);
     res.status(500).json({ error: 'خطأ في جلب الطلبات' });
   }
 });
@@ -625,12 +683,17 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
     const requestRef = db.collection('withdraw_requests').doc(requestId);
     const requestDoc = await requestRef.get();
     
-    if (!requestDoc.exists) return res.status(404).json({ error: 'طلب غير موجود' });
+    if (!requestDoc.exists) {
+      return res.status(404).json({ error: 'طلب غير موجود' });
+    }
     
     const request = requestDoc.data();
-    if (request.status !== 'pending') return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
+    if (request.status !== 'pending') {
+      return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
+    }
     
     if (action === 'reject') {
+      // إعادة الرصيد للمستخدم
       await db.collection('users').doc(request.userId).update({
         balance: admin.firestore.FieldValue.increment(request.amount)
       });
@@ -644,6 +707,7 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
     
     res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب` });
   } catch (error) {
+    console.error('Process withdraw error:', error);
     res.status(500).json({ error: 'فشل معالجة الطلب' });
   }
 });
@@ -670,6 +734,7 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
     
     res.json({ success: true, deposits });
   } catch (error) {
+    console.error('Get deposits admin error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
   }
 });
@@ -691,18 +756,20 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     });
     res.json({ success: true, users });
   } catch (error) {
+    console.error('Get users error:', error);
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
   }
 });
 
 app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
   try {
-    const { userId, amount } = req.body;
+    const { userId, amount, reason } = req.body;
     await db.collection('users').doc(userId).update({
       balance: admin.firestore.FieldValue.increment(Number(amount))
     });
     res.json({ success: true });
   } catch (error) {
+    console.error('Update balance error:', error);
     res.status(500).json({ error: 'فشل تحديث الرصيد' });
   }
 });
@@ -715,6 +782,7 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
     await db.collection('users').doc(userId).update({ isBanned: !currentBan });
     res.json({ success: true });
   } catch (error) {
+    console.error('Toggle ban error:', error);
     res.status(500).json({ error: 'فشل تحديث حالة الحظر' });
   }
 });
