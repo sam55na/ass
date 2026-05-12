@@ -77,7 +77,7 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-// ============= إعدادات النظام المبسطة =============
+// ============= إعدادات النظام =============
 async function getSettings() {
   const doc = await db.collection('settings').doc('config').get();
   if (doc.exists) return doc.data();
@@ -85,99 +85,96 @@ async function getSettings() {
   const defaultSettings = {
     minDeposit: 1000,
     minWithdraw: 5000,
-    shamCashAddress: '0930000000',
+    shamCashEnabled: true,
+    syriatelEnabled: true,
     shamCashApiKey: '',
-    syriatelAddress: '0930000000',
-    syriatelApiKey: ''
+    shamCashPrivateAddress: '',
+    shamCashPublicAddress: '0930000000',
+    syriatelApiKey: '',
+    syriatelPrivateAddress: '',
+    syriatelPublicAddress: '0930000000'
   };
   await db.collection('settings').doc('config').set(defaultSettings);
   return defaultSettings;
 }
 
-// ============= API تهيئة قاعدة البيانات (مسح كل شيء) =============
-app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
-  try {
-    const { password } = req.body;
-    
-    // التحقق من كلمة المرور
-    if (password !== RESET_PASSWORD) {
-      return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
-    }
-    
-    console.log('⚠️ بدء تهيئة قاعدة البيانات...');
-    
-    // 1. حذف جميع المستخدمين
-    const usersSnapshot = await db.collection('users').get();
-    const usersDeletions = [];
-    usersSnapshot.forEach(doc => {
-      usersDeletions.push(db.collection('users').doc(doc.id).delete());
-    });
-    await Promise.all(usersDeletions);
-    console.log(`✅ تم حذف ${usersDeletions.length} مستخدم`);
-    
-    // 2. حذف جميع طلبات السحب
-    const withdrawsSnapshot = await db.collection('withdraw_requests').get();
-    const withdrawsDeletions = [];
-    withdrawsSnapshot.forEach(doc => {
-      withdrawsDeletions.push(db.collection('withdraw_requests').doc(doc.id).delete());
-    });
-    await Promise.all(withdrawsDeletions);
-    console.log(`✅ تم حذف ${withdrawsDeletions.length} طلب سحب`);
-    
-    // 3. حذف جميع الإيداعات
-    const depositsSnapshot = await db.collection('deposits').get();
-    const depositsDeletions = [];
-    depositsSnapshot.forEach(doc => {
-      depositsDeletions.push(db.collection('deposits').doc(doc.id).delete());
-    });
-    await Promise.all(depositsDeletions);
-    console.log(`✅ تم حذف ${depositsDeletions.length} إيداع`);
-    
-    // 4. حذف سجل المعاملات
-    const transactionsSnapshot = await db.collection('transactions').get();
-    const transactionsDeletions = [];
-    transactionsSnapshot.forEach(doc => {
-      transactionsDeletions.push(db.collection('transactions').doc(doc.id).delete());
-    });
-    await Promise.all(transactionsDeletions);
-    console.log(`✅ تم حذف ${transactionsDeletions.length} معاملة`);
-    
-    // 5. إعادة تعيين الإعدادات إلى القيم الافتراضية
-    const defaultSettings = {
-      minDeposit: 1000,
-      minWithdraw: 5000,
-      shamCashAddress: '0930000000',
-      shamCashApiKey: '',
-      syriatelAddress: '0930000000',
-      syriatelApiKey: ''
-    };
-    await db.collection('settings').doc('config').set(defaultSettings);
-    console.log('✅ تم إعادة تعيين الإعدادات');
-    
-    // تسجيل عملية التهيئة
-    await db.collection('admin_logs').add({
-      adminEmail: req.user.email,
-      action: 'DATABASE_RESET',
-      timestamp: new Date(),
-      message: 'تم تهيئة قاعدة البيانات بالكامل'
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'تم تهيئة قاعدة البيانات بالكامل بنجاح',
-      deleted: {
-        users: usersDeletions.length,
-        withdraws: withdrawsDeletions.length,
-        deposits: depositsDeletions.length,
-        transactions: transactionsDeletions.length
-      }
-    });
-    
-  } catch (error) {
-    console.error('Reset database error:', error);
-    res.status(500).json({ error: 'فشل تهيئة قاعدة البيانات' });
+// ============= كلاس شام كاش للتحقق الحقيقي =============
+class ShamCashClient {
+  constructor(apiKey, accountAddress) {
+    this.apiKey = apiKey;
+    this.accountAddress = accountAddress;
+    this.baseUrl = "https://apisyria.com/api/v1";
   }
-});
+
+  async verifyTransaction(txid, expectedAmount = null) {
+    try {
+      const params = {
+        resource: "shamcash",
+        action: "logs",
+        account_address: this.accountAddress,
+        api_key: this.apiKey
+      };
+      const response = await axios.get(this.baseUrl, { params, timeout: 30000 });
+      
+      if (response.status === 200 && response.data.success) {
+        const items = response.data.data?.items || [];
+        for (const item of items) {
+          if (String(item.tran_id) === String(txid)) {
+            const apiAmount = parseFloat(item.amount);
+            const timestamp = item.created_at || Date.now() / 1000;
+            if ((Date.now() / 1000 - timestamp) > 86400) {
+              return { success: false, message: "العملية أقدم من 24 ساعة" };
+            }
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
+              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}` };
+            }
+            return { success: true, amount: apiAmount, currency: item.currency || "SYP" };
+          }
+        }
+        return { success: false, message: "رقم العملية غير موجود" };
+      }
+      return { success: false, message: "فشل التحقق من العملية" };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+}
+
+// ============= كلاس سيرياتيل كاش للتحقق الحقيقي =============
+class SyriatelCashClient {
+  constructor(apiKey, gsmNumbers) {
+    this.apiKey = apiKey;
+    this.gsmNumbers = gsmNumbers;
+    this.baseUrl = "https://apisyria.com/api/v1";
+  }
+
+  async verifyTransaction(txid, expectedAmount = null) {
+    for (const gsm of this.gsmNumbers) {
+      try {
+        const params = {
+          api_key: this.apiKey,
+          resource: "syriatel",
+          action: "find_tx",
+          tx: txid,
+          gsm: gsm
+        };
+        const response = await axios.get(this.baseUrl, { params, timeout: 30000 });
+        
+        if (response.status === 200 && response.data.success && response.data.data?.found) {
+          const transaction = response.data.data.transaction || {};
+          const apiAmount = parseFloat(transaction.amount || 0);
+          if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
+            return { success: false, message: "المبلغ غير متطابق" };
+          }
+          return { success: true, amount: apiAmount, currency: "SYP" };
+        }
+      } catch (error) {
+        console.error(`Syriatel error:`, error.message);
+      }
+    }
+    return { success: false, message: "رقم العملية غير موجود" };
+  }
+}
 
 // ============= API المستخدمين =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
@@ -257,13 +254,32 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSettings();
+    const methods = [];
+    
+    if (settings.shamCashEnabled && settings.shamCashPublicAddress) {
+      methods.push({
+        id: 'sham_cash',
+        name: 'شام كاش',
+        address: settings.shamCashPublicAddress,
+        type: 'sham_cash'
+      });
+    }
+    
+    if (settings.syriatelEnabled && settings.syriatelPublicAddress) {
+      methods.push({
+        id: 'syriatel_cash',
+        name: 'سيرياتيل كاش',
+        address: settings.syriatelPublicAddress,
+        type: 'syriatel_cash'
+      });
+    }
+    
     res.json({
       success: true,
       settings: {
         minDeposit: settings.minDeposit,
         minWithdraw: settings.minWithdraw,
-        shamCashAddress: settings.shamCashAddress,
-        syriatelAddress: settings.syriatelAddress
+        methods: methods
       }
     });
   } catch (error) {
@@ -291,6 +307,35 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
     }
     
+    let verification = null;
+    
+    if (method === 'sham_cash') {
+      if (!settings.shamCashEnabled) {
+        return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
+      }
+      if (!settings.shamCashApiKey || !settings.shamCashPrivateAddress) {
+        return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
+      }
+      const client = new ShamCashClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
+      verification = await client.verifyTransaction(transactionId, amountNum);
+      
+    } else if (method === 'syriatel_cash') {
+      if (!settings.syriatelEnabled) {
+        return res.status(400).json({ error: 'طريقة الدفع سيرياتيل كاش غير مفعلة' });
+      }
+      if (!settings.syriatelApiKey || !settings.syriatelPrivateAddress) {
+        return res.status(400).json({ error: 'بيانات سيرياتيل كاش غير مكتملة' });
+      }
+      const client = new SyriatelCashClient(settings.syriatelApiKey, [settings.syriatelPrivateAddress]);
+      verification = await client.verifyTransaction(transactionId, amountNum);
+    } else {
+      return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
+    }
+    
+    if (!verification.success) {
+      return res.status(400).json({ error: verification.message });
+    }
+    
     const existing = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
     if (!existing.empty) {
       return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
@@ -298,14 +343,14 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
-      balance: admin.firestore.FieldValue.increment(amountNum),
-      totalDeposited: admin.firestore.FieldValue.increment(amountNum)
+      balance: admin.firestore.FieldValue.increment(verification.amount),
+      totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
     });
     
     await db.collection('deposits').add({
       userId: uid,
       method,
-      amount: amountNum,
+      amount: verification.amount,
       transactionId,
       status: 'completed',
       verifiedAt: new Date()
@@ -314,7 +359,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     const updatedUser = await userRef.get();
     res.json({ 
       success: true, 
-      message: `تم إيداع ${amountNum} SYP بنجاح`,
+      message: `تم إيداع ${verification.amount} SYP بنجاح`,
       newBalance: updatedUser.data().balance
     });
     
@@ -340,7 +385,6 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
         amount: data.amount,
         method: data.method,
         transactionId: data.transactionId,
-        status: data.status,
         verifiedAt: data.verifiedAt?.toDate()
       });
     });
@@ -434,6 +478,64 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Get withdraw requests error:', error);
     res.status(500).json({ error: 'خطأ في جلب طلبات السحب' });
+  }
+});
+
+// ============= API تهيئة قاعدة البيانات =============
+app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    if (password !== RESET_PASSWORD) {
+      return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
+    }
+    
+    // حذف جميع المستخدمين
+    const usersSnapshot = await db.collection('users').get();
+    const usersDeletions = [];
+    usersSnapshot.forEach(doc => usersDeletions.push(db.collection('users').doc(doc.id).delete()));
+    await Promise.all(usersDeletions);
+    
+    // حذف جميع طلبات السحب
+    const withdrawsSnapshot = await db.collection('withdraw_requests').get();
+    const withdrawsDeletions = [];
+    withdrawsSnapshot.forEach(doc => withdrawsDeletions.push(db.collection('withdraw_requests').doc(doc.id).delete()));
+    await Promise.all(withdrawsDeletions);
+    
+    // حذف جميع الإيداعات
+    const depositsSnapshot = await db.collection('deposits').get();
+    const depositsDeletions = [];
+    depositsSnapshot.forEach(doc => depositsDeletions.push(db.collection('deposits').doc(doc.id).delete()));
+    await Promise.all(depositsDeletions);
+    
+    // إعادة تعيين الإعدادات
+    const defaultSettings = {
+      minDeposit: 1000,
+      minWithdraw: 5000,
+      shamCashEnabled: true,
+      syriatelEnabled: true,
+      shamCashApiKey: '',
+      shamCashPrivateAddress: '',
+      shamCashPublicAddress: '0930000000',
+      syriatelApiKey: '',
+      syriatelPrivateAddress: '',
+      syriatelPublicAddress: '0930000000'
+    };
+    await db.collection('settings').doc('config').set(defaultSettings);
+    
+    res.json({ 
+      success: true, 
+      message: 'تم تهيئة قاعدة البيانات بنجاح',
+      deleted: {
+        users: usersDeletions.length,
+        withdraws: withdrawsDeletions.length,
+        deposits: depositsDeletions.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Reset error:', error);
+    res.status(500).json({ error: 'فشل تهيئة قاعدة البيانات' });
   }
 });
 
@@ -624,5 +726,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
-  console.log(`🔐 Reset password: ${RESET_PASSWORD}`);
 });
