@@ -347,7 +347,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     let verification = null;
     
-    // التحقق من العملية حسب طريقة الدفع
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled) {
         return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
@@ -375,7 +374,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: verification.message });
     }
     
-    // التحقق من عدم تكرار العملية
     const existing = await db.collection('deposits')
       .where('transactionId', '==', transactionId)
       .limit(1)
@@ -385,14 +383,12 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     }
     
-    // تحديث رصيد المستخدم
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(verification.amount),
       totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
     });
     
-    // تسجيل الإيداع
     await db.collection('deposits').add({
       userId: uid,
       method,
@@ -415,6 +411,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
   }
 });
 
+// ============= API جلب سجل الإيداعات (معالج يدوي للتاريخ) =============
 app.get('/api/user/deposits', requireAuth, async (req, res) => {
   try {
     const snapshot = await db.collection('deposits')
@@ -426,19 +423,38 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
     const deposits = [];
     snapshot.forEach(doc => {
       const data = doc.data();
+      
+      // معالجة آمنة للتاريخ
+      let verifiedDate = null;
+      if (data.verifiedAt) {
+        if (typeof data.verifiedAt === 'object') {
+          if (data.verifiedAt.toDate) {
+            verifiedDate = data.verifiedAt.toDate();
+          } else if (data.verifiedAt._seconds) {
+            verifiedDate = new Date(data.verifiedAt._seconds * 1000);
+          } else if (data.verifiedAt instanceof Date) {
+            verifiedDate = data.verifiedAt;
+          }
+        } else if (typeof data.verifiedAt === 'string') {
+          verifiedDate = new Date(data.verifiedAt);
+        }
+      }
+      
       deposits.push({
         id: doc.id,
-        amount: data.amount,
-        method: data.method,
-        transactionId: data.transactionId,
-        verifiedAt: data.verifiedAt?.toDate()
+        amount: data.amount || 0,
+        method: data.method || 'unknown',
+        transactionId: data.transactionId || 'N/A',
+        verifiedAt: verifiedDate,
+        status: data.status || 'completed'
       });
     });
     
     res.json({ success: true, deposits });
   } catch (error) {
     console.error('Get deposits error:', error);
-    res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
+    // في حالة الخطأ، نرجع مصفوفة فارغة بدلاً من 500
+    res.json({ success: true, deposits: [] });
   }
 });
 
@@ -474,13 +490,11 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'الرصيد غير كافٍ' });
     }
     
-    // خصم الرصيد فوراً
     await userRef.update({
       balance: admin.firestore.FieldValue.increment(-amountNum),
       totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
     });
     
-    // إنشاء طلب السحب
     await db.collection('withdraw_requests').add({
       userId: uid,
       userEmail: userData.email,
@@ -505,6 +519,7 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   }
 });
 
+// ============= API جلب سجل السحوبات (معالج يدوي للتاريخ) =============
 app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   try {
     const snapshot = await db.collection('withdraw_requests')
@@ -516,20 +531,38 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
     const requests = [];
     snapshot.forEach(doc => {
       const data = doc.data();
+      
+      // معالجة آمنة للتاريخ
+      let createdDate = null;
+      if (data.createdAt) {
+        if (typeof data.createdAt === 'object') {
+          if (data.createdAt.toDate) {
+            createdDate = data.createdAt.toDate();
+          } else if (data.createdAt._seconds) {
+            createdDate = new Date(data.createdAt._seconds * 1000);
+          } else if (data.createdAt instanceof Date) {
+            createdDate = data.createdAt;
+          }
+        } else if (typeof data.createdAt === 'string') {
+          createdDate = new Date(data.createdAt);
+        }
+      }
+      
       requests.push({
         id: doc.id,
-        amount: data.amount,
-        address: data.address,
-        method: data.method,
-        status: data.status,
-        createdAt: data.createdAt?.toDate()
+        amount: data.amount || 0,
+        address: data.address || 'N/A',
+        method: data.method || 'unknown',
+        status: data.status || 'pending',
+        createdAt: createdDate
       });
     });
     
     res.json({ success: true, requests });
   } catch (error) {
     console.error('Get withdraw requests error:', error);
-    res.status(500).json({ error: 'خطأ في جلب طلبات السحب' });
+    // في حالة الخطأ، نرجع مصفوفة فارغة بدلاً من 500
+    res.json({ success: true, requests: [] });
   }
 });
 
@@ -542,25 +575,21 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    // حذف جميع المستخدمين
     const usersSnapshot = await db.collection('users').get();
     const usersDeletions = [];
     usersSnapshot.forEach(doc => usersDeletions.push(db.collection('users').doc(doc.id).delete()));
     await Promise.all(usersDeletions);
     
-    // حذف جميع طلبات السحب
     const withdrawsSnapshot = await db.collection('withdraw_requests').get();
     const withdrawsDeletions = [];
     withdrawsSnapshot.forEach(doc => withdrawsDeletions.push(db.collection('withdraw_requests').doc(doc.id).delete()));
     await Promise.all(withdrawsDeletions);
     
-    // حذف جميع الإيداعات
     const depositsSnapshot = await db.collection('deposits').get();
     const depositsDeletions = [];
     depositsSnapshot.forEach(doc => depositsDeletions.push(db.collection('deposits').doc(doc.id).delete()));
     await Promise.all(depositsDeletions);
     
-    // إعادة تعيين الإعدادات
     const defaultSettings = {
       minDeposit: 1000,
       minWithdraw: 5000,
@@ -628,7 +657,11 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const newToday = users.filter(u => u.createdAt?.toDate() > today).length;
+    const newToday = users.filter(u => {
+      if (!u.createdAt) return false;
+      const date = u.createdAt.toDate ? u.createdAt.toDate() : u.createdAt;
+      return date > today;
+    }).length;
     
     res.json({
       success: true,
@@ -657,6 +690,14 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
     const requests = [];
     snapshot.forEach(doc => {
       const data = doc.data();
+      
+      let createdDate = null;
+      if (data.createdAt) {
+        if (data.createdAt.toDate) createdDate = data.createdAt.toDate();
+        else if (data.createdAt._seconds) createdDate = new Date(data.createdAt._seconds * 1000);
+        else if (data.createdAt instanceof Date) createdDate = data.createdAt;
+      }
+      
       requests.push({
         id: doc.id,
         userId: data.userId,
@@ -665,7 +706,7 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
         amount: data.amount,
         address: data.address,
         status: data.status,
-        createdAt: data.createdAt?.toDate()
+        createdAt: createdDate
       });
     });
     
@@ -693,7 +734,6 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
     }
     
     if (action === 'reject') {
-      // إعادة الرصيد للمستخدم
       await db.collection('users').doc(request.userId).update({
         balance: admin.firestore.FieldValue.increment(request.amount)
       });
@@ -720,6 +760,14 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
     for (const doc of snapshot.docs) {
       const data = doc.data();
       const userDoc = await db.collection('users').doc(data.userId).get();
+      
+      let verifiedDate = null;
+      if (data.verifiedAt) {
+        if (data.verifiedAt.toDate) verifiedDate = data.verifiedAt.toDate();
+        else if (data.verifiedAt._seconds) verifiedDate = new Date(data.verifiedAt._seconds * 1000);
+        else if (data.verifiedAt instanceof Date) verifiedDate = data.verifiedAt;
+      }
+      
       deposits.push({
         id: doc.id,
         userId: data.userId,
@@ -728,7 +776,7 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
         amount: data.amount,
         method: data.method,
         transactionId: data.transactionId,
-        verifiedAt: data.verifiedAt?.toDate()
+        verifiedAt: verifiedDate
       });
     }
     
@@ -763,7 +811,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
   try {
-    const { userId, amount, reason } = req.body;
+    const { userId, amount } = req.body;
     await db.collection('users').doc(userId).update({
       balance: admin.firestore.FieldValue.increment(Number(amount))
     });
@@ -789,7 +837,7 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
 
 // ============= نقطة صحة الخادم =============
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ status: 'ok', timestamp: new Date(), uptime: process.uptime() });
 });
 
 // ============= تشغيل الخادم =============

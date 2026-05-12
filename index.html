@@ -182,6 +182,9 @@
             background: var(--surface-light); margin-bottom: 12px; padding: 12px;
             border-radius: var(--radius); border-right: 3px solid var(--primary);
         }
+        .request-card.pending { border-right-color: #ff9800; }
+        .request-card.approved { border-right-color: #4caf50; }
+        .request-card.rejected { border-right-color: #f44336; }
 
         /* التنبيهات */
         .toast {
@@ -511,6 +514,7 @@
                 }
                 return response;
             } catch (error) {
+                console.error('API call error:', error);
                 showMessage('خطأ في الاتصال بالخادم', true);
                 return null;
             }
@@ -556,42 +560,103 @@
         }
 
         async function loadDeposits() {
-            const res = await apiCall('/api/user/deposits');
-            if (res?.ok) {
-                const data = await res.json();
-                const container = document.getElementById('depositsList');
-                if (!data.deposits?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات سابقة</p>';
-                    return;
+            try {
+                const res = await apiCall('/api/user/deposits');
+                if (res?.ok) {
+                    const data = await res.json();
+                    const container = document.getElementById('depositsList');
+                    if (!data.deposits || data.deposits.length === 0) {
+                        container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات سابقة</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.deposits.map(d => {
+                        let dateStr = '-';
+                        if (d.verifiedAt) {
+                            try {
+                                const date = new Date(d.verifiedAt);
+                                if (!isNaN(date.getTime())) {
+                                    dateStr = date.toLocaleString('ar');
+                                }
+                            } catch(e) {
+                                dateStr = '-';
+                            }
+                        }
+                        
+                        return `
+                            <div class="request-card">
+                                <div><strong>💰 ${d.amount} SYP</strong></div>
+                                <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : (d.method === 'syriatel_cash' ? 'سيرياتيل كاش' : d.method)}</div>
+                                <div>رقم العملية: ${d.transactionId}</div>
+                                <div>التاريخ: ${dateStr}</div>
+                                <div>الحالة: ${d.status === 'completed' ? '✅ مكتمل' : '⏳ قيد المراجعة'}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('depositsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
                 }
-                container.innerHTML = data.deposits.map(d => `
-                    <div class="request-card">
-                        <div><strong>💰 ${d.amount} SYP</strong></div>
-                        <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>
-                        <div>رقم العملية: ${d.transactionId}</div>
-                        <div>التاريخ: ${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</div>
-                    </div>
-                `).join('');
+            } catch (error) {
+                console.error('Load deposits error:', error);
+                document.getElementById('depositsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
             }
         }
 
         async function loadWithdrawals() {
-            const res = await apiCall('/api/user/withdraw-requests');
-            if (res?.ok) {
-                const data = await res.json();
-                const container = document.getElementById('withdrawsList');
-                if (!data.requests?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات سابقة</p>';
-                    return;
+            try {
+                const res = await apiCall('/api/user/withdraw-requests');
+                if (res?.ok) {
+                    const data = await res.json();
+                    const container = document.getElementById('withdrawsList');
+                    if (!data.requests || data.requests.length === 0) {
+                        container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات سابقة</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.requests.map(r => {
+                        let dateStr = '-';
+                        if (r.createdAt) {
+                            try {
+                                const date = new Date(r.createdAt);
+                                if (!isNaN(date.getTime())) {
+                                    dateStr = date.toLocaleString('ar');
+                                }
+                            } catch(e) {
+                                dateStr = '-';
+                            }
+                        }
+                        
+                        let statusText = '';
+                        let statusClass = '';
+                        if (r.status === 'pending') {
+                            statusText = '⏳ قيد المراجعة';
+                            statusClass = 'pending';
+                        } else if (r.status === 'approved') {
+                            statusText = '✅ مقبول';
+                            statusClass = 'approved';
+                        } else if (r.status === 'rejected') {
+                            statusText = '❌ مرفوض';
+                            statusClass = 'rejected';
+                        } else {
+                            statusText = r.status;
+                        }
+                        
+                        return `
+                            <div class="request-card ${statusClass}">
+                                <div><strong>💸 ${r.amount} SYP</strong></div>
+                                <div>العنوان: ${r.address}</div>
+                                <div>طريقة السحب: ${r.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div>
+                                <div>الحالة: ${statusText}</div>
+                                <div>التاريخ: ${dateStr}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('withdrawsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
                 }
-                container.innerHTML = data.requests.map(r => `
-                    <div class="request-card">
-                        <div><strong>💸 ${r.amount} SYP</strong></div>
-                        <div>العنوان: ${r.address}</div>
-                        <div>الحالة: ${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</div>
-                        <div>التاريخ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</div>
-                    </div>
-                `).join('');
+            } catch (error) {
+                console.error('Load withdrawals error:', error);
+                document.getElementById('withdrawsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
             }
         }
 
@@ -630,6 +695,7 @@
                         gameImage.classList.remove('hidden');
                         defaultIcon.classList.add('hidden');
                         gameIconContainer.style.background = 'none';
+                        gameIconContainer.classList.remove('default-icon');
                     } else {
                         gameImage.classList.add('hidden');
                         defaultIcon.classList.remove('hidden');
@@ -815,9 +881,9 @@
                             <td>${r.amount} SYP</td>
                             <td>${r.address}</td>
                             <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
-                            <td>${new Date(r.createdAt).toLocaleString('ar')}</td>
+                            <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
                             <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت المعالجة'}</td>
-                          </tr>`).join('')}
+                        </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -839,8 +905,8 @@
                             <td>${d.amount} SYP</td>
                             <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
                             <td>${d.transactionId}</td>
-                            <td>${new Date(d.verifiedAt).toLocaleString('ar')}</td>
-                         </tr>`).join('')}
+                            <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
+                        </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -865,7 +931,7 @@
                             <td>${u.balance || 0} NSP</td>
                             <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                             <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                         </tr>`).join('')}
+                        </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -973,6 +1039,7 @@
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } catch (err) {
+                console.error('Sign in error:', err);
                 showMessage('فشل تسجيل الدخول', true);
             }
         }
@@ -1055,7 +1122,7 @@
                     <td>${u.balance || 0} NSP</td>
                     <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                     <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                 </tr>`).join('')}
+                </tr>`).join('')}
             </tbody></table>`;
         });
 
