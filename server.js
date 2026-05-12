@@ -92,7 +92,8 @@ async function getSettings() {
     shamCashPublicAddress: '0930000000',
     syriatelApiKey: '',
     syriatelPrivateAddress: '',
-    syriatelPublicAddress: '0930000000'
+    syriatelPublicAddress: '0930000000',
+    gameImageUrl: '' // إضافة رابط صورة اللعبة
   };
   await db.collection('settings').doc('config').set(defaultSettings);
   return defaultSettings;
@@ -279,7 +280,8 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
       settings: {
         minDeposit: settings.minDeposit,
         minWithdraw: settings.minWithdraw,
-        methods: methods
+        methods: methods,
+        gameImageUrl: settings.gameImageUrl || '' // إرسال رابط الصورة للمستخدم
       }
     });
   } catch (error) {
@@ -519,7 +521,8 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       shamCashPublicAddress: '0930000000',
       syriatelApiKey: '',
       syriatelPrivateAddress: '',
-      syriatelPublicAddress: '0930000000'
+      syriatelPublicAddress: '0930000000',
+      gameImageUrl: ''
     };
     await db.collection('settings').doc('config').set(defaultSettings);
     
