@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="referrer" content="origin">
-    <!-- إضافة هذه السياسات لحل مشكلة COOP -->
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
     <title>BOOMB - منصة الألعاب</title>
@@ -23,6 +22,7 @@
             --border: #333333;
             --error: #ff4444;
             --success: #00cc44;
+            --warning: #ff9800;
             --radius: 12px;
             --radius-lg: 20px;
         }
@@ -92,6 +92,7 @@
         .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
         .btn-danger { background: linear-gradient(95deg, #8b0000, #cc0000); color: white; border: 1px solid #ff4444; }
         .btn-danger:hover { background: linear-gradient(95deg, #660000, #990000); }
+        .btn-success { background: linear-gradient(95deg, #008000, #00cc44); color: white; }
 
         /* منطقة اللعب */
         .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -161,6 +162,7 @@
         }
         .method-card.selected { border-color: var(--primary); background: rgba(255,0,0,0.1); }
         .method-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+        .method-currency { font-size: 12px; color: var(--primary-light); margin-top: 4px; }
         .address-box {
             background: var(--surface); padding: 12px; border-radius: var(--radius);
             margin: 12px 0; display: flex; justify-content: space-between;
@@ -185,9 +187,9 @@
             background: var(--surface-light); margin-bottom: 12px; padding: 12px;
             border-radius: var(--radius); border-right: 3px solid var(--primary);
         }
-        .request-card.pending { border-right-color: #ff9800; }
-        .request-card.approved { border-right-color: #4caf50; }
-        .request-card.rejected { border-right-color: #f44336; }
+        .request-card.pending { border-right-color: var(--warning); }
+        .request-card.approved { border-right-color: var(--success); }
+        .request-card.rejected { border-right-color: var(--error); }
 
         /* التنبيهات */
         .toast {
@@ -226,6 +228,7 @@
         .section-title { color: var(--primary-light); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
         .reset-section { background: rgba(139,0,0,0.2); border: 1px solid var(--error); border-radius: var(--radius); padding: 20px; margin-top: 20px; }
         .hidden { display: none; }
+        .commission-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; display: inline-block; }
 
         @media (max-width: 480px) {
             .btn { padding: 10px 6px; font-size: 13px; }
@@ -249,7 +252,7 @@
                 <div class="avatar-btn" id="openProfileBtn">👤</div>
                 <div class="balance-card">
                     <div class="balance-label">الرصيد</div>
-                    <div class="balance-value"><span id="mainBalance">0</span> NSP</div>
+                    <div class="balance-value"><span id="mainBalance">0</span> SYP</div>
                 </div>
             </div>
             <div class="action-grid">
@@ -273,10 +276,11 @@
             <div class="info-panel">
                 <div class="info-row"><span class="info-label">الاسم</span><span id="profileName">-</span></div>
                 <div class="info-row"><span class="info-label">كود الإحالة</span><span id="profileRefCode">-</span></div>
-                <div class="info-row"><span class="info-label">أرباح الإحالات</span><span id="profileRefEarn">0 NSP</span></div>
+                <div class="info-row"><span class="info-label">أرباح الإحالات</span><span id="profileRefEarn">0 SYP</span></div>
                 <div class="info-row"><span class="info-label">عدد الإحالات</span><span id="profileRefCount">0</span></div>
-                <div class="info-row"><span class="info-label">إجمالي الإيداع</span><span id="profileTotalDeposit">0 NSP</span></div>
-                <div class="info-row"><span class="info-label">إجمالي السحب</span><span id="profileTotalWithdraw">0 NSP</span></div>
+                <div class="info-row"><span class="info-label">إجمالي الإيداع</span><span id="profileTotalDeposit">0 SYP</span></div>
+                <div class="info-row"><span class="info-label">إجمالي السحب</span><span id="profileTotalWithdraw">0 SYP</span></div>
+                <div id="referrerInfoProfile" class="info-row hidden"><span class="info-label">تمت الدعوة بواسطة</span><span id="referrerNameProfile">-</span></div>
                 <div class="ref-code-block" id="refCodeBlock"></div>
                 <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:16px">تسجيل خروج</button>
             </div>
@@ -284,17 +288,74 @@
 
         <div class="bottom-nav">
             <div class="nav-tab" data-tab="stats">إحصائياتي</div>
-            <div class="nav-tab" data-tab="earn">اكسب مجانا</div>
-            <div class="nav-tab" data-tab="deposits">إيداعاتي</div>
-            <div class="nav-tab" data-tab="withdraws">سحوباتي</div>
+            <div class="nav-tab" data-tab="earn">💰 اكسب مجانا</div>
+            <div class="nav-tab" data-tab="history">📋 سجل المعاملات</div>
         </div>
     </div>
 
     <!-- نوافذ المستخدم -->
     <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
-    <div id="earnModal" class="modal"><div class="modal-content"><div class="modal-header"><span>دعوة الأصدقاء</span><span class="close-modal">&times;</span></div><div style="text-align:center;padding:20px"><p>قم بدعوة أصدقاءك بكودك الخاص</p><div id="earnCodeDisplay" class="ref-code-block"></div><p style="color:var(--primary-light)">كل مستخدم جديد يضيف 5 NSP</p></div></div></div>
-    <div id="depositsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>سجل الإيداعات</span><span class="close-modal">&times;</span></div><div id="depositsList"></div></div></div>
-    <div id="withdrawsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>سجل السحوبات</span><span class="close-modal">&times;</span></div><div id="withdrawsList"></div></div></div>
+    
+    <div id="earnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>💰 اكسب مجانا</span>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <!-- قسم كود الإحالة الخاص بالمستخدم -->
+                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
+                    <h4 style="color: var(--primary-light); margin-bottom: 12px;">🏆 كود الإحالة الخاص بك</h4>
+                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 8px 0; font-size: 20px;"></div>
+                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 8px;">📋 نسخ الكود</button>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; text-align: center;">
+                        💰 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
+                        🎁 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع يقوم به
+                    </p>
+                </div>
+                
+                <!-- قسم إضافة كود إحالة (للمستخدم الذي ليس لديه محيل) -->
+                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
+                    <h4 style="color: var(--warning); margin-bottom: 12px;">👥 هل لديك كود إحالة؟</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                        أدخل كود الإحالة الخاص بالشخص الذي دعاك للحصول على 5 SYP مكافأة تسجيل
+                    </p>
+                    <div class="form-group">
+                        <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 18px;">
+                    </div>
+                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%">🎁 تفعيل كود الإحالة</button>
+                </div>
+                
+                <!-- عرض معلومات المحيل إذا وجد -->
+                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; display: none;">
+                    <h4 style="color: var(--success); margin-bottom: 12px;">✅ تم التفعيل بنجاح</h4>
+                    <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
+                    <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; text-align: center;">
+                        🎉 ستحصل أنت والمحيل على 5 SYP مكافأة تسجيل<br>
+                        📊 وتحصل على عمولة دائمة من كل إيداع يقوم به المحالون لديك
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>📋 سجل المعاملات</span>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div style="padding: 10px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+                    <button class="tab active" data-history-tab="deposits" style="flex:1; background: none; border: none; color: var(--text); padding: 10px;">💰 الإيداعات</button>
+                    <button class="tab" data-history-tab="withdraws" style="flex:1; background: none; border: none; color: var(--text); padding: 10px;">💸 السحوبات</button>
+                </div>
+                <div id="depositsHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
+                <div id="withdrawsHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- نافذة الإيداع -->
     <div id="depositModal" class="modal">
@@ -306,9 +367,10 @@
             </div>
             <div id="addressInfo"></div>
             <div class="form-group">
-                <label>المبلغ (SYP)</label>
+                <label>المبلغ</label>
                 <input type="number" id="depositAmount" placeholder="أدخل المبلغ">
                 <div id="minDepositHint" class="hint"></div>
+                <div id="exchangeRateHint" class="hint" style="color: var(--warning);"></div>
             </div>
             <div class="form-group">
                 <label>رقم العملية (Transaction ID)</label>
@@ -354,6 +416,7 @@
                 <ul style="text-align:right; margin:16px 20px; color:var(--text-secondary)">
                     <li>جميع المستخدمين</li>
                     <li>جميع طلبات السحب والإيداع</li>
+                    <li>جميع العمولات</li>
                     <li>إعادة تعيين الإعدادات</li>
                 </ul>
             </div>
@@ -428,15 +491,25 @@
                 <h3 class="section-title" style="margin-top:20px">صورة اللعبة</h3>
                 <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة (png, jpg, gif)"></div>
 
-                <h3 class="section-title" style="margin-top:20px">شام كاش</h3>
+                <h3 class="section-title" style="margin-top:20px">نظام الإحالات</h3>
+                <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" placeholder="5" step="0.5"></div>
+
+                <h3 class="section-title" style="margin-top:20px">شام كاش (ليرة)</h3>
                 <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
-                <div class="form-group"><label>🔑 API Key (خاص)</label><input type="password" id="settingShamCashApiKey" placeholder="مفتاح API الخاص"></div>
+                <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey" placeholder="مفتاح API الخاص"></div>
                 <div class="form-group"><label>🏦 العنوان الخاص (للـ API)</label><input type="text" id="settingShamCashPrivateAddress" placeholder="رقم المحفظة الخاص"></div>
                 <div class="form-group"><label>🌐 العنوان العام (للمستخدم)</label><input type="text" id="settingShamCashPublicAddress" placeholder="رقم التحويل العام"></div>
                 
+                <h3 class="section-title" style="margin-top:20px">شام كاش (دولار)</h3>
+                <div class="form-group"><label>🔘 تفعيل شام كاش دولار</label><input type="checkbox" id="settingShamCashUsdEnabled"></div>
+                <div class="form-group"><label>💵 سعر صرف الدولار إلى ليرة</label><input type="number" id="settingUsdToSypRate" placeholder="13000"></div>
+                <div class="form-group"><label>🔑 API Key (دولار)</label><input type="password" id="settingShamCashUsdApiKey" placeholder="مفتاح API الخاص"></div>
+                <div class="form-group"><label>🏦 العنوان الخاص (للـ API - دولار)</label><input type="text" id="settingShamCashUsdPrivateAddress" placeholder="رقم المحفظة الخاص"></div>
+                <div class="form-group"><label>🌐 العنوان العام (للمستخدم - دولار)</label><input type="text" id="settingShamCashUsdPublicAddress" placeholder="رقم التحويل العام"></div>
+                
                 <h3 class="section-title" style="margin-top:20px">سيرياتيل كاش</h3>
                 <div class="form-group"><label>🔘 تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
-                <div class="form-group"><label>🔑 API Key (خاص)</label><input type="password" id="settingSyriatelApiKey" placeholder="مفتاح API الخاص"></div>
+                <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingSyriatelApiKey" placeholder="مفتاح API الخاص"></div>
                 <div class="form-group"><label>📱 العنوان الخاص (للـ API)</label><input type="text" id="settingSyriatelPrivateAddress" placeholder="رقم الجوال الخاص"></div>
                 <div class="form-group"><label>🌐 العنوان العام (للمستخدم)</label><input type="text" id="settingSyriatelPublicAddress" placeholder="رقم التحويل العام"></div>
                 
@@ -452,6 +525,7 @@
                         <li>جميع المستخدمين المسجلين</li>
                         <li>جميع طلبات السحب</li>
                         <li>جميع سجلات الإيداع</li>
+                        <li>جميع عمولات الإحالات</li>
                         <li>إعادة تعيين الإعدادات</li>
                     </ul>
                     <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
@@ -479,20 +553,19 @@
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
-        
-        // إعدادات إضافية للمصادقة
         auth.useDeviceLanguage();
         
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ 
             prompt: 'select_account',
-            // إضافة هذه الإعدادات لمنع مشاكل الـ popup
             display: 'popup'
         });
 
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000;
         let currentGameImageUrl = '';
+        let currentUsdToSypRate = 13000;
+        let currentReferralCommission = 5;
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -541,8 +614,8 @@
                     userData = data.user;
                     document.getElementById('mainBalance').innerText = userData.balance || 0;
                     document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
-                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' NSP';
-                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' NSP';
+                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0) + ' SYP';
+                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0) + ' SYP';
                     isAdmin = data.isAdmin;
                 }
             }
@@ -555,17 +628,29 @@
                 if (data.success) {
                     const s = data.stats;
                     document.getElementById('profileRefCode').innerText = s.uniqueId || '---';
-                    document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0) + ' NSP';
+                    document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0) + ' SYP';
                     document.getElementById('profileRefCount').innerText = s.referralCount || 0;
                     document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`;
-                    document.getElementById('earnCodeDisplay').innerHTML = `كودك الخاص : ${s.uniqueId}`;
+                    
+                    // عرض معلومات المحيل في الصفحة الشخصية
+                    const referrerInfoDiv = document.getElementById('referrerInfoProfile');
+                    const referrerNameSpan = document.getElementById('referrerNameProfile');
+                    
+                    if (s.referredBy && s.referrerInfo) {
+                        referrerInfoDiv.classList.remove('hidden');
+                        referrerNameSpan.innerText = s.referredByName || s.referrerInfo.name;
+                    } else {
+                        referrerInfoDiv.classList.add('hidden');
+                    }
+                    
                     document.getElementById('statsInner').innerHTML = `
                         <div class="info-row"><span>تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div>
                         <div class="info-row"><span>عدد الإحالات</span><span>${s.referralCount}</span></div>
-                        <div class="info-row"><span>أرباح الإحالات</span><span>${s.referralEarnings} NSP</span></div>
-                        <div class="info-row"><span>إجمالي الإيداع</span><span>${s.totalDeposited || 0} NSP</span></div>
-                        <div class="info-row"><span>إجمالي السحب</span><span>${s.totalWithdrawn || 0} NSP</span></div>
-                        <div class="info-row"><span>الرصيد الحالي</span><span>${s.balance} NSP</span></div>
+                        <div class="info-row"><span>أرباح الإحالات</span><span>${s.referralEarnings} SYP</span></div>
+                        <div class="info-row"><span>عمولة الإحالة</span><span>${currentReferralCommission}%</span></div>
+                        <div class="info-row"><span>إجمالي الإيداع</span><span>${s.totalDeposited || 0} SYP</span></div>
+                        <div class="info-row"><span>إجمالي السحب</span><span>${s.totalWithdrawn || 0} SYP</span></div>
+                        <div class="info-row"><span>الرصيد الحالي</span><span>${s.balance} SYP</span></div>
                     `;
                 }
             }
@@ -576,7 +661,7 @@
                 const res = await apiCall('/api/user/deposits');
                 if (res?.ok) {
                     const data = await res.json();
-                    const container = document.getElementById('depositsList');
+                    const container = document.getElementById('depositsHistoryList');
                     if (!data.deposits || data.deposits.length === 0) {
                         container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد إيداعات سابقة</p>';
                         return;
@@ -595,10 +680,15 @@
                             }
                         }
                         
+                        let amountDisplay = `${d.amount} SYP`;
+                        if (d.originalAmount && d.originalCurrency === 'USD') {
+                            amountDisplay = `${d.originalAmount} USD (${d.amount} SYP)`;
+                        }
+                        
                         return `
                             <div class="request-card">
-                                <div><strong>💰 ${d.amount} SYP</strong></div>
-                                <div>طريقة الدفع: ${d.method === 'sham_cash' ? 'شام كاش' : (d.method === 'syriatel_cash' ? 'سيرياتيل كاش' : d.method)}</div>
+                                <div><strong>💰 ${amountDisplay}</strong></div>
+                                <div>طريقة الدفع: ${d.method}</div>
                                 <div>رقم العملية: ${d.transactionId}</div>
                                 <div>التاريخ: ${dateStr}</div>
                                 <div>الحالة: ${d.status === 'completed' ? '✅ مكتمل' : '⏳ قيد المراجعة'}</div>
@@ -606,11 +696,11 @@
                         `;
                     }).join('');
                 } else {
-                    document.getElementById('depositsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
+                    document.getElementById('depositsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
                 }
             } catch (error) {
                 console.error('Load deposits error:', error);
-                document.getElementById('depositsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
+                document.getElementById('depositsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل الإيداعات</p>';
             }
         }
 
@@ -619,7 +709,7 @@
                 const res = await apiCall('/api/user/withdraw-requests');
                 if (res?.ok) {
                     const data = await res.json();
-                    const container = document.getElementById('withdrawsList');
+                    const container = document.getElementById('withdrawsHistoryList');
                     if (!data.requests || data.requests.length === 0) {
                         container.innerHTML = '<p style="text-align:center;padding:20px">لا توجد سحوبات سابقة</p>';
                         return;
@@ -664,12 +754,77 @@
                         `;
                     }).join('');
                 } else {
-                    document.getElementById('withdrawsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
+                    document.getElementById('withdrawsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
                 }
             } catch (error) {
                 console.error('Load withdrawals error:', error);
-                document.getElementById('withdrawsList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
+                document.getElementById('withdrawsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">حدث خطأ في تحميل السحوبات</p>';
             }
+        }
+
+        // دوال الإحالات
+        async function addReferrerCode() {
+            const referrerCode = document.getElementById('referrerCodeInput').value.trim();
+            
+            if (!referrerCode) {
+                showMessage('الرجاء إدخال كود الإحالة', true);
+                return;
+            }
+            
+            const btn = document.getElementById('submitReferrerCodeBtn');
+            setButtonLoading(btn, true);
+            
+            const res = await apiCall('/api/user/add-referrer', {
+                method: 'POST',
+                body: JSON.stringify({ referrerCode })
+            });
+            
+            setButtonLoading(btn, false);
+            
+            if (res?.ok) {
+                const data = await res.json();
+                showMessage(data.message);
+                document.getElementById('referrerCodeInput').value = '';
+                await loadStats();
+                await loadEarnPageInfo();
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل إضافة كود الإحالة', true);
+            }
+        }
+
+        async function loadEarnPageInfo() {
+            const res = await apiCall('/api/user/stats');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.stats;
+                    
+                    // عرض كود الإحالة
+                    document.getElementById('earnCodeDisplay').innerHTML = s.uniqueId;
+                    document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission;
+                    
+                    // التحقق من وجود محيل
+                    const addSection = document.getElementById('addReferrerSection');
+                    const infoSection = document.getElementById('referrerInfoSection');
+                    
+                    if (s.referredBy && s.referrerInfo) {
+                        addSection.style.display = 'none';
+                        infoSection.style.display = 'block';
+                        document.getElementById('referrerNameDisplay').innerHTML = s.referredByName || s.referrerInfo.name;
+                        document.getElementById('referrerCodeDisplay').innerHTML = s.referrerInfo.uniqueId;
+                    } else {
+                        addSection.style.display = 'block';
+                        infoSection.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        function copyReferralCode() {
+            const code = document.getElementById('earnCodeDisplay').innerText;
+            navigator.clipboard.writeText(code);
+            showMessage('تم نسخ كود الإحالة: ' + code);
         }
 
         async function registerUser(refCode = null) {
@@ -696,6 +851,8 @@
                     currentMinDeposit = s.minDeposit;
                     currentMinWithdraw = s.minWithdraw;
                     currentGameImageUrl = s.gameImageUrl || '';
+                    currentUsdToSypRate = s.usdToSypRate || 13000;
+                    currentReferralCommission = s.referralCommission || 5;
                     
                     // تحديث صورة اللعبة
                     const gameIconContainer = document.getElementById('gameIconContainer');
@@ -729,16 +886,35 @@
                         const div = document.createElement('div');
                         div.className = 'method-card';
                         div.dataset.method = method.id;
-                        div.innerHTML = `<div class="method-name">${method.name}</div>`;
+                        div.innerHTML = `
+                            <div class="method-name">${method.name}</div>
+                            ${method.currency === 'USD' ? `<div class="method-currency">💵 السعر: 1 USD = ${currentUsdToSypRate} SYP</div>` : ''}
+                        `;
                         div.onclick = () => {
                             document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
                             div.classList.add('selected');
+                            
+                            let exchangeText = '';
+                            if (method.currency === 'USD') {
+                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: ${method.currency} × ${currentUsdToSypRate} = SYP</div>`;
+                            }
+                            
                             document.getElementById('addressInfo').innerHTML = `
                                 <div class="address-box">
                                     <span>${method.address}</span>
                                     <button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم نسخ العنوان')">📋 نسخ</button>
                                 </div>
+                                ${exchangeText}
                             `;
+                            
+                            // تحديث رسالة سعر الصرف
+                            const exchangeHint = document.getElementById('exchangeRateHint');
+                            if (method.currency === 'USD') {
+                                exchangeHint.innerHTML = `💵 سيتم تحويل المبلغ: المبلغ المدخل × ${currentUsdToSypRate} = المبلغ المقيد بالليرة`;
+                                exchangeHint.style.display = 'block';
+                            } else {
+                                exchangeHint.style.display = 'none';
+                            }
                         };
                         container.appendChild(div);
                     });
@@ -890,12 +1066,12 @@
                     container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
                         ${data.requests.map(r => `<tr>
                             <td>${r.userName || r.userEmail || r.userId}</td>
-                            <td>${r.amount} SYP</td>
+                            <td>${r.amount} SYP</
                             <td>${r.address}</td>
                             <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
                             <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
                             <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت المعالجة'}</td>
-                           </tr>`).join('')}
+                          </td>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -914,8 +1090,8 @@
                     container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>رقم العملية</th><th>التاريخ</th></tr></thead><tbody>
                         ${data.deposits.map(d => `<tr>
                             <td>${d.userName || d.userEmail || d.userId}</td>
-                            <td>${d.amount} SYP</td>
-                            <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
+                            <td>${d.amount} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td>
+                            <td>${d.method}</td>
                             <td>${d.transactionId}</td>
                             <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
                           </tr>`).join('')}
@@ -935,16 +1111,19 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد مستخدمين</p>';
                         return;
                     }
-                    container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+                    container.innerHTML = `</table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>أرباح الإحالات</th><th>عدد الإحالات</th><th>المحيل</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
                         ${allUsers.map(u => `<tr>
-                            <td>${u.email || '-'}</td>
+                            <td>${u.email || '-'}<table>
                             <td>${u.name || '-'}</td>
                             <td>${u.uniqueId || '-'}</td>
-                            <td>${u.balance || 0} NSP</td>
+                            <td>${u.balance || 0} SYP</td>
+                            <td>${u.referralEarnings || 0} SYP</td>
+                            <td>${u.referralsCount || 0}</td>
+                            <td>${u.referredByName || '-'}</td>
                             <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                             <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
                           </tr>`).join('')}
-                    </tbody></table>`;
+                    </tbody></tr>`;
                 }
             }
         }
@@ -957,10 +1136,16 @@
                     document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
                     document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || '';
+                    document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5;
                     document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
                     document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
                     document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || '';
                     document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || '';
+                    document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false;
+                    document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000;
+                    document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || '';
+                    document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || '';
+                    document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || '';
                     document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled;
                     document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
                     document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || '';
@@ -968,6 +1153,8 @@
                     currentMinDeposit = data.settings.minDeposit;
                     currentMinWithdraw = data.settings.minWithdraw;
                     currentGameImageUrl = data.settings.gameImageUrl || '';
+                    currentUsdToSypRate = data.settings.usdToSypRate || 13000;
+                    currentReferralCommission = data.settings.referralCommission || 5;
                 }
             }
         }
@@ -977,10 +1164,16 @@
                 minDeposit: Number(document.getElementById('settingMinDeposit').value),
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
                 gameImageUrl: document.getElementById('settingGameImageUrl').value,
+                referralCommission: Number(document.getElementById('settingReferralCommission').value),
                 shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
                 shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value,
                 shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value,
+                shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked,
+                usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value),
+                shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value,
+                shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value,
+                shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value,
                 syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
                 syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
                 syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value,
@@ -1041,9 +1234,7 @@
             setButtonLoading(loginBtn, true);
             
             try {
-                // إعادة تعيين أي حالة سابقة
                 await auth.signOut().catch(() => {});
-                
                 const result = await signInWithPopup(auth, provider);
                 currentUser = result.user;
                 const params = new URLSearchParams(window.location.search);
@@ -1053,6 +1244,7 @@
                 await loadDeposits();
                 await loadWithdrawals();
                 await loadDepositSettings();
+                await loadEarnPageInfo();
                 document.getElementById('loader').style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
@@ -1084,11 +1276,11 @@
                 await loadDeposits();
                 await loadWithdrawals();
                 await loadDepositSettings();
+                await loadEarnPageInfo();
                 loaderDiv.style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } else {
-                // إظهار زر تسجيل الدخول فقط
                 loaderDiv.innerHTML = '<div class="spinner"></div><div>BOOMB</div>';
                 loginBtn.style.display = 'block';
                 loginBtn.style.marginTop = '20px';
@@ -1096,7 +1288,6 @@
                 loaderDiv.appendChild(loginBtn);
                 loaderDiv.style.display = 'flex';
                 
-                // إزالة المستمع القديم وإضافته مرة واحدة
                 const newLoginBtn = document.getElementById('loginBtn');
                 if (newLoginBtn && !newLoginBtn.hasListener) {
                     newLoginBtn.hasListener = true;
@@ -1154,17 +1345,23 @@
             document.getElementById('resetPassword').value = '';
         });
 
+        document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
+        document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
+
         document.getElementById('searchUsers')?.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term));
             const container = document.getElementById('usersTable');
             if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; }
-            container.innerHTML = `<tr><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>أرباح الإحالات</th><th>عدد الإحالات</th><th>المحيل</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
                 ${filtered.map(u => `<tr>
                     <td>${u.email || '-'}</td>
                     <td>${u.name || '-'}</td>
                     <td>${u.uniqueId || '-'}</td>
-                    <td>${u.balance || 0} NSP</td>
+                    <td>${u.balance || 0} SYP</td>
+                    <td>${u.referralEarnings || 0} SYP</td>
+                    <td>${u.referralsCount || 0}</td>
+                    <td>${u.referredByName || '-'}</td>
                     <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                     <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
                   </tr>`).join('')}
@@ -1193,12 +1390,31 @@
             });
         });
 
+        // أزرار تبويب سجل المعاملات
+        document.querySelectorAll('[data-history-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.historyTab;
+                document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('depositsHistoryList').style.display = target === 'deposits' ? 'block' : 'none';
+                document.getElementById('withdrawsHistoryList').style.display = target === 'withdraws' ? 'block' : 'none';
+            });
+        });
+
+        // الأزرار السفلية
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {
                 const target = tab.dataset.tab;
-                if (target === 'deposits') await loadDeposits();
-                if (target === 'withdraws') await loadWithdrawals();
-                document.getElementById(`${target}Modal`).style.display = 'flex';
+                if (target === 'stats') {
+                    document.getElementById('statsModal').style.display = 'flex';
+                } else if (target === 'earn') {
+                    await loadEarnPageInfo();
+                    document.getElementById('earnModal').style.display = 'flex';
+                } else if (target === 'history') {
+                    await loadDeposits();
+                    await loadWithdrawals();
+                    document.getElementById('historyModal').style.display = 'flex';
+                }
             });
         });
     </script>

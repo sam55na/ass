@@ -97,9 +97,15 @@ async function getSettings() {
       minWithdraw: 5000,
       shamCashEnabled: true,
       syriatelEnabled: true,
+      shamCashUsdEnabled: false,
+      usdToSypRate: 13000,
+      referralCommission: 5, // نسبة العمولة 5%
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
+      shamCashUsdApiKey: '',
+      shamCashUsdPrivateAddress: '',
+      shamCashUsdPublicAddress: '',
       syriatelApiKey: '',
       syriatelPrivateAddress: '',
       syriatelPublicAddress: '0930000000',
@@ -114,9 +120,15 @@ async function getSettings() {
       minWithdraw: 5000,
       shamCashEnabled: true,
       syriatelEnabled: true,
+      shamCashUsdEnabled: false,
+      usdToSypRate: 13000,
+      referralCommission: 5,
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
+      shamCashUsdApiKey: '',
+      shamCashUsdPrivateAddress: '',
+      shamCashUsdPublicAddress: '',
       syriatelApiKey: '',
       syriatelPrivateAddress: '',
       syriatelPublicAddress: '0930000000',
@@ -204,6 +216,86 @@ class SyriatelCashClient {
   }
 }
 
+// ============= كلاس شام كاش دولار =============
+class ShamCashUsdClient {
+  constructor(apiKey, accountAddress) {
+    this.apiKey = apiKey;
+    this.accountAddress = accountAddress;
+    this.baseUrl = "https://apisyria.com/api/v1";
+  }
+
+  async verifyTransaction(txid, expectedAmount = null) {
+    try {
+      const params = {
+        resource: "shamcash",
+        action: "logs",
+        account_address: this.accountAddress,
+        api_key: this.apiKey
+      };
+      const response = await axios.get(this.baseUrl, { params, timeout: 30000 });
+      
+      if (response.status === 200 && response.data.success) {
+        const items = response.data.data?.items || [];
+        for (const item of items) {
+          if (String(item.tran_id) === String(txid)) {
+            const apiAmount = parseFloat(item.amount);
+            const timestamp = item.created_at || Date.now() / 1000;
+            if ((Date.now() / 1000 - timestamp) > 86400) {
+              return { success: false, message: "العملية أقدم من 24 ساعة" };
+            }
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
+              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}` };
+            }
+            return { success: true, amount: apiAmount, currency: "USD" };
+          }
+        }
+        return { success: false, message: "رقم العملية غير موجود" };
+      }
+      return { success: false, message: "فشل التحقق من العملية" };
+    } catch (error) {
+      console.error('ShamCash USD verification error:', error.message);
+      return { success: false, message: "خطأ في الاتصال بخدمة شام كاش" };
+    }
+  }
+}
+
+// ============= دالة لإضافة عمولة الإحالة =============
+async function addReferralCommission(userId, depositAmount) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+    
+    if (userData && userData.referredBy) {
+      const settings = await getSettings();
+      const commissionPercent = settings.referralCommission || 5;
+      const commissionAmount = (depositAmount * commissionPercent) / 100;
+      
+      if (commissionAmount > 0) {
+        // إضافة العمولة للمحيل
+        const referrerRef = db.collection('users').doc(userData.referredBy);
+        await referrerRef.update({
+          balance: admin.firestore.FieldValue.increment(commissionAmount),
+          referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
+        });
+        
+        // تسجيل العمولة
+        await db.collection('referral_commissions').add({
+          userId: userData.referredBy,
+          fromUserId: userId,
+          amount: commissionAmount,
+          depositAmount: depositAmount,
+          percent: commissionPercent,
+          createdAt: new Date()
+        });
+        
+        console.log(`تم إضافة عمولة ${commissionAmount} SYP للمحيل ${userData.referredBy} من إيداع ${depositAmount}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error adding referral commission:', error);
+  }
+}
+
 // ============= API المستخدمين =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
   try {
@@ -217,6 +309,24 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       return res.json({ success: true, user: userDoc.data(), isAdmin: email === ADMIN_EMAIL });
     }
     
+    let referredBy = null;
+    let referrerName = null;
+    
+    // التحقق من كود الإحالة المدخل
+    if (referrerId) {
+      const refQuery = await db.collection('users').where('uniqueId', '==', referrerId).limit(1).get();
+      if (!refQuery.empty) {
+        referredBy = refQuery.docs[0].id;
+        referrerName = refQuery.docs[0].data().name;
+        
+        // إضافة مكافأة التسجيل للمحيل (5 SYP)
+        await refQuery.docs[0].ref.update({
+          referralEarnings: admin.firestore.FieldValue.increment(5),
+          referrals: admin.firestore.FieldValue.arrayUnion(uid)
+        });
+      }
+    }
+    
     const newUser = {
       uniqueId: generateUniqueId(),
       email,
@@ -225,22 +335,14 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       totalDeposited: 0,
       totalWithdrawn: 0,
       referralEarnings: 0,
-      referredBy: referrerId || null,
+      referredBy: referredBy,
+      referredByName: referrerName,
       referrals: [],
       createdAt: new Date(),
       isBanned: false
     };
     await userRef.set(newUser);
     
-    if (referrerId) {
-      const refQuery = await db.collection('users').where('uniqueId', '==', referrerId).limit(1).get();
-      if (!refQuery.empty) {
-        await refQuery.docs[0].ref.update({
-          referralEarnings: admin.firestore.FieldValue.increment(5),
-          referrals: admin.firestore.FieldValue.arrayUnion(uid)
-        });
-      }
-    }
     res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
   } catch (error) {
     console.error('Register error:', error);
@@ -268,6 +370,19 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'مستخدم غير موجود' });
     }
     const data = userDoc.data();
+    
+    // جلب معلومات المحيل إذا وجد
+    let referrerInfo = null;
+    if (data.referredBy) {
+      const referrerDoc = await db.collection('users').doc(data.referredBy).get();
+      if (referrerDoc.exists) {
+        referrerInfo = {
+          name: referrerDoc.data().name,
+          uniqueId: referrerDoc.data().uniqueId
+        };
+      }
+    }
+    
     res.json({
       success: true,
       stats: {
@@ -277,7 +392,10 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
         totalDeposited: data.totalDeposited || 0,
         totalWithdrawn: data.totalWithdrawn || 0,
         uniqueId: data.uniqueId,
-        joinDate: data.createdAt
+        joinDate: data.createdAt,
+        referredBy: data.referredBy,
+        referredByName: data.referredByName,
+        referrerInfo: referrerInfo
       }
     });
   } catch (error) {
@@ -295,9 +413,21 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
     if (settings.shamCashEnabled && settings.shamCashPublicAddress) {
       methods.push({
         id: 'sham_cash',
-        name: 'شام كاش',
+        name: 'شام كاش (ليرة)',
         address: settings.shamCashPublicAddress,
-        type: 'sham_cash'
+        type: 'sham_cash',
+        currency: 'SYP'
+      });
+    }
+    
+    if (settings.shamCashUsdEnabled && settings.shamCashUsdPublicAddress) {
+      methods.push({
+        id: 'sham_cash_usd',
+        name: 'شام كاش (دولار)',
+        address: settings.shamCashUsdPublicAddress,
+        type: 'sham_cash_usd',
+        currency: 'USD',
+        exchangeRate: settings.usdToSypRate || 13000
       });
     }
     
@@ -306,7 +436,8 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         id: 'syriatel_cash',
         name: 'سيرياتيل كاش',
         address: settings.syriatelPublicAddress,
-        type: 'syriatel_cash'
+        type: 'syriatel_cash',
+        currency: 'SYP'
       });
     }
     
@@ -316,7 +447,9 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         minDeposit: settings.minDeposit,
         minWithdraw: settings.minWithdraw,
         methods: methods,
-        gameImageUrl: settings.gameImageUrl || ''
+        gameImageUrl: settings.gameImageUrl || '',
+        usdToSypRate: settings.usdToSypRate || 13000,
+        referralCommission: settings.referralCommission || 5
       }
     });
   } catch (error) {
@@ -334,19 +467,17 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     }
     
-    const amountNum = Number(amount);
+    let amountNum = Number(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       return res.status(400).json({ error: 'المبلغ غير صالح' });
     }
     
     const settings = await getSettings();
-    
-    if (amountNum < settings.minDeposit) {
-      return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
-    }
-    
     let verification = null;
+    let finalAmountSYP = amountNum;
+    let currency = 'SYP';
     
+    // التحقق من العملية حسب طريقة الدفع
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled) {
         return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
@@ -356,6 +487,26 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       }
       const client = new ShamCashClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
       verification = await client.verifyTransaction(transactionId, amountNum);
+      if (verification.success) {
+        finalAmountSYP = verification.amount;
+        currency = verification.currency || 'SYP';
+      }
+      
+    } else if (method === 'sham_cash_usd') {
+      if (!settings.shamCashUsdEnabled) {
+        return res.status(400).json({ error: 'طريقة الدفع شام كاش دولار غير مفعلة' });
+      }
+      if (!settings.shamCashUsdApiKey || !settings.shamCashUsdPrivateAddress) {
+        return res.status(400).json({ error: 'بيانات شام كاش دولار غير مكتملة' });
+      }
+      const client = new ShamCashUsdClient(settings.shamCashUsdApiKey, settings.shamCashUsdPrivateAddress);
+      verification = await client.verifyTransaction(transactionId, amountNum);
+      if (verification.success) {
+        // تحويل المبلغ من دولار إلى ليرة حسب سعر الصرف
+        const exchangeRate = settings.usdToSypRate || 13000;
+        finalAmountSYP = verification.amount * exchangeRate;
+        currency = 'SYP';
+      }
       
     } else if (method === 'syriatel_cash') {
       if (!settings.syriatelEnabled) {
@@ -366,6 +517,10 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       }
       const client = new SyriatelCashClient(settings.syriatelApiKey, [settings.syriatelPrivateAddress]);
       verification = await client.verifyTransaction(transactionId, amountNum);
+      if (verification.success) {
+        finalAmountSYP = verification.amount;
+        currency = verification.currency || 'SYP';
+      }
     } else {
       return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
     }
@@ -374,6 +529,11 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: verification.message });
     }
     
+    if (finalAmountSYP < settings.minDeposit) {
+      return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
+    }
+    
+    // التحقق من عدم تكرار العملية
     const existing = await db.collection('deposits')
       .where('transactionId', '==', transactionId)
       .limit(1)
@@ -383,25 +543,33 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     }
     
+    // تحديث رصيد المستخدم
     const userRef = db.collection('users').doc(uid);
     await userRef.update({
-      balance: admin.firestore.FieldValue.increment(verification.amount),
-      totalDeposited: admin.firestore.FieldValue.increment(verification.amount)
+      balance: admin.firestore.FieldValue.increment(finalAmountSYP),
+      totalDeposited: admin.firestore.FieldValue.increment(finalAmountSYP)
     });
     
+    // تسجيل الإيداع
     await db.collection('deposits').add({
       userId: uid,
       method,
-      amount: verification.amount,
+      amount: finalAmountSYP,
+      originalAmount: verification.amount,
+      originalCurrency: currency,
       transactionId,
       status: 'completed',
-      verifiedAt: new Date()
+      verifiedAt: new Date(),
+      exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
     });
+    
+    // إضافة عمولة الإحالة (5% من مبلغ الإيداع)
+    await addReferralCommission(uid, finalAmountSYP);
     
     const updatedUser = await userRef.get();
     res.json({ 
       success: true, 
-      message: `تم إيداع ${verification.amount} SYP بنجاح`,
+      message: `تم إيداع ${finalAmountSYP} SYP بنجاح`,
       newBalance: updatedUser.data().balance
     });
     
@@ -411,7 +579,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API جلب سجل الإيداعات (معالج يدوي للتاريخ) =============
 app.get('/api/user/deposits', requireAuth, async (req, res) => {
   try {
     const snapshot = await db.collection('deposits')
@@ -424,7 +591,6 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
     snapshot.forEach(doc => {
       const data = doc.data();
       
-      // معالجة آمنة للتاريخ
       let verifiedDate = null;
       if (data.verifiedAt) {
         if (typeof data.verifiedAt === 'object') {
@@ -440,10 +606,18 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
         }
       }
       
+      let methodName = '';
+      if (data.method === 'sham_cash') methodName = 'شام كاش (ليرة)';
+      else if (data.method === 'sham_cash_usd') methodName = 'شام كاش (دولار)';
+      else if (data.method === 'syriatel_cash') methodName = 'سيرياتيل كاش';
+      else methodName = data.method;
+      
       deposits.push({
         id: doc.id,
         amount: data.amount || 0,
-        method: data.method || 'unknown',
+        method: methodName,
+        originalAmount: data.originalAmount,
+        originalCurrency: data.originalCurrency,
         transactionId: data.transactionId || 'N/A',
         verifiedAt: verifiedDate,
         status: data.status || 'completed'
@@ -453,8 +627,65 @@ app.get('/api/user/deposits', requireAuth, async (req, res) => {
     res.json({ success: true, deposits });
   } catch (error) {
     console.error('Get deposits error:', error);
-    // في حالة الخطأ، نرجع مصفوفة فارغة بدلاً من 500
     res.json({ success: true, deposits: [] });
+  }
+});
+
+// ============= API لإضافة كود إحالة (للمستخدم الحالي) =============
+app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { referrerCode } = req.body;
+    
+    if (!referrerCode) {
+      return res.status(400).json({ error: 'كود الإحالة مطلوب' });
+    }
+    
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    // التحقق من أن المستخدم ليس لديه محيل بالفعل
+    if (userData.referredBy) {
+      return res.status(400).json({ error: 'لديك محيل بالفعل' });
+    }
+    
+    // البحث عن المحيل بالكود
+    const referrerQuery = await db.collection('users').where('uniqueId', '==', referrerCode).limit(1).get();
+    
+    if (referrerQuery.empty) {
+      return res.status(404).json({ error: 'كود الإحالة غير صحيح' });
+    }
+    
+    const referrerDoc = referrerQuery.docs[0];
+    const referrerId = referrerDoc.id;
+    
+    // منع المستخدم من إحالة نفسه
+    if (referrerId === uid) {
+      return res.status(400).json({ error: 'لا يمكنك إحالة نفسك' });
+    }
+    
+    // تحديث بيانات المستخدم
+    await userRef.update({
+      referredBy: referrerId,
+      referredByName: referrerDoc.data().name
+    });
+    
+    // إضافة مكافأة التسجيل للمحيل (5 SYP)
+    await referrerDoc.ref.update({
+      referralEarnings: admin.firestore.FieldValue.increment(5),
+      referrals: admin.firestore.FieldValue.arrayUnion(uid)
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `تم إضافة المحيل بنجاح: ${referrerDoc.data().name}`,
+      referrerName: referrerDoc.data().name
+    });
+    
+  } catch (error) {
+    console.error('Add referrer error:', error);
+    res.status(500).json({ error: 'حدث خطأ في إضافة كود الإحالة' });
   }
 });
 
@@ -519,7 +750,6 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API جلب سجل السحوبات (معالج يدوي للتاريخ) =============
 app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   try {
     const snapshot = await db.collection('withdraw_requests')
@@ -532,7 +762,6 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
     snapshot.forEach(doc => {
       const data = doc.data();
       
-      // معالجة آمنة للتاريخ
       let createdDate = null;
       if (data.createdAt) {
         if (typeof data.createdAt === 'object') {
@@ -561,7 +790,6 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
     res.json({ success: true, requests });
   } catch (error) {
     console.error('Get withdraw requests error:', error);
-    // في حالة الخطأ، نرجع مصفوفة فارغة بدلاً من 500
     res.json({ success: true, requests: [] });
   }
 });
@@ -590,14 +818,25 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
     depositsSnapshot.forEach(doc => depositsDeletions.push(db.collection('deposits').doc(doc.id).delete()));
     await Promise.all(depositsDeletions);
     
+    const commissionsSnapshot = await db.collection('referral_commissions').get();
+    const commissionsDeletions = [];
+    commissionsSnapshot.forEach(doc => commissionsDeletions.push(db.collection('referral_commissions').doc(doc.id).delete()));
+    await Promise.all(commissionsDeletions);
+    
     const defaultSettings = {
       minDeposit: 1000,
       minWithdraw: 5000,
       shamCashEnabled: true,
       syriatelEnabled: true,
+      shamCashUsdEnabled: false,
+      usdToSypRate: 13000,
+      referralCommission: 5,
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
+      shamCashUsdApiKey: '',
+      shamCashUsdPrivateAddress: '',
+      shamCashUsdPublicAddress: '',
       syriatelApiKey: '',
       syriatelPrivateAddress: '',
       syriatelPublicAddress: '0930000000',
@@ -611,7 +850,8 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       deleted: {
         users: usersDeletions.length,
         withdraws: withdrawsDeletions.length,
-        deposits: depositsDeletions.length
+        deposits: depositsDeletions.length,
+        commissions: commissionsDeletions.length
       }
     });
     
@@ -768,13 +1008,21 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
         else if (data.verifiedAt instanceof Date) verifiedDate = data.verifiedAt;
       }
       
+      let methodName = '';
+      if (data.method === 'sham_cash') methodName = 'شام كاش (ليرة)';
+      else if (data.method === 'sham_cash_usd') methodName = 'شام كاش (دولار)';
+      else if (data.method === 'syriatel_cash') methodName = 'سيرياتيل كاش';
+      else methodName = data.method;
+      
       deposits.push({
         id: doc.id,
         userId: data.userId,
         userEmail: userDoc.exists ? userDoc.data().email : null,
         userName: userDoc.exists ? userDoc.data().name : null,
         amount: data.amount,
-        method: data.method,
+        method: methodName,
+        originalAmount: data.originalAmount,
+        originalCurrency: data.originalCurrency,
         transactionId: data.transactionId,
         verifiedAt: verifiedDate
       });
@@ -799,7 +1047,11 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         name: data.name,
         uniqueId: data.uniqueId,
         balance: data.balance,
-        isBanned: data.isBanned || false
+        isBanned: data.isBanned || false,
+        referredBy: data.referredBy,
+        referredByName: data.referredByName,
+        referralEarnings: data.referralEarnings || 0,
+        referralsCount: data.referrals?.length || 0
       });
     });
     res.json({ success: true, users });
@@ -811,7 +1063,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
   try {
-    const { userId, amount } = req.body;
+    const { userId, amount, reason } = req.body;
     await db.collection('users').doc(userId).update({
       balance: admin.firestore.FieldValue.increment(Number(amount))
     });
