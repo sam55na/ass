@@ -91,15 +91,22 @@
         .btn-danger:hover { background: linear-gradient(95deg, #660000, #990000); }
 
         /* منطقة اللعب */
-        .play-zone { text-align: center; margin: 20px 0; }
+        .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .game-sphere {
             width: 110px; height: 110px; margin: 0 auto 16px;
-            background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark));
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 58px; cursor: pointer; transition: transform 0.2s;
             box-shadow: 0 0 20px rgba(255,0,0,0.3);
+            background-size: cover; background-position: center; background-color: var(--surface-light);
+        }
+        .game-image {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+        }
+        .game-sphere.default-icon {
+            background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark));
         }
         .game-sphere:active { transform: scale(0.96); }
+        #playNowBtn { margin-top: 8px; width: 80%; }
 
         /* الشريط السفلي */
         .bottom-nav {
@@ -243,7 +250,10 @@
                 <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
             </div>
             <div class="play-zone">
-                <div class="game-sphere">🎮</div>
+                <div class="game-sphere" id="gameIconContainer">
+                    <img id="gameImage" class="game-image hidden" alt="Game Icon">
+                    <span id="defaultGameIcon">🎮</span>
+                </div>
                 <button class="btn btn-primary" id="playNowBtn">العب الآن</button>
             </div>
         </div>
@@ -408,6 +418,9 @@
                 <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
                 <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
                 
+                <h3 class="section-title" style="margin-top:20px">صورة اللعبة</h3>
+                <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة (png, jpg, gif)"></div>
+
                 <h3 class="section-title" style="margin-top:20px">شام كاش</h3>
                 <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
                 <div class="form-group"><label>🔑 API Key (خاص)</label><input type="password" id="settingShamCashApiKey" placeholder="مفتاح API الخاص"></div>
@@ -464,6 +477,7 @@
 
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000;
+        let currentGameImageUrl = '';
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -604,6 +618,24 @@
                     const s = data.settings;
                     currentMinDeposit = s.minDeposit;
                     currentMinWithdraw = s.minWithdraw;
+                    currentGameImageUrl = s.gameImageUrl || '';
+                    
+                    // تحديث صورة اللعبة
+                    const gameIconContainer = document.getElementById('gameIconContainer');
+                    const gameImage = document.getElementById('gameImage');
+                    const defaultIcon = document.getElementById('defaultGameIcon');
+                    
+                    if (currentGameImageUrl && currentGameImageUrl.trim() !== '') {
+                        gameImage.src = currentGameImageUrl;
+                        gameImage.classList.remove('hidden');
+                        defaultIcon.classList.add('hidden');
+                        gameIconContainer.style.background = 'none';
+                    } else {
+                        gameImage.classList.add('hidden');
+                        defaultIcon.classList.remove('hidden');
+                        gameIconContainer.classList.add('default-icon');
+                    }
+                    
                     document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${s.minDeposit} SYP`;
                     document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${s.minWithdraw} SYP`;
                     
@@ -777,7 +809,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">لا توجد طلبات سحب</p>';
                         return;
                     }
-                    container.innerHTML = `<tr><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
+                    container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead><tbody>
                         ${data.requests.map(r => `<tr>
                             <td>${r.userName || r.userEmail || r.userId}</td>
                             <td>${r.amount} SYP</td>
@@ -785,7 +817,7 @@
                             <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
                             <td>${new Date(r.createdAt).toLocaleString('ar')}</td>
                             <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت المعالجة'}</td>
-                         </tr>`).join('')}
+                          </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -808,7 +840,7 @@
                             <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
                             <td>${d.transactionId}</td>
                             <td>${new Date(d.verifiedAt).toLocaleString('ar')}</td>
-                        </tr>`).join('')}
+                         </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -833,7 +865,7 @@
                             <td>${u.balance || 0} NSP</td>
                             <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                             <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                        </tr>`).join('')}
+                         </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -846,6 +878,7 @@
                 if (data.success) {
                     document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
+                    document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || '';
                     document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
                     document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
                     document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || '';
@@ -856,6 +889,7 @@
                     document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || '';
                     currentMinDeposit = data.settings.minDeposit;
                     currentMinWithdraw = data.settings.minWithdraw;
+                    currentGameImageUrl = data.settings.gameImageUrl || '';
                 }
             }
         }
@@ -864,6 +898,7 @@
             const settings = {
                 minDeposit: Number(document.getElementById('settingMinDeposit').value),
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
+                gameImageUrl: document.getElementById('settingGameImageUrl').value,
                 shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
                 shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value,
@@ -1020,7 +1055,7 @@
                     <td>${u.balance || 0} NSP</td>
                     <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                     <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                </tr>`).join('')}
+                 </tr>`).join('')}
             </tbody></table>`;
         });
 
