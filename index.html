@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="referrer" content="origin">
+    <!-- إضافة هذه السياسات لحل مشكلة COOP -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
     <title>BOOMB - منصة الألعاب</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -236,6 +239,7 @@
     <div id="loader" class="loading-overlay">
         <div class="spinner"></div>
         <div>BOOMB</div>
+        <button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px;display:none">🔐 تسجيل دخول Google</button>
     </div>
 
     <!-- واجهة المستخدم -->
@@ -475,8 +479,16 @@
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
+        
+        // إعدادات إضافية للمصادقة
+        auth.useDeviceLanguage();
+        
         const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+        provider.setCustomParameters({ 
+            prompt: 'select_account',
+            // إضافة هذه الإعدادات لمنع مشاكل الـ popup
+            display: 'popup'
+        });
 
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000;
@@ -883,7 +895,7 @@
                             <td>${r.status === 'pending' ? '⏳ قيد المراجعة' : (r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض')}</td>
                             <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
                             <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">قبول</button><button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">رفض</button>` : 'تمت المعالجة'}</td>
-                        </tr>`).join('')}
+                           </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -906,7 +918,7 @@
                             <td>${d.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</td>
                             <td>${d.transactionId}</td>
                             <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
-                        </tr>`).join('')}
+                          </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -931,7 +943,7 @@
                             <td>${u.balance || 0} NSP</td>
                             <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                             <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                        </tr>`).join('')}
+                          </tr>`).join('')}
                     </tbody></table>`;
                 }
             }
@@ -1025,7 +1037,13 @@
         }
 
         async function handleGoogleSignIn() {
+            const loginBtn = document.getElementById('loginBtn');
+            setButtonLoading(loginBtn, true);
+            
             try {
+                // إعادة تعيين أي حالة سابقة
+                await auth.signOut().catch(() => {});
+                
                 const result = await signInWithPopup(auth, provider);
                 currentUser = result.user;
                 const params = new URLSearchParams(window.location.search);
@@ -1039,12 +1057,25 @@
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } catch (err) {
-                console.error('Sign in error:', err);
-                showMessage('فشل تسجيل الدخول', true);
+                console.error('Sign in error details:', err);
+                let errorMessage = 'فشل تسجيل الدخول';
+                if (err.code === 'auth/popup-blocked') {
+                    errorMessage = 'الرجاء السماح للنوافذ المنبثقة في المتصفح';
+                } else if (err.code === 'auth/network-request-failed') {
+                    errorMessage = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت';
+                } else if (err.code === 'auth/internal-error') {
+                    errorMessage = 'خطأ داخلي، حاول مرة أخرى';
+                }
+                showMessage(errorMessage, true);
+            } finally {
+                setButtonLoading(loginBtn, false);
             }
         }
 
         onAuthStateChanged(auth, async (user) => {
+            const loaderDiv = document.getElementById('loader');
+            const loginBtn = document.getElementById('loginBtn');
+            
             if (user) {
                 currentUser = user;
                 await registerUser();
@@ -1053,13 +1084,24 @@
                 await loadDeposits();
                 await loadWithdrawals();
                 await loadDepositSettings();
-                document.getElementById('loader').style.display = 'none';
+                loaderDiv.style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
             } else {
-                document.getElementById('loader').innerHTML = `<div class="spinner"></div><button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px">🔐 تسجيل دخول Google</button>`;
-                document.getElementById('loader').style.display = 'flex';
-                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn);
+                // إظهار زر تسجيل الدخول فقط
+                loaderDiv.innerHTML = '<div class="spinner"></div><div>BOOMB</div>';
+                loginBtn.style.display = 'block';
+                loginBtn.style.marginTop = '20px';
+                loginBtn.style.width = '200px';
+                loaderDiv.appendChild(loginBtn);
+                loaderDiv.style.display = 'flex';
+                
+                // إزالة المستمع القديم وإضافته مرة واحدة
+                const newLoginBtn = document.getElementById('loginBtn');
+                if (newLoginBtn && !newLoginBtn.hasListener) {
+                    newLoginBtn.hasListener = true;
+                    newLoginBtn.addEventListener('click', handleGoogleSignIn);
+                }
             }
         });
 
@@ -1068,12 +1110,15 @@
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('profileScreen').classList.remove('hidden');
             if (isAdmin) {
-                const btn = document.createElement('button');
-                btn.className = 'admin-btn';
-                btn.innerText = 'لوحة الأدمن';
-                btn.onclick = showAdminInterface;
-                document.getElementById('adminSwitchContainer').innerHTML = '';
-                document.getElementById('adminSwitchContainer').appendChild(btn);
+                const container = document.getElementById('adminSwitchContainer');
+                if (container && !container.querySelector('.admin-btn')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'admin-btn';
+                    btn.innerText = 'لوحة الأدمن';
+                    btn.onclick = showAdminInterface;
+                    container.innerHTML = '';
+                    container.appendChild(btn);
+                }
             }
         });
 
@@ -1114,7 +1159,7 @@
             const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term));
             const container = document.getElementById('usersTable');
             if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">لا يوجد نتائج</p>'; return; }
-            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+            container.innerHTML = `<tr><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
                 ${filtered.map(u => `<tr>
                     <td>${u.email || '-'}</td>
                     <td>${u.name || '-'}</td>
@@ -1122,7 +1167,7 @@
                     <td>${u.balance || 0} NSP</td>
                     <td>${u.isBanned ? 'محظور' : 'نشط'}</td>
                     <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">تعديل</button><button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? 'إلغاء الحظر' : 'حظر'}</button></td>
-                </tr>`).join('')}
+                  </tr>`).join('')}
             </tbody></table>`;
         });
 
