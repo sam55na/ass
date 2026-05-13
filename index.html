@@ -67,6 +67,7 @@
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes wheelSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(3600deg); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         @keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--primary-glow); } 50% { box-shadow: 0 0 20px var(--primary-glow); } }
         
@@ -134,6 +135,7 @@
         .btn-secondary:hover { background: var(--primary-bg); transform: translateY(-1px); }
         .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
 
         /* ============= منطقة اللعب ============= */
         .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
@@ -185,6 +187,88 @@
             cursor: pointer; transition: var(--transition);
         }
         .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); }
+
+        /* ============= العجلة ============= */
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+        }
+        .wheel-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transition: transform 0.1s ease;
+            cursor: pointer;
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--primary);
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+            z-index: 10;
+        }
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: var(--surface);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 2px solid var(--primary);
+            z-index: 15;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        .spin-btn {
+            width: 80%;
+            margin: 20px auto;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .spin-info {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--surface-light);
+            border-radius: var(--radius);
+        }
+        .cooldown-timer {
+            color: var(--warning);
+            font-weight: bold;
+        }
+        .wheel-history {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .history-item {
+            background: var(--surface);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .history-prize {
+            color: var(--success);
+            font-weight: bold;
+        }
 
         /* ============= النوافذ المنبثقة ============= */
         .modal {
@@ -309,6 +393,7 @@
             th, td { padding: 8px; font-size: 12px; }
             .game-sphere { width: 100px; height: 100px; font-size: 48px; }
             .theme-color { width: 30px; height: 30px; }
+            .wheel-container { width: 250px; height: 250px; }
         }
     </style>
 </head>
@@ -371,7 +456,7 @@
         <div class="bottom-nav">
             <div class="nav-tab" data-tab="stats">📊<span>إحصائياتي</span></div>
             <div class="nav-tab" data-tab="earn">🎁<span>اكسب مجانا</span></div>
-            <div class="nav-tab" data-tab="history">📋<span>سجل المعاملات</span></div>
+            <div class="nav-tab" data-tab="wheel">🎡<span>عجلة الحظ</span></div>
         </div>
     </div>
 
@@ -408,16 +493,29 @@
         </div>
     </div>
 
-    <div id="historyModal" class="modal">
+    <!-- نافذة عجلة الحظ -->
+    <div id="wheelModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header"><span>📋 سجل المعاملات</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 10px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
-                    <button class="tab active" data-history-tab="deposits" style="flex:1;">💰 الإيداعات</button>
-                    <button class="tab" data-history-tab="withdraws" style="flex:1;">💸 السحوبات</button>
+            <div class="modal-header"><span>🎡 عجلة الحظ</span><span class="close-modal">&times;</span></div>
+            <div style="padding: 10px; text-align: center;">
+                <div class="wheel-container">
+                    <canvas id="wheelCanvas" class="wheel-canvas" width="400" height="400"></canvas>
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel-center">🎡</div>
                 </div>
-                <div id="depositsHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
-                <div id="withdrawsHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
+                
+                <div class="spin-info">
+                    <div>💎 تكلفة التدوير: <strong id="spinCostDisplay">50</strong> SYP من رصيد الإحالات</div>
+                    <div>🎁 رصيد الإحالات الحالي: <strong id="currentReferralBalance">0</strong> SYP</div>
+                    <div id="cooldownInfo" style="display: none;">⏳ يتبقى: <span id="cooldownTimer" class="cooldown-timer">0</span> ثانية</div>
+                </div>
+                
+                <button class="btn btn-warning spin-btn" id="spinWheelBtn">🎡 دوّر العجلة 🎡</button>
+                
+                <div class="wheel-history">
+                    <h4 style="color: var(--primary-light); margin-bottom: 10px;">📜 آخر التدويرات</h4>
+                    <div id="wheelHistoryList"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -482,6 +580,7 @@
                 <div class="tab" data-tab="users">👥 المستخدمين</div>
                 <div class="tab" data-tab="settings">⚙️ إعدادات الدفع</div>
                 <div class="tab" data-tab="themes">🎨 الألوان</div>
+                <div class="tab" data-tab="wheel-settings">🎡 العجلة</div>
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
@@ -553,6 +652,26 @@
                 <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
             </div>
 
+            <div id="adminWheelSettingsPanel" class="admin-table hidden">
+                <h3 class="section-title">🎡 إعدادات عجلة الحظ</h3>
+                <div class="form-group">
+                    <label>💰 سعر التدويرة (SYP من رصيد الإحالات)</label>
+                    <input type="number" id="settingWheelSpinCost" placeholder="سعر التدويرة">
+                </div>
+                <div class="form-group">
+                    <label>⏱️ مدة الانتظار بين التدويرات (دقائق)</label>
+                    <input type="number" id="settingWheelCooldown" value="5" disabled placeholder="5 دقائق (ثابت)">
+                </div>
+                <div class="info-panel" style="margin-top: 15px;">
+                    <h4 style="color: var(--primary-light);">🎁 الجوائز الحالية:</h4>
+                    <div class="info-row"><span>😅 حظ أوفر</span><span>40% (مرتين)</span></div>
+                    <div class="info-row"><span>🎁 10 رصيد أساسي</span><span>10% (مرتين)</span></div>
+                    <div class="info-row"><span>🎁 20 رصيد أساسي</span><span>5% (مرتين)</span></div>
+                    <div class="info-row"><span>🎁 30 رصيد أساسي</span><span>5% (مرتين)</span></div>
+                </div>
+                <button class="admin-btn" id="saveWheelSettingsBtn" style="width:100%; margin-top:20px">💾 حفظ إعدادات العجلة</button>
+            </div>
+
             <div id="adminResetPanel" class="admin-table hidden">
                 <div class="reset-section"><h3 class="section-title" style="color:var(--error)">⚠️ مسح قاعدة البيانات بالكامل</h3><button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button></div>
             </div>
@@ -583,7 +702,22 @@
         provider.setCustomParameters({ prompt: 'select_account', display: 'popup' });
 
         let currentUser = null, userData = null, isAdmin = false;
-        let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
+        let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5, currentWheelSpinCost = 50;
+        
+        // متغيرات العجلة
+        let wheelCanvas = null, wheelCtx = null;
+        let isSpinning = false;
+        let spinAudio = null;
+        let wheelSegments = [
+            { name: 'حظ أوفر', value: 0, color: '#ff6b6b', probability: 40 },
+            { name: '10 رصيد', value: 10, color: '#4ecdc4', probability: 10 },
+            { name: '20 رصيد', value: 20, color: '#45b7d1', probability: 5 },
+            { name: '30 رصيد', value: 30, color: '#96ceb4', probability: 5 },
+            { name: 'حظ أوفر', value: 0, color: '#ff6b6b', probability: 40 },
+            { name: '10 رصيد', value: 10, color: '#4ecdc4', probability: 10 },
+            { name: '20 رصيد', value: 20, color: '#45b7d1', probability: 5 },
+            { name: '30 رصيد', value: 30, color: '#96ceb4', probability: 5 }
+        ];
 
         // ============= دوال مساعدة =============
         function showMessage(msg, isErr = false) {
@@ -646,6 +780,55 @@
             return false;
         }
 
+        // ============= رسم العجلة =============
+        function drawWheel() {
+            if (!wheelCanvas || !wheelCtx) return;
+            const size = wheelCanvas.width;
+            const center = size / 2;
+            const radius = size / 2 - 5;
+            const anglePerSegment = (Math.PI * 2) / wheelSegments.length;
+            
+            wheelCtx.clearRect(0, 0, size, size);
+            
+            for (let i = 0; i < wheelSegments.length; i++) {
+                const startAngle = i * anglePerSegment;
+                const endAngle = startAngle + anglePerSegment;
+                
+                wheelCtx.beginPath();
+                wheelCtx.moveTo(center, center);
+                wheelCtx.arc(center, center, radius, startAngle, endAngle);
+                wheelCtx.closePath();
+                
+                wheelCtx.fillStyle = wheelSegments[i].color;
+                wheelCtx.fill();
+                wheelCtx.strokeStyle = '#fff';
+                wheelCtx.lineWidth = 2;
+                wheelCtx.stroke();
+                
+                wheelCtx.save();
+                wheelCtx.translate(center, center);
+                wheelCtx.rotate(startAngle + anglePerSegment / 2);
+                wheelCtx.textAlign = "center";
+                wheelCtx.textBaseline = "middle";
+                wheelCtx.fillStyle = "#fff";
+                wheelCtx.font = "bold 14px 'Segoe UI'";
+                wheelCtx.shadowBlur = 0;
+                
+                let text = wheelSegments[i].name;
+                if (wheelSegments[i].value > 0) text = `${wheelSegments[i].value}`;
+                wheelCtx.fillText(text, radius * 0.65, 0);
+                wheelCtx.restore();
+            }
+            
+            wheelCtx.beginPath();
+            wheelCtx.arc(center, center, 20, 0, Math.PI * 2);
+            wheelCtx.fillStyle = '#1e1e1e';
+            wheelCtx.fill();
+            wheelCtx.strokeStyle = '#fff';
+            wheelCtx.lineWidth = 3;
+            wheelCtx.stroke();
+        }
+
         // ============= دوال المستخدم =============
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
@@ -678,7 +861,143 @@
 
         async function loadDepositSettings() {
             const res = await apiCall('/api/user/deposit-settings');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; currentMinDeposit = s.minDeposit; currentMinWithdraw = s.minWithdraw; currentUsdToSypRate = s.usdToSypRate || 13000; currentReferralCommission = s.referralCommission || 5; const gameImage = document.getElementById('gameImage'); const defaultIcon = document.getElementById('defaultGameIcon'); const container = document.getElementById('gameIconContainer'); if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { gameImage.src = s.gameImageUrl; gameImage.classList.remove('hidden'); defaultIcon.classList.add('hidden'); container.classList.remove('default-icon'); } else { gameImage.classList.add('hidden'); defaultIcon.classList.remove('hidden'); container.classList.add('default-icon'); } document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = ''; if (!s.methods?.length) { methodsContainer.innerHTML = '<div class="method-card disabled">🚫 لا توجد طرق دفع متاحة حالياً</div>'; return; } s.methods.forEach(method => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id; div.innerHTML = `<div class="method-icon">${method.icon || '🏦'}</div><div><div class="method-name">${method.name}</div>${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); let exchangeText = ''; if (method.currency === 'USD') exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`; document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>${exchangeText}`; const exchangeHint = document.getElementById('exchangeRateHint'); if (method.currency === 'USD') { exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`; exchangeHint.style.display = 'block'; } else { exchangeHint.style.display = 'none'; } }; methodsContainer.appendChild(div); }); if (s.methods[0]) document.querySelector('.method-card')?.click(); } }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; currentMinDeposit = s.minDeposit; currentMinWithdraw = s.minWithdraw; currentUsdToSypRate = s.usdToSypRate || 13000; currentReferralCommission = s.referralCommission || 5; currentWheelSpinCost = s.wheelSpinCost || 50; document.getElementById('spinCostDisplay').innerText = currentWheelSpinCost; const gameImage = document.getElementById('gameImage'); const defaultIcon = document.getElementById('defaultGameIcon'); const container = document.getElementById('gameIconContainer'); if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { gameImage.src = s.gameImageUrl; gameImage.classList.remove('hidden'); defaultIcon.classList.add('hidden'); container.classList.remove('default-icon'); } else { gameImage.classList.add('hidden'); defaultIcon.classList.remove('hidden'); container.classList.add('default-icon'); } document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = ''; if (!s.methods?.length) { methodsContainer.innerHTML = '<div class="method-card disabled">🚫 لا توجد طرق دفع متاحة حالياً</div>'; return; } s.methods.forEach(method => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id; div.innerHTML = `<div class="method-icon">${method.icon || '🏦'}</div><div><div class="method-name">${method.name}</div>${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); let exchangeText = ''; if (method.currency === 'USD') exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`; document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>${exchangeText}`; const exchangeHint = document.getElementById('exchangeRateHint'); if (method.currency === 'USD') { exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`; exchangeHint.style.display = 'block'; } else { exchangeHint.style.display = 'none'; } }; methodsContainer.appendChild(div); }); if (s.methods[0]) document.querySelector('.method-card')?.click(); } }
+        }
+
+        // ============= دوال العجلة =============
+        async function loadWheelStatus() {
+            const res = await apiCall('/api/user/wheel-status');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('currentReferralBalance').innerText = data.data.referralBalance.toLocaleString();
+                    const spinBtn = document.getElementById('spinWheelBtn');
+                    const cooldownInfo = document.getElementById('cooldownInfo');
+                    
+                    if (!data.data.canSpin) {
+                        spinBtn.disabled = true;
+                        if (!data.data.canSpinBalance) {
+                            spinBtn.title = `رصيد الإحالات غير كافٍ - تحتاج ${data.data.spinCost} SYP`;
+                            cooldownInfo.style.display = 'none';
+                        } else if (!data.data.canSpinTime) {
+                            cooldownInfo.style.display = 'block';
+                            startCooldownTimer(data.data.remainingSeconds);
+                        }
+                    } else {
+                        spinBtn.disabled = false;
+                        spinBtn.title = '';
+                        cooldownInfo.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        function startCooldownTimer(seconds) {
+            let remaining = seconds;
+            const timerElement = document.getElementById('cooldownTimer');
+            const cooldownInfo = document.getElementById('cooldownInfo');
+            
+            const interval = setInterval(() => {
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    cooldownInfo.style.display = 'none';
+                    document.getElementById('spinWheelBtn').disabled = false;
+                    loadWheelStatus();
+                } else {
+                    timerElement.innerText = remaining;
+                    remaining--;
+                }
+            }, 1000);
+        }
+
+        async function loadWheelHistory() {
+            const res = await apiCall('/api/user/wheel-history');
+            if (res?.ok) {
+                const data = await res.json();
+                const container = document.getElementById('wheelHistoryList');
+                if (!data.spins?.length) {
+                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد تدويرات سابقة</p>';
+                    return;
+                }
+                container.innerHTML = data.spins.map(s => {
+                    let dateStr = '-';
+                    if (s.createdAt) {
+                        try {
+                            const date = new Date(s.createdAt);
+                            if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar');
+                        } catch(e) {}
+                    }
+                    let prizeText = s.prizeValue > 0 ? `+${s.prizeValue} SYP` : s.prizeName;
+                    return `<div class="history-item">
+                        <span>📅 ${dateStr}</span>
+                        <span class="history-prize">🎁 ${prizeText}</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        async function spinWheel() {
+            if (isSpinning) return;
+            
+            const spinBtn = document.getElementById('spinWheelBtn');
+            setButtonLoading(spinBtn, true);
+            
+            // تشغيل صوت الدوران
+            if (spinAudio) {
+                spinAudio.currentTime = 0;
+                spinAudio.play().catch(e => console.log('Audio play failed:', e));
+            }
+            
+            const res = await apiCall('/api/user/spin-wheel', { method: 'POST' });
+            
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    // حساب الزاوية المستهدفة
+                    const segmentAngle = 360 / wheelSegments.length;
+                    const targetSegment = data.prize.id - 1;
+                    const targetAngle = (targetSegment * segmentAngle) + (segmentAngle / 2);
+                    const currentRotation = 3600 + (360 - targetAngle);
+                    
+                    isSpinning = true;
+                    const canvas = document.getElementById('wheelCanvas');
+                    canvas.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.15, 1)';
+                    canvas.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    setTimeout(() => {
+                        isSpinning = false;
+                        canvas.style.transition = 'none';
+                        const resetRotation = currentRotation % 360;
+                        canvas.style.transform = `rotate(${resetRotation}deg)`;
+                        
+                        showMessage(data.message);
+                        loadProfile();
+                        loadStats();
+                        loadWheelStatus();
+                        loadWheelHistory();
+                        
+                        // تشغيل صوت التوقف
+                        setTimeout(() => {
+                            if (spinAudio) {
+                                spinAudio.currentTime = 0;
+                                spinAudio.play().catch(e => console.log('Audio play failed:', e));
+                            }
+                        }, 100);
+                    }, 4000);
+                } else {
+                    setButtonLoading(spinBtn, false);
+                    showMessage(data.message || 'حدث خطأ', true);
+                }
+            } else if (res) {
+                const err = await res.json();
+                setButtonLoading(spinBtn, false);
+                showMessage(err.error || 'فشل التدوير', true);
+                if (err.remainingSeconds) {
+                    startCooldownTimer(err.remainingSeconds);
+                }
+            } else {
+                setButtonLoading(spinBtn, false);
+            }
         }
 
         async function deposit() {
@@ -717,8 +1036,7 @@
                         <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td
                         <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td
                       </tr>`).join('')}</tbody></table>`; } }
-        async function loadAdminDeposits() { const res = await apiCall('/api/admin/deposits'); if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsTable'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; return; } container.innerHTML = `<table><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr><td>${d.userName || d.userEmail || d.userId}</td
-                        <td>${d.amount.toLocaleString()} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td
+        async function loadAdminDeposits() { const res = await apiCall('/api/admin/deposits'); if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsTable'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; return; } container.innerHTML = `<table><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr><td>${d.userName || d.userEmail || d.userId}</td><td>${d.amount.toLocaleString()} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td
                         <td>${d.method}</td
                         <td>${d.transactionId}</td
                         <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td
@@ -731,8 +1049,8 @@
                         <td>${u.referredByName || '-'}</td
                         <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
                       </tr>`).join('')}</tbody></table>`; } } }
-        async function loadAdminSettings() { const res = await apiCall('/api/admin/settings'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('settingMinDeposit').value = data.settings.minDeposit; document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled; document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || ''; document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || ''; document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || ''; document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false; document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000; document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || ''; document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || ''; document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || ''; document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled; document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || ''; document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || ''; document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || ''; } } }
-        async function saveAdminSettings() { const settings = { minDeposit: Number(document.getElementById('settingMinDeposit').value), minWithdraw: Number(document.getElementById('settingMinWithdraw').value), gameImageUrl: document.getElementById('settingGameImageUrl').value, referralCommission: Number(document.getElementById('settingReferralCommission').value), shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, shamCashApiKey: document.getElementById('settingShamCashApiKey').value, shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value }; const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); if (res?.ok) { showMessage('تم حفظ الإعدادات بنجاح'); await loadAdminSettings(); await loadDepositSettings(); } else { showMessage('فشل حفظ الإعدادات', true); } }
+        async function loadAdminSettings() { const res = await apiCall('/api/admin/settings'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('settingMinDeposit').value = data.settings.minDeposit; document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50; document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled; document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || ''; document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || ''; document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || ''; document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false; document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000; document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || ''; document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || ''; document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || ''; document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled; document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || ''; document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || ''; document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || ''; } } }
+        async function saveAdminSettings() { const settings = { minDeposit: Number(document.getElementById('settingMinDeposit').value), minWithdraw: Number(document.getElementById('settingMinWithdraw').value), gameImageUrl: document.getElementById('settingGameImageUrl').value, referralCommission: Number(document.getElementById('settingReferralCommission').value), wheelSpinCost: Number(document.getElementById('settingWheelSpinCost').value), shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, shamCashApiKey: document.getElementById('settingShamCashApiKey').value, shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value }; const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); if (res?.ok) { showMessage('تم حفظ الإعدادات بنجاح'); await loadAdminSettings(); await loadDepositSettings(); currentWheelSpinCost = settings.wheelSpinCost; document.getElementById('spinCostDisplay').innerText = currentWheelSpinCost; } else { showMessage('فشل حفظ الإعدادات', true); } }
         
         async function saveTheme() { const currentTheme = document.body.className.replace('theme-', ''); const success = await saveThemeToServer(currentTheme); if (success) { await loadAdminSettings(); } }
         
@@ -764,21 +1082,24 @@
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
         document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
         document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
+        document.getElementById('saveWheelSettingsBtn')?.addEventListener('click', saveAdminSettings);
         document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
         document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
         document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; document.getElementById('resetPassword').value = ''; });
         document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
+        document.getElementById('spinWheelBtn')?.addEventListener('click', spinWheel);
         
         document.querySelectorAll('.theme-color').forEach(el => { el.addEventListener('click', async () => { const theme = el.dataset.theme; const success = await saveThemeToServer(theme); if (success) { setTheme(theme); } }); });
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; return; } container.innerHTML = `<table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td
+        
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; return; } container.innerHTML = `<td><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td
                             <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td
                             <td>${(u.balance || 0).toLocaleString()} SYP</td
                             <td>${(u.referralBalance || 0).toLocaleString()} SYP</td
                             <td>${u.referralsCount || 0}</td
                             <td>${u.referredByName || '-'}</td
                             <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
-                          </td>`).join('')}
+                          </tr>`).join('')}
                 </tbody></table>`;
         });
 
@@ -799,28 +1120,14 @@
                 const target = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminThemesPanel,#adminWheelSettingsPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
                 if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
                 if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
+                if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
                 if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden');
-            });
-        });
-
-        document.querySelectorAll('[data-history-tab]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const target = btn.dataset.historyTab;
-                document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                if (target === 'deposits') {
-                    document.getElementById('depositsHistoryList').style.display = 'block';
-                    document.getElementById('withdrawsHistoryList').style.display = 'none';
-                } else {
-                    document.getElementById('depositsHistoryList').style.display = 'none';
-                    document.getElementById('withdrawsHistoryList').style.display = 'block';
-                }
             });
         });
 
@@ -835,10 +1142,13 @@
                 } else if (target === 'earn') { 
                     await loadEarnPageInfo(); 
                     document.getElementById('earnModal').style.display = 'flex'; 
-                } else if (target === 'history') { 
-                    await loadDeposits(); 
-                    await loadWithdrawals(); 
-                    document.getElementById('historyModal').style.display = 'flex'; 
+                } else if (target === 'wheel') { 
+                    wheelCanvas = document.getElementById('wheelCanvas');
+                    wheelCtx = wheelCanvas.getContext('2d');
+                    drawWheel();
+                    await loadWheelStatus();
+                    await loadWheelHistory();
+                    document.getElementById('wheelModal').style.display = 'flex'; 
                 }
             });
         });
@@ -866,12 +1176,16 @@
             filterWithdrawStatus.addEventListener('change', loadAdminWithdraws);
         }
 
+        // تحميل الصوت
+        spinAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-casino-bling-achievement-2063.mp3');
+        spinAudio.preload = 'auto';
+
         // تفعيل التبويب النشط في البداية
         const activeNavTab = document.querySelector('.nav-tab[data-tab="stats"]');
         if (activeNavTab) activeNavTab.classList.add('active');
 
         console.log('✅ BOOMB App initialized successfully');
-        console.log('📱 Version: 2.0.0');
+        console.log('🎡 Wheel system ready with 8 segments');
         console.log('🎨 Theme system ready (synced with server)');
         console.log('🔗 API_URL:', API_URL);
     </script>
