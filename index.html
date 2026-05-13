@@ -10,7 +10,6 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* ============= نظام الألوان المتعدد ============= */
         :root {
             --primary: #ff0000;
             --primary-dark: #cc0000;
@@ -131,7 +130,6 @@
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
 
-        /* ============= عجلة الحظ ============= */
         .wheel-container {
             display: flex;
             flex-direction: column;
@@ -701,14 +699,13 @@
             <div id="adminWheelSettingsPanel" class="admin-table hidden">
                 <h3 class="section-title">🎡 إعدادات عجلة الحظ</h3>
                 <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
-                <div class="form-group"><label>⏱️ وقت الانتظار بين التدويرات</label><input type="number" id="settingWheelCooldown" value="5" disabled> <span>دقائق (ثابت)</span></div>
                 <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
                 
                 <h3 class="section-title" style="margin-top: 30px;">🎁 جوائز العجلة</h3>
                 <div class="admin-table">
                     <table>
                         <thead>
-                            <tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr>
+                            <tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th> </tr>
                         </thead>
                         <tbody>
                             <tr><td>1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;">ذهبي</td></tr>
@@ -916,23 +913,6 @@
                         const minutes = Math.floor(data.remainingSeconds / 60);
                         const seconds = data.remainingSeconds % 60;
                         timerDiv.innerHTML = `⏰ يتبقى ${minutes}:${seconds.toString().padStart(2, '0')} للتدوير مرة أخرى`;
-                        
-                        const interval = setInterval(async () => {
-                            const newStatus = await apiCall('/api/user/wheel-status');
-                            if (newStatus?.ok) {
-                                const newData = await newStatus.json();
-                                if (newData.success && newData.canSpin) {
-                                    clearInterval(interval);
-                                    spinBtn.disabled = false;
-                                    timerDiv.innerHTML = '✅ يمكنك التدوير الآن!';
-                                    setTimeout(() => { timerDiv.innerHTML = ''; }, 3000);
-                                } else if (newData.success && newData.remainingSeconds > 0) {
-                                    const mins = Math.floor(newData.remainingSeconds / 60);
-                                    const secs = newData.remainingSeconds % 60;
-                                    timerDiv.innerHTML = `⏰ يتبقى ${mins}:${secs.toString().padStart(2, '0')} للتدوير مرة أخرى`;
-                                }
-                            }
-                        }, 1000);
                     } else {
                         spinBtn.disabled = false;
                         timerDiv.innerHTML = '';
@@ -1018,13 +998,28 @@
                 return;
             }
             
-            const winningSectorId = spinData.sector - 1;
+            // القسم الفائز (1-8 من الخادم)
+            const winningSectorIndex = spinData.sector - 1;
             const angleStep = (Math.PI * 2) / SECTORS.length;
+            
+            // المؤشر في الأعلى (زاوية -PI/2)
             const pointerAngle = -Math.PI / 2;
-            let targetSectorAngle = pointerAngle - (winningSectorId * angleStep);
-            targetSectorAngle = ((targetSectorAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const fullRotations = 10 + Math.floor(Math.random() * 5);
-            const targetRotation = (fullRotations * Math.PI * 2) + targetSectorAngle;
+            
+            // الزاوية التي يجب أن يكون عندها القسم الفائز تحت المؤشر
+            // القسم i يبدأ من زاوية i * angleStep + currentRotation
+            // نريد أن تكون زاوية منتصف القسم = pointerAngle
+            const targetSectorMidAngle = pointerAngle;
+            // زاوية بداية القسم المطلوب
+            const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
+            // الزاوية المطلوبة للدوران
+            let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep);
+            
+            // تطبيع الزاوية
+            targetRotation = ((targetRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+            
+            // إضافة دورات كاملة (بين 10 و 15 دورة)
+            const fullRotations = 10 + Math.floor(Math.random() * 6);
+            const finalTargetRotation = targetRotation + (fullRotations * Math.PI * 2);
             
             const startRotation = currentRotation;
             const startTime = performance.now();
@@ -1033,14 +1028,15 @@
             function animateSpin(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
+                // منحنى تباطؤ سلس
                 const easeOut = 1 - Math.pow(1 - progress, 3);
-                currentRotation = startRotation + (targetRotation - startRotation) * easeOut;
+                currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
                 drawWheel();
                 
                 if (progress < 1) {
                     animationFrame = requestAnimationFrame(animateSpin);
                 } else {
-                    currentRotation = targetRotation % (Math.PI * 2);
+                    currentRotation = finalTargetRotation % (Math.PI * 2);
                     drawWheel();
                     
                     if (spinData.prizeAmount > 0) {
@@ -1237,6 +1233,8 @@
                     currentMinWithdraw = s.minWithdraw; 
                     currentUsdToSypRate = s.usdToSypRate || 13000; 
                     currentReferralCommission = s.referralCommission || 5; 
+                    currentWheelSpinCost = s.wheelSpinCost || 50;
+                    
                     const gameImage = document.getElementById('gameImage'); 
                     const defaultIcon = document.getElementById('defaultGameIcon'); 
                     const container = document.getElementById('gameIconContainer'); 
@@ -1250,9 +1248,62 @@
                         defaultIcon.classList.remove('hidden'); 
                         container.classList.add('default-icon'); 
                     } 
+                    
                     document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; 
                     document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; 
                     document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; 
+                    
+                    // ============= عرض طرق الدفع =============
+                    const methodsContainer = document.getElementById('methodsList');
+                    methodsContainer.innerHTML = '';
+                    
+                    if (!s.methods || s.methods.length === 0) {
+                        methodsContainer.innerHTML = '<div class="method-card disabled">🚫 لا توجد طرق دفع متاحة حالياً</div>';
+                        return;
+                    }
+                    
+                    s.methods.forEach(method => {
+                        const methodDiv = document.createElement('div');
+                        methodDiv.className = 'method-card';
+                        methodDiv.dataset.method = method.id;
+                        methodDiv.innerHTML = `
+                            <div class="method-icon">${method.icon || '🏦'}</div>
+                            <div>
+                                <div class="method-name">${method.name}</div>
+                                ${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}
+                            </div>
+                        `;
+                        methodDiv.onclick = () => {
+                            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                            methodDiv.classList.add('selected');
+                            
+                            let exchangeText = '';
+                            if (method.currency === 'USD') {
+                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
+                            }
+                            
+                            document.getElementById('addressInfo').innerHTML = `
+                                <div class="address-box">
+                                    <span>${method.address}</span>
+                                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}'); showMessage('تم نسخ العنوان')">📋 نسخ</button>
+                                </div>
+                                ${exchangeText}
+                            `;
+                            
+                            const exchangeHint = document.getElementById('exchangeRateHint');
+                            if (method.currency === 'USD') {
+                                exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`;
+                                exchangeHint.style.display = 'block';
+                            } else {
+                                exchangeHint.style.display = 'none';
+                            }
+                        };
+                        methodsContainer.appendChild(methodDiv);
+                    });
+                    
+                    if (s.methods[0]) {
+                        document.querySelector('.method-card')?.click();
+                    }
                 } 
             }
         }
@@ -1411,13 +1462,13 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr>
+                container.innerHTML = `<tr><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr>
                     <td>${r.userName || r.userEmail || r.userId}</td>
-                    <td>${r.amount.toLocaleString()} SYP</td>
-                    <td>${r.address}</td>
-                    <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td>
-                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
-                    <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td>
+                    <td>${r.amount.toLocaleString()} SYP</td
+                    <td>${r.address}</td
+                    <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td
+                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td
+                    <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td
                 </tr>`).join('')}</tbody></table>`; 
             } 
         }
@@ -1431,7 +1482,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr>
+                container.innerHTML = `<table><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr>
                     <td>${d.userName || d.userEmail || d.userId}</td>
                     <td>${d.amount.toLocaleString()} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td>
                     <td>${d.method}</td>
@@ -1452,17 +1503,17 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${allUsers.map(u => `<tr>
+                    container.innerHTML = `<table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${allUsers.map(u => `<tr>
                         <td>${u.email || '-'}</td>
-                        <td>${u.name || '-'}</td>
-                        <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td>
-                        <td>${(u.balance || 0).toLocaleString()} SYP</td>
-                        <td>${(u.referralBalance || 0).toLocaleString()} SYP</td>
-                        <td>${u.referralsCount || 0}</td>
-                        <td>${u.referredByName || '-'}</td>
-                        <td>${u.totalSpins || 0}</td>
-                        <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td>
-                    </tr>`).join('')}</tbody></table>`; 
+                        <td>${u.name || '-'}</td
+                        <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td
+                        <td>${(u.balance || 0).toLocaleString()} SYP</td
+                        <td>${(u.referralBalance || 0).toLocaleString()} SYP</td
+                        <td>${u.referralsCount || 0}</td
+                        <td>${u.referredByName || '-'}</td
+                        <td>${u.totalSpins || 0}</td
+                        <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
+                      </tr>`).join('')}</tbody></table>`; 
                 } 
             } 
         }
@@ -1761,10 +1812,10 @@
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
                 return; 
             } 
-            container.innerHTML = `</table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr>
+            container.innerHTML = `<table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr>
                 <td>${u.email || '-'}</td>
-                <td>${u.name || '-'}</td>
-                <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td>
+                <td>${u.name || '-'}</td
+                <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td
                 <td>${(u.balance || 0).toLocaleString()} SYP</td
                 <td>${(u.referralBalance || 0).toLocaleString()} SYP</td
                 <td>${u.referralsCount || 0}</td
