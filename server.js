@@ -357,7 +357,7 @@ class SyriatelCashClient {
   }
 }
 
-// ============= عمولة الإحالة (تضاف إلى رصيد الإحالات المنفصل) =============
+// ============= عمولة الإحالة =============
 async function addReferralCommission(userId, depositAmount) {
   try {
     const userDoc = await db.collection('users').doc(userId).get();
@@ -370,7 +370,6 @@ async function addReferralCommission(userId, depositAmount) {
       
       if (commissionAmount > 0) {
         const referrerRef = db.collection('users').doc(userData.referredBy);
-        
         await referrerRef.update({
           referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
           referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
@@ -403,7 +402,7 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
     const userDoc = await db.collection('users').doc(uid).get();
     const userData = userDoc.data();
     const referralBalance = userData?.referralBalance || 0;
-    const canSpin = referralBalance >= spinCost;
+    const canSpinBalance = referralBalance >= spinCost;
     
     // جلب آخر تدوير
     const lastSpinQuery = await db.collection('wheel_spins')
@@ -412,9 +411,9 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
       .limit(1)
       .get();
     
-    let lastSpinTime = null;
     let canSpinTime = true;
     let remainingSeconds = 0;
+    let lastSpinTime = null;
     
     if (!lastSpinQuery.empty) {
       const lastSpin = lastSpinQuery.docs[0].data();
@@ -433,8 +432,8 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
       data: {
         spinCost: spinCost,
         referralBalance: referralBalance,
-        canSpin: canSpin && canSpinTime,
-        canSpinBalance: canSpin,
+        canSpin: canSpinBalance && canSpinTime,
+        canSpinBalance: canSpinBalance,
         canSpinTime: canSpinTime,
         remainingSeconds: remainingSeconds,
         lastSpinTime: lastSpinTime
@@ -468,7 +467,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       if (diffMinutes < 5) {
         const remainingSeconds = Math.ceil((5 - diffMinutes) * 60);
         return res.status(400).json({ 
-          error: `يجب الانتظار ${Math.ceil(remainingSeconds / 60)} دقائق و ${remainingSeconds % 60} ثانية قبل التدوير مرة أخرى`,
+          error: `يجب الانتظار ${Math.floor(remainingSeconds / 60)} دقائق و ${remainingSeconds % 60} ثانية قبل التدوير مرة أخرى`,
           remainingSeconds: remainingSeconds
         });
       }
@@ -537,7 +536,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       spinCost: spinCost,
       newReferralBalance: newReferralBalance,
       newBalance: newBalance,
-      remainingCooldown: 300 // 5 دقائق بالثواني
+      remainingCooldown: 300
     });
     
   } catch (error) {
@@ -1025,7 +1024,7 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API تغيير الثيم (لجميع المستخدمين) =============
+// ============= API تغيير الثيم =============
 app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   try {
     const { theme } = req.body;
