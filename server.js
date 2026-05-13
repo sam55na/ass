@@ -68,11 +68,47 @@ app.use('/api/user/deposit', strictLimiter);
 app.use('/api/user/withdraw', strictLimiter);
 app.use('/api/user/register', strictLimiter);
 app.use('/api/user/spin-wheel', strictLimiter);
+app.use('/api/game/bet', strictLimiter);
 app.use('/api/admin/', generalLimiter);
 
 // ============= الثوابت =============
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
+
+// ============= ثوابت لعبة الدرج =============
+const STAIRCASE_MULTIPLIERS = [
+    { level: 0, multiplier: 0.2 },
+    { level: 1, multiplier: 0.4 },
+    { level: 2, multiplier: 0.6 },
+    { level: 3, multiplier: 0.8 },
+    { level: 4, multiplier: 1.0 },
+    { level: 5, multiplier: 1.3 },
+    { level: 6, multiplier: 1.6 },
+    { level: 7, multiplier: 1.9 },
+    { level: 8, multiplier: 2.2 },
+    { level: 9, multiplier: 3.2 },
+    { level: 10, multiplier: 4.2 },
+    { level: 11, multiplier: 5.2 },
+    { level: 12, multiplier: 6.2 },
+    { level: 13, multiplier: 7.2 },
+    { level: 14, multiplier: 8.2 },
+    { level: 15, multiplier: 9.2 },
+    { level: 16, multiplier: 10.5 },
+    { level: 17, multiplier: 11.5 },
+    { level: 18, multiplier: 12.5 },
+    { level: 19, multiplier: 13.5 },
+    { level: 20, multiplier: 14.5 },
+    { level: 21, multiplier: 15.5 },
+    { level: 22, multiplier: 16.5 },
+    { level: 23, multiplier: 17.5 },
+    { level: 24, multiplier: 18.5 },
+    { level: 25, multiplier: 19.5 },
+    { level: 26, multiplier: 20.5 },
+    { level: 27, multiplier: 22.0 },
+    { level: 28, multiplier: 25.0 }
+];
+
+const AVAILABLE_BETS = [1000, 2000, 5000, 10000, 20000];
 
 // ============= دالة إنشاء كود فريد =============
 async function generateUniqueReferralCode() {
@@ -145,7 +181,7 @@ async function getSettings() {
       shamCashUsdEnabled: false,
       usdToSypRate: 13000,
       referralCommission: 5,
-      wheelSpinCost: 50, // سعر التدويرة من رصيد الإحالات
+      wheelSpinCost: 50,
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
@@ -326,6 +362,218 @@ class SyriatelCashClient {
   }
 }
 
+// ============= دوال إدارة المخازن (Pools) للعبة الدرج =============
+
+// المستويات المؤهلة للمخازن فقط من 1.0 فما فوق
+function getPoolLevels() {
+    return STAIRCASE_MULTIPLIERS.filter(l => l.multiplier >= 1.0).map(l => l.multiplier);
+}
+
+async function getChipPool(betAmount) {
+    const poolRef = db.collection('game_pools').doc(`chip_${betAmount}`);
+    const poolDoc = await poolRef.get();
+    
+    if (!poolDoc.exists) {
+        const initialPool = {
+            chipAmount: betAmount,
+            levels: {},
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        for (const level of getPoolLevels()) {
+            initialPool.levels[level] = {
+                totalAmount: 0,
+                contributionCount: 0
+            };
+        }
+        
+        await poolRef.set(initialPool);
+        return initialPool;
+    }
+    
+    return poolDoc.data();
+}
+
+// الحصول على جميع المخازن الممتلئة
+async function getFilledPools(betAmount) {
+    const pool = await getChipPool(betAmount);
+    const filled = [];
+    
+    for (const multiplier of getPoolLevels()) {
+        const levelData = pool.levels[multiplier];
+        if (levelData && levelData.totalAmount > 0) {
+            filled.push(multiplier);
+        }
+    }
+    
+    return filled.sort((a, b) => a - b);
+}
+
+// توزيع الخسارة الجزئية على المخازن (للمستويات 1.0 فما فوق فقط)
+async function distributePartialLoss(betAmount, lostAmount, explosionMultiplier) {
+    const poolRef = db.collection('game_pools').doc(`chip_${betAmount}`);
+    const pool = await getChipPool(betAmount);
+    
+    const eligibleLevels = getPoolLevels();
+    
+    if (eligibleLevels.length === 0) return;
+    
+    const sharePerLevel = lostAmount / eligibleLevels.length;
+    
+    const updates = {};
+    for (const multiplier of eligibleLevels) {
+        const current = pool.levels[multiplier] || { totalAmount: 0, contributionCount: 0 };
+        updates[`levels.${multiplier}.totalAmount`] = (current.totalAmount || 0) + sharePerLevel;
+        updates[`levels.${multiplier}.contributionCount`] = (current.contributionCount || 0) + 1;
+    }
+    
+    updates.updatedAt = new Date();
+    await poolRef.update(updates);
+}
+
+// سحب المكسب من المخزن
+async function deductFromPool(betAmount, multiplier, amount) {
+    const poolRef = db.collection('game_pools').doc(`chip_${betAmount}`);
+    const pool = await getChipPool(betAmount);
+    
+    const current = pool.levels[multiplier] || { totalAmount: 0 };
+    const deducted = Math.min(current.totalAmount, amount);
+    
+    await poolRef.update({
+        [`levels.${multiplier}.totalAmount`]: current.totalAmount - deducted,
+        updatedAt: new Date()
+    });
+    
+    return deducted;
+}
+
+// ============= خوارزمية تحديد مستوى الانفجار (سري وآمن) =============
+async function determineExplosionLevel(betAmount, userBalance) {
+    const filledPools = await getFilledPools(betAmount);
+    
+    // حالة 1: توجد مخازن ممتلئة - فرصة للفوز
+    if (filledPools.length > 0) {
+        // 65% فرصة للفوز بمخزن ممتلئ (زيادة الأدرينالين)
+        const winChance = 0.65;
+        if (Math.random() < winChance) {
+            const randomIndex = Math.floor(Math.random() * filledPools.length);
+            const winMultiplier = filledPools[randomIndex];
+            return STAIRCASE_MULTIPLIERS.find(l => l.multiplier === winMultiplier);
+        }
+    }
+    
+    // حالة 2: لا توجد مخازن ممتلئة أو الحظ عاند اللاعب
+    // الكرة تنفجر قبل الوصول إلى 1.0 (من 0.2 إلى 0.8)
+    const lowLevels = STAIRCASE_MULTIPLIERS.filter(l => l.multiplier < 1.0);
+    
+    // زيادة فرصة الانفجار المبكر إذا كان الرصيد منخفضاً
+    const isLowBalance = userBalance < betAmount * 3;
+    let explosionIndex;
+    
+    if (isLowBalance && Math.random() < 0.4) {
+        // انفجار مبكر جداً (0.2 أو 0.4)
+        explosionIndex = Math.floor(Math.random() * 2);
+    } else {
+        // انفجار عشوائي بين 0.2 و 0.8 مع ميل للانفجار في المنتصف
+        const rand = Math.random();
+        if (rand < 0.3) explosionIndex = 0; // 0.2
+        else if (rand < 0.6) explosionIndex = 1; // 0.4
+        else if (rand < 0.8) explosionIndex = 2; // 0.6
+        else explosionIndex = 3; // 0.8
+    }
+    
+    return lowLevels[explosionIndex];
+}
+
+// ============= تنفيذ جولة اللعبة =============
+async function executeGameRound(userId, betAmount) {
+    if (!AVAILABLE_BETS.includes(betAmount)) {
+        return { success: false, error: 'مبلغ الرهان غير صالح' };
+    }
+    
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    if (!userData) return { success: false, error: 'مستخدم غير موجود' };
+    if (userData.isBanned) return { success: false, error: 'حسابك محظور' };
+    if ((userData.balance || 0) < betAmount) {
+        return { success: false, error: 'الرصيد غير كافٍ' };
+    }
+    
+    // خصم الرهان
+    await userRef.update({
+        balance: admin.firestore.FieldValue.increment(-betAmount)
+    });
+    
+    // تحديد مستوى الانفجار (خوارزمية سرية)
+    const explosionData = await determineExplosionLevel(betAmount, userData.balance);
+    const explosionMultiplier = explosionData.multiplier;
+    
+    let winAmount = 0;
+    let refundAmount = 0;
+    let isWin = false;
+    
+    if (explosionMultiplier >= 1.0) {
+        // فوز
+        isWin = true;
+        winAmount = Math.floor(betAmount * explosionMultiplier);
+        
+        await userRef.update({
+            balance: admin.firestore.FieldValue.increment(winAmount)
+        });
+        
+        // سحب المكسب من المخزن
+        await deductFromPool(betAmount, explosionMultiplier, winAmount);
+        
+    } else {
+        // خسارة جزئية - استرداد جزء من الرهان
+        refundAmount = Math.floor(betAmount * explosionMultiplier);
+        const lostAmount = betAmount - refundAmount;
+        
+        if (refundAmount > 0) {
+            await userRef.update({
+                balance: admin.firestore.FieldValue.increment(refundAmount)
+            });
+        }
+        
+        if (lostAmount > 0) {
+            // توزيع الخسارة على المخازن (1.0 فما فوق فقط)
+            await distributePartialLoss(betAmount, lostAmount, explosionMultiplier);
+        }
+    }
+    
+    // تسجيل الجولة
+    const gameRecord = {
+        userId,
+        userEmail: userData.email,
+        userName: userData.name,
+        betAmount,
+        explosionMultiplier,
+        isWin,
+        winAmount,
+        refundAmount,
+        timestamp: new Date()
+    };
+    
+    await db.collection('staircase_games').add(gameRecord);
+    
+    const updatedUser = await userRef.get();
+    
+    return {
+        success: true,
+        result: {
+            betAmount,
+            explosionMultiplier,
+            isWin,
+            winAmount,
+            refundAmount,
+            newBalance: updatedUser.data().balance
+        }
+    };
+}
+
 // ============= دالة عجلة الحظ =============
 const WHEEL_SECTORS = [
   { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
@@ -350,173 +598,6 @@ function getRandomSector() {
   }
   return WHEEL_SECTORS[0];
 }
-
-// ============= API عجلة الحظ =============
-app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
-    const userData = userDoc.data();
-    const settings = await getSettings();
-    
-    // التحقق من آخر تدوير
-    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
-    const now = new Date();
-    let canSpin = true;
-    let remainingSeconds = 0;
-    
-    if (lastSpin) {
-      const timeDiff = (now - lastSpin) / 1000; // بالثواني
-      if (timeDiff < 300) { // 5 دقائق = 300 ثانية
-        canSpin = false;
-        remainingSeconds = Math.ceil(300 - timeDiff);
-      }
-    }
-    
-    res.json({
-      success: true,
-      canSpin: canSpin,
-      remainingSeconds: remainingSeconds,
-      spinCost: settings.wheelSpinCost || 50,
-      referralBalance: userData.referralBalance || 0,
-      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
-    });
-  } catch (error) {
-    console.error('Wheel status error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
-    const userData = userDoc.data();
-    
-    if (!userData) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
-    
-    // التحقق من آخر تدوير
-    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
-    const now = new Date();
-    
-    if (lastSpin) {
-      const timeDiff = (now - lastSpin) / 1000;
-      if (timeDiff < 300) {
-        const remainingSeconds = Math.ceil(300 - timeDiff);
-        const minutes = Math.floor(remainingSeconds / 60);
-        const seconds = remainingSeconds % 60;
-        return res.status(400).json({ 
-          error: `يجب الانتظار ${minutes} دقيقة و ${seconds} ثانية قبل التدوير مرة أخرى` 
-        });
-      }
-    }
-    
-    // التحقق من رصيد الإحالات
-    const settings = await getSettings();
-    const spinCost = settings.wheelSpinCost || 50;
-    
-    if ((userData.referralBalance || 0) < spinCost) {
-      return res.status(400).json({ error: `رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير` });
-    }
-    
-    // اختيار الجائزة العشوائية
-    const selectedSector = getRandomSector();
-    let prizeAmount = 0;
-    let prizeMessage = '';
-    
-    // معالجة الجائزة
-    if (selectedSector.type === 'balance') {
-      prizeAmount = selectedSector.value;
-      prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP! تم إضافتها إلى رصيدك الأساسي`;
-      
-      // إضافة الجائزة إلى الرصيد الأساسي
-      await userRef.update({
-        balance: admin.firestore.FieldValue.increment(prizeAmount),
-        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
-        lastSpinTime: now,
-        totalSpins: admin.firestore.FieldValue.increment(1),
-        totalWinnings: admin.firestore.FieldValue.increment(prizeAmount)
-      });
-    } else {
-      // حظ أوفر
-      prizeMessage = `😅 حظ أوفر! لم تربح هذه المرة. حظاً أفضل في المرة القادمة`;
-      
-      // خصم تكلفة التدويرة فقط
-      await userRef.update({
-        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
-        lastSpinTime: now,
-        totalSpins: admin.firestore.FieldValue.increment(1)
-      });
-    }
-    
-    // تسجيل التدويرة
-    await db.collection('wheel_spins').add({
-      userId: uid,
-      sector: selectedSector.id,
-      sectorName: selectedSector.name,
-      prizeAmount: prizeAmount,
-      prizeType: selectedSector.type,
-      spinCost: spinCost,
-      timestamp: now,
-      userEmail: userData.email,
-      userName: userData.name
-    });
-    
-    // جلب البيانات المحدثة
-    const updatedUser = await userRef.get();
-    const updatedData = updatedUser.data();
-    
-    res.json({
-      success: true,
-      sector: selectedSector.id,
-      sectorName: selectedSector.name,
-      prizeAmount: prizeAmount,
-      prizeType: selectedSector.type,
-      message: prizeMessage,
-      newBalance: updatedData.balance || 0,
-      newReferralBalance: updatedData.referralBalance || 0,
-      spinCost: spinCost
-    });
-    
-  } catch (error) {
-    console.error('Spin wheel error:', error);
-    res.status(500).json({ error: 'حدث خطأ أثناء التدوير' });
-  }
-});
-
-// ============= API تاريخ التدويرات =============
-app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const snapshot = await db.collection('wheel_spins')
-      .where('userId', '==', uid)
-      .orderBy('timestamp', 'desc')
-      .limit(50)
-      .get();
-    
-    const spins = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      spins.push({
-        id: doc.id,
-        sectorName: data.sectorName,
-        prizeAmount: data.prizeAmount || 0,
-        prizeType: data.prizeType,
-        spinCost: data.spinCost,
-        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp)
-      });
-    });
-    
-    res.json({ success: true, spins });
-  } catch (error) {
-    console.error('Wheel history error:', error);
-    res.json({ success: true, spins: [] });
-  }
-});
 
 // ============= عمولة الإحالة =============
 async function addReferralCommission(userId, depositAmount) {
@@ -993,6 +1074,218 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   }
 });
 
+// ============= APIs لعبة الدرج =============
+
+// جلب قائمة الفيش المتاحة
+app.get('/api/game/bets', requireAuth, async (req, res) => {
+    res.json({ success: true, availableBets: AVAILABLE_BETS });
+});
+
+// تنفيذ رهان اللعبة
+app.post('/api/game/bet', requireAuth, async (req, res) => {
+    try {
+        const { uid } = req.user;
+        const { betAmount } = req.body;
+        
+        const result = await executeGameRound(uid, Number(betAmount));
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+        
+        res.json(result);
+        
+    } catch (error) {
+        console.error('Game bet error:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء اللعب' });
+    }
+});
+
+// جلب تاريخ ألعاب المستخدم
+app.get('/api/game/history', requireAuth, async (req, res) => {
+    try {
+        const { uid } = req.user;
+        const snapshot = await db.collection('staircase_games')
+            .where('userId', '==', uid)
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get();
+        
+        const games = [];
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            games.push({
+                betAmount: d.betAmount,
+                explosionMultiplier: d.explosionMultiplier,
+                isWin: d.isWin,
+                winAmount: d.winAmount || 0,
+                refundAmount: d.refundAmount || 0,
+                timestamp: d.timestamp?.toDate?.() || new Date(d.timestamp)
+            });
+        });
+        
+        res.json({ success: true, games });
+    } catch (error) {
+        res.json({ success: true, games: [] });
+    }
+});
+
+// ============= API عجلة الحظ =============
+app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    const settings = await getSettings();
+    
+    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
+    const now = new Date();
+    let canSpin = true;
+    let remainingSeconds = 0;
+    
+    if (lastSpin) {
+      const timeDiff = (now - lastSpin) / 1000;
+      if (timeDiff < 300) {
+        canSpin = false;
+        remainingSeconds = Math.ceil(300 - timeDiff);
+      }
+    }
+    
+    res.json({
+      success: true,
+      canSpin: canSpin,
+      remainingSeconds: remainingSeconds,
+      spinCost: settings.wheelSpinCost || 50,
+      referralBalance: userData.referralBalance || 0,
+      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
+    });
+  } catch (error) {
+    console.error('Wheel status error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    if (!userData) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
+    const now = new Date();
+    
+    if (lastSpin) {
+      const timeDiff = (now - lastSpin) / 1000;
+      if (timeDiff < 300) {
+        const remainingSeconds = Math.ceil(300 - timeDiff);
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        return res.status(400).json({ 
+          error: `يجب الانتظار ${minutes} دقيقة و ${seconds} ثانية قبل التدوير مرة أخرى` 
+        });
+      }
+    }
+    
+    const settings = await getSettings();
+    const spinCost = settings.wheelSpinCost || 50;
+    
+    if ((userData.referralBalance || 0) < spinCost) {
+      return res.status(400).json({ error: `رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير` });
+    }
+    
+    const selectedSector = getRandomSector();
+    let prizeAmount = 0;
+    let prizeMessage = '';
+    
+    if (selectedSector.type === 'balance') {
+      prizeAmount = selectedSector.value;
+      prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP! تم إضافتها إلى رصيدك الأساسي`;
+      
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(prizeAmount),
+        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
+        lastSpinTime: now,
+        totalSpins: admin.firestore.FieldValue.increment(1),
+        totalWinnings: admin.firestore.FieldValue.increment(prizeAmount)
+      });
+    } else {
+      prizeMessage = `😅 حظ أوفر! لم تربح هذه المرة. حظاً أفضل في المرة القادمة`;
+      
+      await userRef.update({
+        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
+        lastSpinTime: now,
+        totalSpins: admin.firestore.FieldValue.increment(1)
+      });
+    }
+    
+    await db.collection('wheel_spins').add({
+      userId: uid,
+      sector: selectedSector.id,
+      sectorName: selectedSector.name,
+      prizeAmount: prizeAmount,
+      prizeType: selectedSector.type,
+      spinCost: spinCost,
+      timestamp: now,
+      userEmail: userData.email,
+      userName: userData.name
+    });
+    
+    const updatedUser = await userRef.get();
+    const updatedData = updatedUser.data();
+    
+    res.json({
+      success: true,
+      sector: selectedSector.id,
+      sectorName: selectedSector.name,
+      prizeAmount: prizeAmount,
+      prizeType: selectedSector.type,
+      message: prizeMessage,
+      newBalance: updatedData.balance || 0,
+      newReferralBalance: updatedData.referralBalance || 0,
+      spinCost: spinCost
+    });
+    
+  } catch (error) {
+    console.error('Spin wheel error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء التدوير' });
+  }
+});
+
+app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('wheel_spins')
+      .where('userId', '==', uid)
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .get();
+    
+    const spins = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      spins.push({
+        id: doc.id,
+        sectorName: data.sectorName,
+        prizeAmount: data.prizeAmount || 0,
+        prizeType: data.prizeType,
+        spinCost: data.spinCost,
+        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp)
+      });
+    });
+    
+    res.json({ success: true, spins });
+  } catch (error) {
+    console.error('Wheel history error:', error);
+    res.json({ success: true, spins: [] });
+  }
+});
+
 // ============= APIs الأدمن =============
 app.get('/api/admin/settings', requireAdmin, async (req, res) => {
   const settings = await getSettings();
@@ -1009,7 +1302,6 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API تغيير الثيم =============
 app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   try {
     const { theme } = req.body;
@@ -1025,7 +1317,6 @@ app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API جلب الثيم الحالي =============
 app.get('/api/site-theme', async (req, res) => {
   try {
     const settings = await getSettings();
@@ -1057,10 +1348,20 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       return date > today;
     }).length;
     
-    // إحصائيات عجلة الحظ
     const wheelSpinsSnapshot = await db.collection('wheel_spins').get();
     const totalSpins = wheelSpinsSnapshot.size;
     const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
+    
+    // إحصائيات لعبة الدرج
+    const staircaseGamesSnapshot = await db.collection('staircase_games').get();
+    const totalGames = staircaseGamesSnapshot.size;
+    let totalGameBets = 0;
+    let totalGamePayouts = 0;
+    staircaseGamesSnapshot.forEach(doc => {
+      const d = doc.data();
+      totalGameBets += d.betAmount;
+      if (d.isWin) totalGamePayouts += d.winAmount;
+    });
     
     res.json({
       success: true,
@@ -1073,7 +1374,11 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
         totalReferralEarnings,
         pendingWithdrawals: pendingSnapshot.size,
         totalSpins,
-        totalWinnings
+        totalWinnings,
+        totalGames,
+        totalGameBets,
+        totalGamePayouts,
+        gameHouseProfit: totalGameBets - totalGamePayouts
       }
     });
   } catch (error) {
@@ -1221,7 +1526,6 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API تحديث سعر عجلة الحظ =============
 app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   try {
     const { cost } = req.body;
@@ -1236,6 +1540,94 @@ app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= APIs الأدمن للعبة الدرج =============
+
+// جلب حالة جميع المخازن
+app.get('/api/admin/game-pools', requireAdmin, async (req, res) => {
+  try {
+    const pools = {};
+    for (const bet of AVAILABLE_BETS) {
+      const pool = await getChipPool(bet);
+      pools[bet] = pool.levels;
+    }
+    res.json({ success: true, pools });
+  } catch (error) {
+    console.error('Get pools error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// إضافة رصيد إلى مخزن معين (للأدمن - لضبط التوازن)
+app.post('/api/admin/add-to-pool', requireAdmin, async (req, res) => {
+  try {
+    const { chipAmount, multiplier, amount } = req.body;
+    
+    if (!AVAILABLE_BETS.includes(chipAmount)) {
+      return res.status(400).json({ error: 'قيمة الفيشة غير صالحة' });
+    }
+    
+    const poolRef = db.collection('game_pools').doc(`chip_${chipAmount}`);
+    const pool = await getChipPool(chipAmount);
+    
+    const currentAmount = pool.levels[multiplier]?.totalAmount || 0;
+    
+    await poolRef.update({
+      [`levels.${multiplier}.totalAmount`]: currentAmount + amount,
+      [`levels.${multiplier}.lastUpdated`]: new Date(),
+      updatedAt: new Date()
+    });
+    
+    res.json({ success: true, message: `تمت إضافة ${amount} SYP إلى مخزن ${chipAmount} / ${multiplier}` });
+  } catch (error) {
+    console.error('Add to pool error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// إحصائيات لعبة الدرج العامة
+app.get('/api/admin/game-stats', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('staircase_games').get();
+    
+    let totalBets = 0;
+    let totalPayouts = 0;
+    let totalRefunds = 0;
+    let winsCount = 0;
+    let lossesCount = 0;
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      totalBets += data.betAmount;
+      if (data.isWin) {
+        totalPayouts += data.winAmount || 0;
+        winsCount++;
+      } else {
+        totalRefunds += data.refundAmount || 0;
+        lossesCount++;
+      }
+    });
+    
+    const houseProfit = totalBets - totalPayouts - totalRefunds;
+    
+    res.json({
+      success: true,
+      stats: {
+        totalGames: snapshot.size,
+        winsCount,
+        lossesCount,
+        totalBets,
+        totalPayouts,
+        totalRefunds,
+        houseProfit,
+        houseEdgePercent: totalBets > 0 ? ((houseProfit / totalBets) * 100).toFixed(2) : 0
+      }
+    });
+  } catch (error) {
+    console.error('Game stats error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
 app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
   try {
     const { password } = req.body;
@@ -1243,7 +1635,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins'];
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'staircase_games', 'game_pools'];
     for (const col of collections) {
       const snapshot = await db.collection(col).get();
       const deletions = [];
@@ -1274,4 +1666,6 @@ app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
+  console.log(`🎲 Staircase Game with ${AVAILABLE_BETS.length} chip types and ${STAIRCASE_MULTIPLIERS.length} levels`);
+  console.log(`💰 Pool system active for multipliers >= 1.0x`);
 });
