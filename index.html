@@ -396,52 +396,143 @@
             align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--primary);
         }
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px; margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px; margin-bottom: 25px;
         }
         .stat-card {
-            background: var(--surface); padding: 16px; border-radius: var(--radius);
+            background: var(--surface); padding: 20px; border-radius: var(--radius);
             text-align: center; border: 1px solid var(--border); transition: var(--transition);
         }
         .stat-card:hover { transform: translateY(-3px); border-color: var(--primary); }
-        .stat-number { font-size: 28px; font-weight: bold; color: var(--primary); }
+        .stat-number { font-size: 32px; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
         .admin-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: var(--transition); }
         .admin-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
-        .admin-btn-small { padding: 4px 8px; font-size: 12px; margin: 2px; }
-        .admin-table { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 16px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); }
-        th { background: var(--primary-bg); color: var(--primary-light); }
-        .tabs-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab { cursor: pointer; padding: 10px 20px; background: var(--surface); border-radius: var(--radius); transition: var(--transition); }
-        .tab:hover { background: var(--primary-bg); transform: translateY(-2px); }
-        .tab.active { background: var(--primary); color: white; }
-        .section-title { color: var(--primary-light); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .admin-btn-small { padding: 6px 12px; font-size: 12px; margin: 2px; }
+        .admin-table {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            overflow-x: auto;
+            padding: 0;
+        }
+        .admin-table-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-light);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .admin-table-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-light);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px 12px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        th {
+            background: var(--primary-bg);
+            color: var(--primary-light);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: var(--surface-light);
+        }
+        .tabs-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            background: var(--surface);
+            padding: 10px;
+            border-radius: var(--radius-lg);
+        }
+        .tab {
+            cursor: pointer;
+            padding: 10px 24px;
+            background: var(--surface-light);
+            border-radius: var(--radius);
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        .tab:hover {
+            background: var(--primary-bg);
+            transform: translateY(-2px);
+            color: var(--primary-light);
+        }
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        .section-title {
+            color: var(--primary-light);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 18px;
+        }
         .hidden { display: none; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
         .badge-success { background: var(--success); color: white; }
-        .badge-warning { background: var(--warning); color: white; }
+        .badge-warning { background: var(--warning); color: #1a1a2e; }
         .badge-danger { background: var(--error); color: white; }
         .badge-info { background: var(--info); color: white; }
 
         .commission-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
         .theme-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
-        .theme-color { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .theme-color { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
         .theme-color:hover { transform: scale(1.1); }
         .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 10px white; }
-        .stat-icon { font-size: 24px; margin-bottom: 8px; }
+        .stat-icon { font-size: 28px; margin-bottom: 10px; }
         
-        @media (max-width: 480px) {
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-bar select {
+            width: auto;
+            min-width: 150px;
+            background: var(--surface-light);
+        }
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        @media (max-width: 768px) {
             .btn { padding: 10px 6px; font-size: 13px; }
             .balance-value { font-size: 18px; }
             .balance-value-large { font-size: 22px; }
             .balance-card { padding: 6px 12px; min-width: 100px; }
             .stat-number { font-size: 22px; }
-            th, td { padding: 8px; font-size: 12px; }
+            th, td { padding: 10px 8px; font-size: 11px; }
             .game-sphere { width: 100px; height: 100px; font-size: 48px; }
             .theme-color { width: 30px; height: 30px; }
             .wheel-wrapper { width: 250px; height: 250px; }
             .spin-button { padding: 12px 30px; font-size: 18px; }
+            .tab { padding: 8px 16px; font-size: 12px; }
+            .stats-grid { gap: 10px; }
+            .stat-card { padding: 12px; }
+            .stat-number { font-size: 20px; }
+            .stat-icon { font-size: 22px; }
         }
     </style>
 </head>
@@ -625,14 +716,14 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div>المستخدمين</div></div>
-                <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number" id="statNewToday">0</div><div>جدد اليوم</div></div>
-                <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" id="statTotalBalance">0</div><div>إجمالي الرصيد</div></div>
-                <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" id="statTotalDeposited">0</div><div>الإيداعات</div></div>
-                <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" id="statTotalWithdrawn">0</div><div>السحوبات</div></div>
-                <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" id="statPendingWithdraws">0</div><div>طلبات معلقة</div></div>
-                <div class="stat-card"><div class="stat-icon">🎡</div><div class="stat-number" id="statTotalSpins">0</div><div>إجمالي التدويرات</div></div>
-                <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number" id="statTotalWinnings">0</div><div>أرباح العجلة</div></div>
+                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div class="stat-label">المستخدمين</div></div>
+                <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number" id="statNewToday">0</div><div class="stat-label">جدد اليوم</div></div>
+                <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" id="statTotalBalance">0</div><div class="stat-label">إجمالي الرصيد</div></div>
+                <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" id="statTotalDeposited">0</div><div class="stat-label">الإيداعات</div></div>
+                <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" id="statTotalWithdrawn">0</div><div class="stat-label">السحوبات</div></div>
+                <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" id="statPendingWithdraws">0</div><div class="stat-label">طلبات معلقة</div></div>
+                <div class="stat-card"><div class="stat-icon">🎡</div><div class="stat-number" id="statTotalSpins">0</div><div class="stat-label">إجمالي التدويرات</div></div>
+                <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number" id="statTotalWinnings">0</div><div class="stat-label">أرباح العجلة</div></div>
             </div>
 
             <div class="tabs-bar">
@@ -645,9 +736,13 @@
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
+            <!-- طلبات السحب -->
             <div id="adminWithdrawsPanel" class="admin-table">
-                <div style="margin-bottom:15px;display:flex;gap:10px">
-                    <select id="filterWithdrawStatus" style="flex:1">
+                <div class="admin-table-header">
+                    <div class="admin-table-title">💸 طلبات السحب</div>
+                </div>
+                <div class="filter-bar" style="padding: 15px;">
+                    <select id="filterWithdrawStatus">
                         <option value="all">جميع الطلبات</option>
                         <option value="pending">⏳ قيد المراجعة</option>
                         <option value="approved">✅ مقبولة</option>
@@ -655,91 +750,131 @@
                     </select>
                     <button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button>
                 </div>
-                <div id="withdrawsTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+                <div id="withdrawsTable" style="padding: 0 15px 15px 15px;">
+                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                </div>
             </div>
             
+            <!-- الإيداعات -->
             <div id="adminDepositsPanel" class="admin-table hidden">
-                <div id="depositsTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+                <div class="admin-table-header">
+                    <div class="admin-table-title">💰 الإيداعات</div>
+                </div>
+                <div id="depositsTable" style="padding: 15px;">
+                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                </div>
             </div>
             
+            <!-- المستخدمين -->
             <div id="adminUsersPanel" class="admin-table hidden">
-                <input type="text" id="searchUsers" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="margin-bottom:15px">
-                <div id="usersTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+                <div class="admin-table-header">
+                    <div class="admin-table-title">👥 المستخدمين</div>
+                </div>
+                <div style="padding: 15px;">
+                    <input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%; margin-bottom:15px;">
+                </div>
+                <div id="usersTable" style="padding: 0 15px 15px 15px;">
+                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                </div>
             </div>
             
+            <!-- إعدادات الدفع -->
             <div id="adminSettingsPanel" class="admin-table hidden">
-                <h3 class="section-title">⚙️ الحدود العامة</h3>
-                <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
-                <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
-                <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
-                <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
-                
-                <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
-                <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
-                <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div>
-                <div class="form-group"><label>🏦 العنوان الخاص (للـ API)</label><input type="text" id="settingShamCashPrivateAddress"></div>
-                <div class="form-group"><label>🌐 العنوان العام (للمستخدم)</label><input type="text" id="settingShamCashPublicAddress"></div>
-                
-                <h3 class="section-title">💵 شام كاش (دولار)</h3>
-                <div class="form-group"><label>🔘 تفعيل شام كاش دولار</label><input type="checkbox" id="settingShamCashUsdEnabled"></div>
-                <div class="form-group"><label>💱 سعر صرف الدولار إلى ليرة</label><input type="number" id="settingUsdToSypRate"></div>
-                <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashUsdApiKey"></div>
-                <div class="form-group"><label>🏦 العنوان الخاص</label><input type="text" id="settingShamCashUsdPrivateAddress"></div>
-                <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashUsdPublicAddress"></div>
-                
-                <h3 class="section-title">📱 سيرياتيل كاش</h3>
-                <div class="form-group"><label>🔘 تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
-                <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingSyriatelApiKey"></div>
-                <div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingSyriatelPrivateAddress"></div>
-                <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingSyriatelPublicAddress"></div>
-                
-                <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:20px">💾 حفظ جميع الإعدادات</button>
+                <div class="admin-table-header">
+                    <div class="admin-table-title">⚙️ إعدادات النظام</div>
+                </div>
+                <div style="padding: 20px;">
+                    <h3 class="section-title">الحدود العامة</h3>
+                    <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
+                    <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
+                    <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
+                    <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
+                    
+                    <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
+                    <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
+                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div>
+                    <div class="form-group"><label>🏦 العنوان الخاص (للـ API)</label><input type="text" id="settingShamCashPrivateAddress"></div>
+                    <div class="form-group"><label>🌐 العنوان العام (للمستخدم)</label><input type="text" id="settingShamCashPublicAddress"></div>
+                    
+                    <h3 class="section-title">💵 شام كاش (دولار)</h3>
+                    <div class="form-group"><label>🔘 تفعيل شام كاش دولار</label><input type="checkbox" id="settingShamCashUsdEnabled"></div>
+                    <div class="form-group"><label>💱 سعر صرف الدولار إلى ليرة</label><input type="number" id="settingUsdToSypRate"></div>
+                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashUsdApiKey"></div>
+                    <div class="form-group"><label>🏦 العنوان الخاص</label><input type="text" id="settingShamCashUsdPrivateAddress"></div>
+                    <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashUsdPublicAddress"></div>
+                    
+                    <h3 class="section-title">📱 سيرياتيل كاش</h3>
+                    <div class="form-group"><label>🔘 تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
+                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingSyriatelApiKey"></div>
+                    <div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingSyriatelPrivateAddress"></div>
+                    <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingSyriatelPublicAddress"></div>
+                    
+                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:20px">💾 حفظ جميع الإعدادات</button>
+                </div>
             </div>
 
+            <!-- إعدادات العجلة -->
             <div id="adminWheelSettingsPanel" class="admin-table hidden">
-                <h3 class="section-title">🎡 إعدادات عجلة الحظ</h3>
-                <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
-                <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
-                
-                <h3 class="section-title" style="margin-top: 30px;">🎁 جوائز العجلة</h3>
-                <div class="admin-table">
-                    <table>
-                        <thead>
-                            <tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th> </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;">ذهبي</td></tr>
-                            <tr><td>2</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                            <tr><td>3</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                            <tr><td>4</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                            <tr><td>5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;">ذهبي</td></tr>
-                            <tr><td>6</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                            <tr><td>7</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                            <tr><td>8</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;">أزرق لامع</td></tr>
-                        </tbody>
-                    </table>
+                <div class="admin-table-header">
+                    <div class="admin-table-title">🎡 إعدادات عجلة الحظ</div>
+                </div>
+                <div style="padding: 20px;">
+                    <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
+                    <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
+                    
+                    <h3 class="section-title" style="margin-top: 30px;">🎁 جوائز العجلة</h3>
+                    <div class="admin-table" style="background: var(--surface-light);">
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th> </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td style="text-align:center;">1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
+                                <tr><td style="text-align:center;">2</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">3</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">4</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
+                                <tr><td style="text-align:center;">6</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">7</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">8</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
+            <!-- الألوان -->
             <div id="adminThemesPanel" class="admin-table hidden">
-                <h3 class="section-title">🎨 اختيار لون الموقع</h3>
-                <div class="theme-selector">
-                    <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
-                    <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
-                    <div class="theme-color" style="background: #4caf50;" data-theme="green" title="أخضر"></div>
-                    <div class="theme-color" style="background: #9c27b0;" data-theme="purple" title="بنفسجي"></div>
-                    <div class="theme-color" style="background: #ff9800;" data-theme="orange" title="برتقالي"></div>
-                    <div class="theme-color" style="background: #e91e63;" data-theme="pink" title="وردي"></div>
-                    <div class="theme-color" style="background: #009688;" data-theme="teal" title="تركواز"></div>
-                    <div class="theme-color" style="background: #3f51b5;" data-theme="indigo" title="نيلي"></div>
-                    <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
-                    <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
+                <div class="admin-table-header">
+                    <div class="admin-table-title">🎨 اختيار لون الموقع</div>
                 </div>
-                <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
+                <div style="padding: 20px; text-align: center;">
+                    <div class="theme-selector">
+                        <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
+                        <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
+                        <div class="theme-color" style="background: #4caf50;" data-theme="green" title="أخضر"></div>
+                        <div class="theme-color" style="background: #9c27b0;" data-theme="purple" title="بنفسجي"></div>
+                        <div class="theme-color" style="background: #ff9800;" data-theme="orange" title="برتقالي"></div>
+                        <div class="theme-color" style="background: #e91e63;" data-theme="pink" title="وردي"></div>
+                        <div class="theme-color" style="background: #009688;" data-theme="teal" title="تركواز"></div>
+                        <div class="theme-color" style="background: #3f51b5;" data-theme="indigo" title="نيلي"></div>
+                        <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
+                        <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
+                    </div>
+                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
+                </div>
             </div>
 
+            <!-- تهيئة -->
             <div id="adminResetPanel" class="admin-table hidden">
-                <div class="reset-section"><h3 class="section-title" style="color:var(--error)">⚠️ مسح قاعدة البيانات بالكامل</h3><button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button></div>
+                <div class="admin-table-header">
+                    <div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div>
+                </div>
+                <div style="padding: 20px; text-align: center;">
+                    <p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</p>
+                    <p style="margin-bottom:20px">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات</p>
+                    <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
+                </div>
             </div>
         </div>
     </div>
@@ -998,26 +1133,13 @@
                 return;
             }
             
-            // القسم الفائز (1-8 من الخادم)
             const winningSectorIndex = spinData.sector - 1;
             const angleStep = (Math.PI * 2) / SECTORS.length;
-            
-            // المؤشر في الأعلى (زاوية -PI/2)
             const pointerAngle = -Math.PI / 2;
-            
-            // الزاوية التي يجب أن يكون عندها القسم الفائز تحت المؤشر
-            // القسم i يبدأ من زاوية i * angleStep + currentRotation
-            // نريد أن تكون زاوية منتصف القسم = pointerAngle
             const targetSectorMidAngle = pointerAngle;
-            // زاوية بداية القسم المطلوب
             const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
-            // الزاوية المطلوبة للدوران
             let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep);
-            
-            // تطبيع الزاوية
             targetRotation = ((targetRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            
-            // إضافة دورات كاملة (بين 10 و 15 دورة)
             const fullRotations = 10 + Math.floor(Math.random() * 6);
             const finalTargetRotation = targetRotation + (fullRotations * Math.PI * 2);
             
@@ -1028,7 +1150,6 @@
             function animateSpin(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // منحنى تباطؤ سلس
                 const easeOut = 1 - Math.pow(1 - progress, 3);
                 currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
                 drawWheel();
@@ -1253,7 +1374,6 @@
                     document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; 
                     document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; 
                     
-                    // ============= عرض طرق الدفع =============
                     const methodsContainer = document.getElementById('methodsList');
                     methodsContainer.innerHTML = '';
                     
@@ -1440,13 +1560,13 @@
             if (res?.ok) { 
                 const data = await res.json(); 
                 if (data.success) { 
-                    document.getElementById('statTotalUsers').innerText = data.stats.totalUsers || 0; 
-                    document.getElementById('statNewToday').innerText = data.stats.newToday || 0; 
+                    document.getElementById('statTotalUsers').innerText = (data.stats.totalUsers || 0).toLocaleString(); 
+                    document.getElementById('statNewToday').innerText = (data.stats.newToday || 0).toLocaleString(); 
                     document.getElementById('statTotalBalance').innerText = (data.stats.totalBalance || 0).toLocaleString(); 
                     document.getElementById('statTotalDeposited').innerText = (data.stats.totalDeposited || 0).toLocaleString(); 
                     document.getElementById('statTotalWithdrawn').innerText = (data.stats.totalWithdrawn || 0).toLocaleString(); 
-                    document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals || 0; 
-                    document.getElementById('statTotalSpins').innerText = data.stats.totalSpins || 0; 
+                    document.getElementById('statPendingWithdraws').innerText = (data.stats.pendingWithdrawals || 0).toLocaleString(); 
+                    document.getElementById('statTotalSpins').innerText = (data.stats.totalSpins || 0).toLocaleString(); 
                     document.getElementById('statTotalWinnings').innerText = (data.stats.totalWinnings || 0).toLocaleString(); 
                 } 
             } 
@@ -1462,14 +1582,23 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<tr><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr>
-                    <td>${r.userName || r.userEmail || r.userId}</td>
-                    <td>${r.amount.toLocaleString()} SYP</td
-                    <td>${r.address}</td
-                    <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td
-                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td
-                    <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td
-                </tr>`).join('')}</tbody></table>`; 
+                container.innerHTML = `<table>
+                    <thead>
+                        <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th>  </tr>
+                    </thead>
+                    <tbody>
+                        ${data.requests.map(r => `
+                            <tr>
+                                <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
+                                <td><span class="badge badge-info">${r.amount.toLocaleString()} SYP</span></td>
+                                <td style="direction:ltr; text-align:left;">${r.address}</td>
+                                <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td>
+                                <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
+                                <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`; 
             } 
         }
 
@@ -1482,13 +1611,22 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table><thead>汽<th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr>
-                    <td>${d.userName || d.userEmail || d.userId}</td>
-                    <td>${d.amount.toLocaleString()} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td>
-                    <td>${d.method}</td>
-                    <td>${d.transactionId}</td>
-                    <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
-                </tr>`).join('')}</tbody></table>`; 
+                container.innerHTML = `<td>
+                    <thead>
+                        <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
+                    </thead>
+                    <tbody>
+                        ${data.deposits.map(d => `
+                            <tr>
+                                <td><strong>${d.userName || d.userEmail || d.userId}</strong></td>
+                                <td><span class="badge badge-success">${d.amount.toLocaleString()} SYP</span>${d.originalAmount ? `<br><small>(${d.originalAmount} ${d.originalCurrency})</small>` : ''}</td>
+                                <td>${d.method === 'sham_cash' ? '🏦 شام كاش' : d.method === 'sham_cash_usd' ? '💵 شام كاش دولار' : '📱 سيرياتيل كاش'}</td>
+                                <td><code style="direction:ltr; font-size:11px;">${d.transactionId}</code></td>
+                                <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`; 
             } 
         }
 
@@ -1503,17 +1641,29 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${allUsers.map(u => `<tr>
-                        <td>${u.email || '-'}</td>
-                        <td>${u.name || '-'}</td
-                        <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td
-                        <td>${(u.balance || 0).toLocaleString()} SYP</td
-                        <td>${(u.referralBalance || 0).toLocaleString()} SYP</td
-                        <td>${u.referralsCount || 0}</td
-                        <td>${u.referredByName || '-'}</td
-                        <td>${u.totalSpins || 0}</td
-                        <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
-                      </tr>`).join('')}</tbody></table>`; 
+                    container.innerHTML = `<table>
+                        <thead>
+                            <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
+                        </thead>
+                        <tbody>
+                            ${allUsers.map(u => `
+                                <tr>
+                                    <td><small>${u.email || '-'}</small></td>
+                                    <td><strong>${u.name || '-'}</strong></td>
+                                    <td><code>${u.uniqueId || '-'}</code></td>
+                                    <td><span class="badge badge-info">${(u.balance || 0).toLocaleString()} SYP</span></td>
+                                    <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span></td>
+                                    <td>${u.referralsCount || 0}</td>
+                                    <td>${u.referredByName || '-'}</td>
+                                    <td>${u.totalSpins || 0}</td>
+                                    <td>
+                                        <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
+                                        <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    点心`; 
                 } 
             } 
         }
@@ -1812,17 +1962,29 @@
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
                 return; 
             } 
-            container.innerHTML = `<table><thead>汽<th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr>
-                <td>${u.email || '-'}</td>
-                <td>${u.name || '-'}</td
-                <td><span class="badge badge-info">${u.uniqueId || '-'}</span></td
-                <td>${(u.balance || 0).toLocaleString()} SYP</td
-                <td>${(u.referralBalance || 0).toLocaleString()} SYP</td
-                <td>${u.referralsCount || 0}</td
-                <td>${u.referredByName || '-'}</td
-                <td>${u.totalSpins || 0}</td
-                <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
-              </tr>`).join('')}</tbody></table>`;
+            container.innerHTML = `<tr>
+                <thead>
+                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
+                </thead>
+                <tbody>
+                    ${filtered.map(u => `
+                        <tr>
+                            <td><small>${u.email || '-'}</small></td>
+                            <td><strong>${u.name || '-'}</strong></td>
+                            <td><code>${u.uniqueId || '-'}</code></td>
+                            <td><span class="badge badge-info">${(u.balance || 0).toLocaleString()} SYP</span></td>
+                            <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span>
+                            <td>${u.referralsCount || 0}</td>
+                            <td>${u.referredByName || '-'}</td>
+                            <td>${u.totalSpins || 0}</td>
+                            <td>
+                                <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
+                                <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
         });
 
         document.querySelectorAll('.close-modal').forEach(btn => { 
