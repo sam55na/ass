@@ -80,7 +80,7 @@ app.use('/api/admin/', adminLimiter);
 // ============= إعدادات النظام =============
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
-const CACHE_TTL = 60; // ثانية
+const CACHE_TTL = 60;
 
 // نظام كاش بسيط
 const cache = new Map();
@@ -95,8 +95,33 @@ function setCache(key, data, ttl = CACHE_TTL) {
   cache.set(key, { data, expiry: Date.now() + ttl * 1000 });
 }
 
-function generateUniqueId() {
-  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+// ============= دالة إنشاء كود فريد وغير متكرر =============
+async function generateUniqueReferralCode() {
+  let uniqueId;
+  let isUnique = false;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (!isUnique && attempts < maxAttempts) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    uniqueId = result;
+    
+    const existingQuery = await db.collection('users').where('uniqueId', '==', uniqueId).limit(1).get();
+    if (existingQuery.empty) {
+      isUnique = true;
+    }
+    attempts++;
+  }
+  
+  if (!isUnique) {
+    uniqueId = 'UID' + Date.now().toString().slice(-8);
+  }
+  
+  return uniqueId;
 }
 
 const requireAuth = async (req, res, next) => {
@@ -195,7 +220,7 @@ async function getSettings() {
   }
 }
 
-// ============= كلاس شام كاش =============
+// ============= كلاس شام كاش للتحقق من العملة والمبلغ =============
 class ShamCashClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
@@ -203,7 +228,7 @@ class ShamCashClient {
     this.baseUrl = "https://apisyria.com/api/v1";
   }
 
-  async verifyTransaction(txid, expectedAmount = null) {
+  async verifyTransaction(txid, expectedAmount = null, expectedCurrency = null) {
     try {
       const params = {
         resource: "shamcash",
@@ -218,14 +243,33 @@ class ShamCashClient {
         for (const item of items) {
           if (String(item.tran_id) === String(txid)) {
             const apiAmount = parseFloat(item.amount);
+            const apiCurrency = item.currency || 'SYP';
             const timestamp = item.created_at || Date.now() / 1000;
+            
             if ((Date.now() / 1000 - timestamp) > 86400) {
               return { success: false, message: "العملية أقدم من 24 ساعة" };
             }
-            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}` };
+            
+            if (expectedCurrency && apiCurrency !== expectedCurrency) {
+              return { 
+                success: false, 
+                message: `نوع العملة غير متطابق: العملية بـ ${apiCurrency} ولكن المطلوب ${expectedCurrency}` 
+              };
             }
-            return { success: true, amount: apiAmount, currency: item.currency || "SYP" };
+            
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
+              return { 
+                success: false, 
+                message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount} ${apiCurrency}` 
+              };
+            }
+            
+            return { 
+              success: true, 
+              amount: apiAmount, 
+              currency: apiCurrency,
+              rawData: item
+            };
           }
         }
         return { success: false, message: "رقم العملية غير موجود" };
@@ -238,6 +282,7 @@ class ShamCashClient {
   }
 }
 
+// ============= كلاس سيرياتيل كاش =============
 class SyriatelCashClient {
   constructor(apiKey, gsmNumbers) {
     this.apiKey = apiKey;
@@ -273,6 +318,7 @@ class SyriatelCashClient {
   }
 }
 
+// ============= كلاس شام كاش دولار =============
 class ShamCashUsdClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
@@ -295,14 +341,33 @@ class ShamCashUsdClient {
         for (const item of items) {
           if (String(item.tran_id) === String(txid)) {
             const apiAmount = parseFloat(item.amount);
+            const apiCurrency = item.currency || 'USD';
             const timestamp = item.created_at || Date.now() / 1000;
+            
             if ((Date.now() / 1000 - timestamp) > 86400) {
               return { success: false, message: "العملية أقدم من 24 ساعة" };
             }
-            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount}` };
+            
+            if (apiCurrency !== 'USD') {
+              return { 
+                success: false, 
+                message: `نوع العملة غير صحيح: يجب أن تكون العملية بالدولار ولكن وجدت ${apiCurrency}` 
+              };
             }
-            return { success: true, amount: apiAmount, currency: "USD" };
+            
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
+              return { 
+                success: false, 
+                message: `المبلغ غير متطابق: المبلغ الفعلي ${apiAmount} USD` 
+              };
+            }
+            
+            return { 
+              success: true, 
+              amount: apiAmount, 
+              currency: apiCurrency,
+              rawData: item
+            };
           }
         }
         return { success: false, message: "رقم العملية غير موجود" };
@@ -365,8 +430,16 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     const userDoc = await userRef.get();
     
     if (userDoc.exists) {
-      return res.json({ success: true, user: userDoc.data(), isAdmin: email === ADMIN_EMAIL });
+      const userData = userDoc.data();
+      return res.json({ 
+        success: true, 
+        user: userData, 
+        isAdmin: email === ADMIN_EMAIL,
+        referralCode: userData.uniqueId
+      });
     }
+    
+    const uniqueId = await generateUniqueReferralCode();
     
     let referredBy = null;
     let referrerName = null;
@@ -385,7 +458,7 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     }
     
     const newUser = {
-      uniqueId: generateUniqueId(),
+      uniqueId: uniqueId,
       email,
       name: name || email.split('@')[0],
       balance: 0,
@@ -399,11 +472,19 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       isBanned: false,
       lastLogin: new Date()
     };
-    await userRef.set(newUser);
     
+    await userRef.set(newUser);
     cache.delete('admin_users');
     
-    res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
+    console.log(`✅ مستخدم جديد: ${email} - كود الإحالة: ${uniqueId}`);
+    
+    res.json({ 
+      success: true, 
+      user: newUser, 
+      isAdmin: email === ADMIN_EMAIL,
+      referralCode: uniqueId
+    });
+    
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ error: 'خطأ في التسجيل' });
@@ -559,7 +640,8 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     const settings = await getSettings();
     let verification = null;
     let finalAmountSYP = amountNum;
-    let currency = 'SYP';
+    let originalCurrency = 'SYP';
+    let originalAmount = amountNum;
     
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled) {
@@ -568,11 +650,22 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       if (!settings.shamCashApiKey || !settings.shamCashPrivateAddress) {
         return res.status(400).json({ error: 'بيانات شام كاش غير مكتملة' });
       }
+      
       const client = new ShamCashClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
-      verification = await client.verifyTransaction(transactionId, amountNum);
+      verification = await client.verifyTransaction(transactionId, amountNum, 'SYP');
+      
       if (verification.success) {
-        finalAmountSYP = verification.amount;
-        currency = verification.currency || 'SYP';
+        originalAmount = verification.amount;
+        originalCurrency = verification.currency;
+        
+        if (originalCurrency === 'SYP' || originalCurrency === 'SYR') {
+          finalAmountSYP = originalAmount;
+        } else if (originalCurrency === 'USD') {
+          const exchangeRate = settings.usdToSypRate || 13000;
+          finalAmountSYP = originalAmount * exchangeRate;
+        } else {
+          return res.status(400).json({ error: `عملة غير مدعومة: ${originalCurrency}` });
+        }
       }
       
     } else if (method === 'sham_cash_usd') {
@@ -582,12 +675,15 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       if (!settings.shamCashUsdApiKey || !settings.shamCashUsdPrivateAddress) {
         return res.status(400).json({ error: 'بيانات شام كاش دولار غير مكتملة' });
       }
+      
       const client = new ShamCashUsdClient(settings.shamCashUsdApiKey, settings.shamCashUsdPrivateAddress);
       verification = await client.verifyTransaction(transactionId, amountNum);
+      
       if (verification.success) {
+        originalAmount = verification.amount;
+        originalCurrency = verification.currency;
         const exchangeRate = settings.usdToSypRate || 13000;
-        finalAmountSYP = verification.amount * exchangeRate;
-        currency = 'SYP';
+        finalAmountSYP = originalAmount * exchangeRate;
       }
       
     } else if (method === 'syriatel_cash') {
@@ -600,19 +696,22 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       const client = new SyriatelCashClient(settings.syriatelApiKey, [settings.syriatelPrivateAddress]);
       verification = await client.verifyTransaction(transactionId, amountNum);
       if (verification.success) {
-        finalAmountSYP = verification.amount;
-        currency = verification.currency || 'SYP';
+        originalAmount = verification.amount;
+        originalCurrency = verification.currency || 'SYP';
+        finalAmountSYP = originalAmount;
       }
     } else {
       return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
     }
     
-    if (!verification.success) {
-      return res.status(400).json({ error: verification.message });
+    if (!verification || !verification.success) {
+      return res.status(400).json({ error: verification?.message || 'فشل التحقق من العملية' });
     }
     
     if (finalAmountSYP < settings.minDeposit) {
-      return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit.toLocaleString()} SYP` });
+      return res.status(400).json({ 
+        error: `الحد الأدنى للإيداع ${settings.minDeposit.toLocaleString()} SYP، قيمة إيداعك ${finalAmountSYP.toLocaleString()} SYP` 
+      });
     }
     
     const existing = await db.collection('deposits')
@@ -640,12 +739,13 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       userId: uid,
       method,
       amount: finalAmountSYP,
-      originalAmount: verification.amount,
-      originalCurrency: currency,
-      transactionId,
+      originalAmount: originalAmount,
+      originalCurrency: originalCurrency,
+      transactionId: transactionId,
       status: 'completed',
       verifiedAt: new Date(),
-      exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
+      exchangeRate: (originalCurrency === 'USD' && method !== 'sham_cash_usd') ? settings.usdToSypRate : null,
+      verificationData: verification.rawData || null
     });
     
     await addReferralCommission(uid, finalAmountSYP);
@@ -654,10 +754,22 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     cache.delete('admin_users');
     
     const updatedUser = await userRef.get();
+    
+    let successMessage = `تم إيداع ${finalAmountSYP.toLocaleString()} SYP بنجاح`;
+    if (originalCurrency !== 'SYP' && originalCurrency !== 'SYR') {
+      successMessage = `تم إيداع ${originalAmount} ${originalCurrency} (ما يعادل ${finalAmountSYP.toLocaleString()} SYP) بنجاح`;
+    }
+    
     res.json({ 
       success: true, 
-      message: `تم إيداع ${finalAmountSYP.toLocaleString()} SYP بنجاح`,
-      newBalance: updatedUser.data().balance
+      message: successMessage,
+      newBalance: updatedUser.data().balance,
+      depositDetails: {
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
+        finalAmountSYP: finalAmountSYP,
+        exchangeRate: originalCurrency === 'USD' ? settings.usdToSypRate : null
+      }
     });
     
   } catch (error) {
