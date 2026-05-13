@@ -323,7 +323,7 @@ class SyriatelCashClient {
   }
 }
 
-// ============= عمولة الإحالة =============
+// ============= عمولة الإحالة (تضاف إلى رصيد الإحالات المنفصل) =============
 async function addReferralCommission(userId, depositAmount) {
   try {
     const userDoc = await db.collection('users').doc(userId).get();
@@ -336,8 +336,10 @@ async function addReferralCommission(userId, depositAmount) {
       
       if (commissionAmount > 0) {
         const referrerRef = db.collection('users').doc(userData.referredBy);
+        
+        // إضافة العمولة إلى رصيد الإحالات المنفصل
         await referrerRef.update({
-          balance: admin.firestore.FieldValue.increment(commissionAmount),
+          referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
           referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
         });
         
@@ -349,6 +351,8 @@ async function addReferralCommission(userId, depositAmount) {
           percent: commissionPercent,
           createdAt: new Date()
         });
+        
+        console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
       }
     }
   } catch (error) {
@@ -379,7 +383,9 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       if (!refQuery.empty) {
         referredBy = refQuery.docs[0].id;
         referrerName = refQuery.docs[0].data().name;
+        // مكافأة التسجيل (5 SYP) تضاف إلى رصيد الإحالات المنفصل
         await refQuery.docs[0].ref.update({
+          referralBalance: admin.firestore.FieldValue.increment(5),
           referralEarnings: admin.firestore.FieldValue.increment(5),
           referrals: admin.firestore.FieldValue.arrayUnion(uid)
         });
@@ -390,10 +396,11 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       uniqueId: uniqueId,
       email,
       name: name || email.split('@')[0],
-      balance: 0,
+      balance: 0,               // الرصيد الأساسي (للسحب والإيداع)
+      referralBalance: 0,       // رصيد الإحالات المنفصل (للعرض فقط)
       totalDeposited: 0,
       totalWithdrawn: 0,
-      referralEarnings: 0,
+      referralEarnings: 0,      // إجمالي أرباح الإحالات (تاريخي)
       referredBy: referredBy,
       referredByName: referrerName,
       referrals: [],
@@ -452,7 +459,8 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
       stats: {
         referralCount: data.referrals?.length || 0,
         referralEarnings: data.referralEarnings || 0,
-        balance: data.balance || 0,
+        referralBalance: data.referralBalance || 0,  // رصيد الإحالات المنفصل
+        balance: data.balance || 0,                   // الرصيد الأساسي
         totalDeposited: data.totalDeposited || 0,
         totalWithdrawn: data.totalWithdrawn || 0,
         uniqueId: data.uniqueId,
@@ -469,7 +477,7 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API إعدادات الإيداع =============
+// ============= API إعدادات الإيداع (مع إضافة الثيم المتزامن) =============
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSettings();
@@ -515,7 +523,7 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         gameImageUrl: settings.gameImageUrl || '',
         usdToSypRate: settings.usdToSypRate || 13000,
         referralCommission: settings.referralCommission || 5,
-        siteTheme: settings.siteTheme || 'red'
+        siteTheme: settings.siteTheme || 'red'  // إرسال الثيم الحالي للمستخدم
       }
     });
   } catch (error) {
@@ -618,6 +626,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
     });
     
+    // إضافة العمولة إلى رصيد الإحالات المنفصل للمحيل
     await addReferralCommission(uid, finalAmountSYP);
     
     const updatedUser = await userRef.get();
@@ -692,7 +701,9 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
       referredByName: referrerDoc.data().name
     });
     
+    // مكافأة التسجيل (5 SYP) تضاف إلى رصيد الإحالات المنفصل
     await referrerDoc.ref.update({
+      referralBalance: admin.firestore.FieldValue.increment(5),
       referralEarnings: admin.firestore.FieldValue.increment(5),
       referrals: admin.firestore.FieldValue.arrayUnion(uid)
     });
@@ -798,6 +809,33 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Save settings error:', error);
     res.status(500).json({ error: 'فشل تحديث الإعدادات' });
+  }
+});
+
+// ============= API تغيير الثيم (لجميع المستخدمين) =============
+app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
+  try {
+    const { theme } = req.body;
+    if (!theme) {
+      return res.status(400).json({ error: 'اللون مطلوب' });
+    }
+    
+    await db.collection('settings').doc('config').update({ siteTheme: theme });
+    res.json({ success: true, message: `تم تغيير لون الموقع إلى ${theme}` });
+  } catch (error) {
+    console.error('Update theme error:', error);
+    res.status(500).json({ error: 'فشل تغيير اللون' });
+  }
+});
+
+// ============= API جلب الثيم الحالي =============
+app.get('/api/site-theme', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    res.json({ success: true, theme: settings.siteTheme || 'red' });
+  } catch (error) {
+    console.error('Get theme error:', error);
+    res.json({ success: true, theme: 'red' });
   }
 });
 
@@ -936,6 +974,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         name: data.name,
         uniqueId: data.uniqueId,
         balance: data.balance,
+        referralBalance: data.referralBalance || 0,
         isBanned: data.isBanned || false,
         referredBy: data.referredBy,
         referredByName: data.referredByName,
