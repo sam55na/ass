@@ -67,6 +67,7 @@ app.use('/api/', generalLimiter);
 app.use('/api/user/deposit', strictLimiter);
 app.use('/api/user/withdraw', strictLimiter);
 app.use('/api/user/register', strictLimiter);
+app.use('/api/user/spin-wheel', strictLimiter);
 app.use('/api/admin/', generalLimiter);
 
 // ============= الثوابت =============
@@ -144,6 +145,7 @@ async function getSettings() {
       shamCashUsdEnabled: false,
       usdToSypRate: 13000,
       referralCommission: 5,
+      wheelSpinCost: 50, // سعر التدويرة من رصيد الإحالات
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
@@ -170,6 +172,7 @@ async function getSettings() {
       shamCashUsdEnabled: false,
       usdToSypRate: 13000,
       referralCommission: 5,
+      wheelSpinCost: 50,
       shamCashApiKey: '',
       shamCashPrivateAddress: '',
       shamCashPublicAddress: '0930000000',
@@ -323,7 +326,199 @@ class SyriatelCashClient {
   }
 }
 
-// ============= عمولة الإحالة (تضاف إلى رصيد الإحالات المنفصل) =============
+// ============= دالة عجلة الحظ =============
+const WHEEL_SECTORS = [
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
+  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 },
+  { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
+  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 }
+];
+
+function getRandomSector() {
+  const random = Math.random() * 100;
+  let cumulative = 0;
+  
+  for (const sector of WHEEL_SECTORS) {
+    cumulative += sector.probability;
+    if (random < cumulative) {
+      return sector;
+    }
+  }
+  return WHEEL_SECTORS[0];
+}
+
+// ============= API عجلة الحظ =============
+app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    const settings = await getSettings();
+    
+    // التحقق من آخر تدوير
+    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
+    const now = new Date();
+    let canSpin = true;
+    let remainingSeconds = 0;
+    
+    if (lastSpin) {
+      const timeDiff = (now - lastSpin) / 1000; // بالثواني
+      if (timeDiff < 300) { // 5 دقائق = 300 ثانية
+        canSpin = false;
+        remainingSeconds = Math.ceil(300 - timeDiff);
+      }
+    }
+    
+    res.json({
+      success: true,
+      canSpin: canSpin,
+      remainingSeconds: remainingSeconds,
+      spinCost: settings.wheelSpinCost || 50,
+      referralBalance: userData.referralBalance || 0,
+      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
+    });
+  } catch (error) {
+    console.error('Wheel status error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    if (!userData) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    // التحقق من آخر تدوير
+    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
+    const now = new Date();
+    
+    if (lastSpin) {
+      const timeDiff = (now - lastSpin) / 1000;
+      if (timeDiff < 300) {
+        const remainingSeconds = Math.ceil(300 - timeDiff);
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        return res.status(400).json({ 
+          error: `يجب الانتظار ${minutes} دقيقة و ${seconds} ثانية قبل التدوير مرة أخرى` 
+        });
+      }
+    }
+    
+    // التحقق من رصيد الإحالات
+    const settings = await getSettings();
+    const spinCost = settings.wheelSpinCost || 50;
+    
+    if ((userData.referralBalance || 0) < spinCost) {
+      return res.status(400).json({ error: `رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير` });
+    }
+    
+    // اختيار الجائزة العشوائية
+    const selectedSector = getRandomSector();
+    let prizeAmount = 0;
+    let prizeMessage = '';
+    
+    // معالجة الجائزة
+    if (selectedSector.type === 'balance') {
+      prizeAmount = selectedSector.value;
+      prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP! تم إضافتها إلى رصيدك الأساسي`;
+      
+      // إضافة الجائزة إلى الرصيد الأساسي
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(prizeAmount),
+        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
+        lastSpinTime: now,
+        totalSpins: admin.firestore.FieldValue.increment(1),
+        totalWinnings: admin.firestore.FieldValue.increment(prizeAmount)
+      });
+    } else {
+      // حظ أوفر
+      prizeMessage = `😅 حظ أوفر! لم تربح هذه المرة. حظاً أفضل في المرة القادمة`;
+      
+      // خصم تكلفة التدويرة فقط
+      await userRef.update({
+        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
+        lastSpinTime: now,
+        totalSpins: admin.firestore.FieldValue.increment(1)
+      });
+    }
+    
+    // تسجيل التدويرة
+    await db.collection('wheel_spins').add({
+      userId: uid,
+      sector: selectedSector.id,
+      sectorName: selectedSector.name,
+      prizeAmount: prizeAmount,
+      prizeType: selectedSector.type,
+      spinCost: spinCost,
+      timestamp: now,
+      userEmail: userData.email,
+      userName: userData.name
+    });
+    
+    // جلب البيانات المحدثة
+    const updatedUser = await userRef.get();
+    const updatedData = updatedUser.data();
+    
+    res.json({
+      success: true,
+      sector: selectedSector.id,
+      sectorName: selectedSector.name,
+      prizeAmount: prizeAmount,
+      prizeType: selectedSector.type,
+      message: prizeMessage,
+      newBalance: updatedData.balance || 0,
+      newReferralBalance: updatedData.referralBalance || 0,
+      spinCost: spinCost
+    });
+    
+  } catch (error) {
+    console.error('Spin wheel error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء التدوير' });
+  }
+});
+
+// ============= API تاريخ التدويرات =============
+app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('wheel_spins')
+      .where('userId', '==', uid)
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .get();
+    
+    const spins = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      spins.push({
+        id: doc.id,
+        sectorName: data.sectorName,
+        prizeAmount: data.prizeAmount || 0,
+        prizeType: data.prizeType,
+        spinCost: data.spinCost,
+        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp)
+      });
+    });
+    
+    res.json({ success: true, spins });
+  } catch (error) {
+    console.error('Wheel history error:', error);
+    res.json({ success: true, spins: [] });
+  }
+});
+
+// ============= عمولة الإحالة =============
 async function addReferralCommission(userId, depositAmount) {
   try {
     const userDoc = await db.collection('users').doc(userId).get();
@@ -337,7 +532,6 @@ async function addReferralCommission(userId, depositAmount) {
       if (commissionAmount > 0) {
         const referrerRef = db.collection('users').doc(userData.referredBy);
         
-        // إضافة العمولة إلى رصيد الإحالات المنفصل
         await referrerRef.update({
           referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
           referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
@@ -383,7 +577,6 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       if (!refQuery.empty) {
         referredBy = refQuery.docs[0].id;
         referrerName = refQuery.docs[0].data().name;
-        // مكافأة التسجيل (5 SYP) تضاف إلى رصيد الإحالات المنفصل
         await refQuery.docs[0].ref.update({
           referralBalance: admin.firestore.FieldValue.increment(5),
           referralEarnings: admin.firestore.FieldValue.increment(5),
@@ -396,17 +589,20 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       uniqueId: uniqueId,
       email,
       name: name || email.split('@')[0],
-      balance: 0,               // الرصيد الأساسي (للسحب والإيداع)
-      referralBalance: 0,       // رصيد الإحالات المنفصل (للعرض فقط)
+      balance: 0,
+      referralBalance: 0,
       totalDeposited: 0,
       totalWithdrawn: 0,
-      referralEarnings: 0,      // إجمالي أرباح الإحالات (تاريخي)
+      referralEarnings: 0,
       referredBy: referredBy,
       referredByName: referrerName,
       referrals: [],
       createdAt: new Date(),
       isBanned: false,
-      lastLogin: new Date()
+      lastLogin: new Date(),
+      lastSpinTime: null,
+      totalSpins: 0,
+      totalWinnings: 0
     };
     
     await userRef.set(newUser);
@@ -459,8 +655,8 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
       stats: {
         referralCount: data.referrals?.length || 0,
         referralEarnings: data.referralEarnings || 0,
-        referralBalance: data.referralBalance || 0,  // رصيد الإحالات المنفصل
-        balance: data.balance || 0,                   // الرصيد الأساسي
+        referralBalance: data.referralBalance || 0,
+        balance: data.balance || 0,
         totalDeposited: data.totalDeposited || 0,
         totalWithdrawn: data.totalWithdrawn || 0,
         uniqueId: data.uniqueId,
@@ -468,7 +664,9 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
         referredBy: data.referredBy,
         referredByName: data.referredByName,
         referrerInfo: referrerInfo,
-        siteTheme: settings.siteTheme || 'red'
+        siteTheme: settings.siteTheme || 'red',
+        totalSpins: data.totalSpins || 0,
+        totalWinnings: data.totalWinnings || 0
       }
     });
   } catch (error) {
@@ -477,7 +675,7 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API إعدادات الإيداع (مع إضافة الثيم المتزامن) =============
+// ============= API إعدادات الإيداع =============
 app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSettings();
@@ -523,7 +721,8 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         gameImageUrl: settings.gameImageUrl || '',
         usdToSypRate: settings.usdToSypRate || 13000,
         referralCommission: settings.referralCommission || 5,
-        siteTheme: settings.siteTheme || 'red'  // إرسال الثيم الحالي للمستخدم
+        siteTheme: settings.siteTheme || 'red',
+        wheelSpinCost: settings.wheelSpinCost || 50
       }
     });
   } catch (error) {
@@ -626,7 +825,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
     });
     
-    // إضافة العمولة إلى رصيد الإحالات المنفصل للمحيل
     await addReferralCommission(uid, finalAmountSYP);
     
     const updatedUser = await userRef.get();
@@ -701,7 +899,6 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
       referredByName: referrerDoc.data().name
     });
     
-    // مكافأة التسجيل (5 SYP) تضاف إلى رصيد الإحالات المنفصل
     await referrerDoc.ref.update({
       referralBalance: admin.firestore.FieldValue.increment(5),
       referralEarnings: admin.firestore.FieldValue.increment(5),
@@ -812,7 +1009,7 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API تغيير الثيم (لجميع المستخدمين) =============
+// ============= API تغيير الثيم =============
 app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   try {
     const { theme } = req.body;
@@ -860,6 +1057,11 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       return date > today;
     }).length;
     
+    // إحصائيات عجلة الحظ
+    const wheelSpinsSnapshot = await db.collection('wheel_spins').get();
+    const totalSpins = wheelSpinsSnapshot.size;
+    const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
+    
     res.json({
       success: true,
       stats: {
@@ -869,7 +1071,9 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
         totalDeposited,
         totalWithdrawn,
         totalReferralEarnings,
-        pendingWithdrawals: pendingSnapshot.size
+        pendingWithdrawals: pendingSnapshot.size,
+        totalSpins,
+        totalWinnings
       }
     });
   } catch (error) {
@@ -979,7 +1183,9 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         referredBy: data.referredBy,
         referredByName: data.referredByName,
         referralEarnings: data.referralEarnings || 0,
-        referralsCount: data.referrals?.length || 0
+        referralsCount: data.referrals?.length || 0,
+        totalSpins: data.totalSpins || 0,
+        totalWinnings: data.totalWinnings || 0
       });
     });
     res.json({ success: true, users });
@@ -1015,6 +1221,21 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تحديث سعر عجلة الحظ =============
+app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
+  try {
+    const { cost } = req.body;
+    if (!cost || cost < 10 || cost > 10000) {
+      return res.status(400).json({ error: 'سعر غير صالح (يجب أن يكون بين 10 و 10000)' });
+    }
+    await db.collection('settings').doc('config').update({ wheelSpinCost: cost });
+    res.json({ success: true, message: `تم تحديث سعر التدويرة إلى ${cost} SYP` });
+  } catch (error) {
+    console.error('Update wheel cost error:', error);
+    res.status(500).json({ error: 'فشل تحديث السعر' });
+  }
+});
+
 app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
   try {
     const { password } = req.body;
@@ -1022,7 +1243,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions'];
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins'];
     for (const col of collections) {
       const snapshot = await db.collection(col).get();
       const deletions = [];
@@ -1032,7 +1253,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
     
     const defaultSettings = {
       minDeposit: 1000, minWithdraw: 5000, shamCashEnabled: true, syriatelEnabled: true,
-      shamCashUsdEnabled: false, usdToSypRate: 13000, referralCommission: 5,
+      shamCashUsdEnabled: false, usdToSypRate: 13000, referralCommission: 5, wheelSpinCost: 50,
       shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
       shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
       syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
@@ -1052,4 +1273,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
+  console.log(`🎰 Wheel system ready with 8 sectors`);
 });
