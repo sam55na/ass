@@ -254,26 +254,6 @@
             font-size: 14px;
             color: var(--text-secondary);
         }
-        
-        .prize-history {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 15px;
-        }
-        
-        .prize-item {
-            background: var(--surface);
-            padding: 8px 12px;
-            margin: 5px 0;
-            border-radius: 8px;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .prize-win { color: var(--success); }
-        .prize-lose { color: var(--error); }
 
         .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
         .game-sphere {
@@ -296,58 +276,103 @@
         #playNowBtn { margin-top: 8px; width: 70%; }
 
         .bottom-nav {
-            display: flex; justify-content: space-around;
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(14px);
-            padding: 8px 6px; border-radius: 60px; margin-top: auto; gap: 4px;
+            display: flex;
+            justify-content: space-around;
+            background: rgba(18,18,18,0.95);
+            backdrop-filter: blur(14px);
+            padding: 8px 6px;
+            border-radius: 60px;
+            margin-top: auto;
+            gap: 4px;
             border: 1px solid var(--primary);
         }
         .nav-tab {
-            flex: 1; text-align: center; padding: 10px 4px; cursor: pointer;
-            border-radius: 50px; transition: var(--transition); color: var(--text-secondary);
-            font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+            flex: 1;
+            text-align: center;
+            padding: 10px 4px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
         .nav-tab:hover { background: var(--primary-bg); color: var(--primary-light); transform: translateY(-2px); }
         .nav-tab.active { background: var(--primary-bg); color: var(--primary-light); }
 
         .info-panel {
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg); padding: 20px;
+            background: rgba(18,18,18,0.95);
+            backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            padding: 20px;
             border: 1px solid var(--primary);
         }
         .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
         .ref-code-block {
-            background: var(--surface); padding: 12px; border-radius: 40px;
-            text-align: center; font-family: monospace; font-size: 18px;
-            margin: 16px 0 8px; border: 1px solid var(--primary);
-            cursor: pointer; transition: var(--transition);
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 40px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 18px;
+            margin: 16px 0 8px;
+            border: 1px solid var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
         }
         .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); }
 
         .modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.96); backdrop-filter: blur(12px);
-            z-index: 1100; justify-content: center; align-items: center; padding: 16px;
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.96);
+            backdrop-filter: blur(12px);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
             animation: fadeIn 0.3s ease;
         }
         .modal-content {
-            background: var(--surface); border-radius: var(--radius-lg);
-            max-width: 520px; width: 100%; padding: 24px 20px;
-            border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            max-width: 520px;
+            width: 100%;
+            padding: 24px 20px;
+            border: 1px solid var(--primary);
+            max-height: 90vh;
+            overflow-y: auto;
             animation: slideIn 0.3s ease;
         }
         .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--primary); padding-bottom: 12px;
-            margin-bottom: 20px; font-size: 20px; font-weight: 600; color: var(--primary-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-light);
         }
         .close-modal { font-size: 28px; cursor: pointer; transition: var(--transition); }
         .close-modal:hover { transform: scale(1.1); color: var(--error); }
 
         .methods-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
         .method-card {
-            background: var(--surface-light); border: 2px solid var(--border);
-            border-radius: var(--radius); padding: 16px; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; gap: 12px;
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .method-card:hover { border-color: var(--primary); transform: translateX(-5px); }
         .method-card.selected { border-color: var(--primary); background: var(--primary-bg); }
@@ -355,9 +380,15 @@
         .method-name { font-size: 16px; font-weight: bold; }
         .method-currency { font-size: 12px; color: var(--primary-light); margin-top: 4px; }
         .address-box {
-            background: var(--surface); padding: 12px; border-radius: var(--radius);
-            margin: 12px 0; display: flex; justify-content: space-between;
-            align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--surface);
+            padding: 12px;
+            border-radius: var(--radius);
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .address-box span { font-family: monospace; font-size: 14px; word-break: break-all; flex: 1; }
         .copy-btn { background: var(--primary); border: none; color: white; padding: 6px 14px; border-radius: 25px; cursor: pointer; transition: var(--transition); }
@@ -366,15 +397,23 @@
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; color: var(--primary-light); font-size: 13px; font-weight: 500; }
         input, select, textarea {
-            background: var(--surface-light); border: 1px solid var(--border);
-            color: var(--text); padding: 12px 14px; border-radius: var(--radius);
-            width: 100%; font-size: 14px; transition: var(--transition);
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 14px;
+            border-radius: var(--radius);
+            width: 100%;
+            font-size: 14px;
+            transition: var(--transition);
         }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
 
         .request-card {
-            background: var(--surface-light); margin-bottom: 12px; padding: 12px;
-            border-radius: var(--radius); border-right: 4px solid var(--primary);
+            background: var(--surface-light);
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: var(--radius);
+            border-right: 4px solid var(--primary);
             transition: var(--transition);
         }
         .request-card:hover { transform: translateX(-5px); background: var(--surface-lighter); }
@@ -383,25 +422,45 @@
         .request-card.rejected { border-right-color: var(--error); }
 
         .toast {
-            position: fixed; bottom: 90px; left: 16px; right: 16px;
-            background: var(--primary-dark); backdrop-filter: blur(8px);
-            padding: 14px; border-radius: 50px; text-align: center;
-            z-index: 1200; animation: slideIn 0.3s ease;
+            position: fixed;
+            bottom: 90px;
+            left: 16px;
+            right: 16px;
+            background: var(--primary-dark);
+            backdrop-filter: blur(8px);
+            padding: 14px;
+            border-radius: 50px;
+            text-align: center;
+            z-index: 1200;
+            animation: slideIn 0.3s ease;
             font-weight: 500;
         }
 
         .admin-header {
-            background: var(--surface); padding: 16px 20px; border-radius: var(--radius-lg);
-            margin-bottom: 20px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--primary);
+            background: var(--surface);
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 2px solid var(--primary);
         }
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px; margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
         }
         .stat-card {
-            background: var(--surface); padding: 20px; border-radius: var(--radius);
-            text-align: center; border: 1px solid var(--border); transition: var(--transition);
+            background: var(--surface);
+            padding: 20px;
+            border-radius: var(--radius);
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: var(--transition);
         }
         .stat-card:hover { transform: translateY(-3px); border-color: var(--primary); }
         .stat-number { font-size: 32px; font-weight: bold; color: var(--primary); }
@@ -597,7 +656,6 @@
             <div class="nav-tab" data-tab="stats">📊<span>إحصائياتي</span></div>
             <div class="nav-tab" data-tab="wheel">🎡<span>عجلة الحظ</span></div>
             <div class="nav-tab" data-tab="earn">🎁<span>اكسب مجانا</span></div>
-            <div class="nav-tab" data-tab="history">📋<span>السجل</span></div>
         </div>
     </div>
 
@@ -617,9 +675,6 @@
                 <div class="wheel-info">
                     <div class="wheel-cost" id="wheelCostDisplay">تكلفة التدويرة: 0 SYP</div>
                     <div class="timer-text" id="wheelTimer"></div>
-                    <div class="prize-history" id="prizeHistory">
-                        <div style="text-align:center;color:var(--text-secondary);">📜 سجل الجوائز</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -653,22 +708,6 @@
                     <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
                     <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="historyModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>📋 سجل المعاملات</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 10px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
-                    <button class="tab active" data-history-tab="deposits" style="flex:1;">💰 الإيداعات</button>
-                    <button class="tab" data-history-tab="withdraws" style="flex:1;">💸 السحوبات</button>
-                    <button class="tab" data-history-tab="wheel" style="flex:1;">🎡 العجلة</button>
-                </div>
-                <div id="depositsHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
-                <div id="withdrawsHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
-                <div id="wheelHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
             </div>
         </div>
     </div>
@@ -736,7 +775,6 @@
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
-            <!-- طلبات السحب -->
             <div id="adminWithdrawsPanel" class="admin-table">
                 <div class="admin-table-header">
                     <div class="admin-table-title">💸 طلبات السحب</div>
@@ -755,7 +793,6 @@
                 </div>
             </div>
             
-            <!-- الإيداعات -->
             <div id="adminDepositsPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title">💰 الإيداعات</div>
@@ -765,7 +802,6 @@
                 </div>
             </div>
             
-            <!-- المستخدمين -->
             <div id="adminUsersPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title">👥 المستخدمين</div>
@@ -778,7 +814,6 @@
                 </div>
             </div>
             
-            <!-- إعدادات الدفع -->
             <div id="adminSettingsPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title">⚙️ إعدادات النظام</div>
@@ -813,7 +848,6 @@
                 </div>
             </div>
 
-            <!-- إعدادات العجلة -->
             <div id="adminWheelSettingsPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title">🎡 إعدادات عجلة الحظ</div>
@@ -843,7 +877,6 @@
                 </div>
             </div>
 
-            <!-- الألوان -->
             <div id="adminThemesPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title">🎨 اختيار لون الموقع</div>
@@ -865,7 +898,6 @@
                 </div>
             </div>
 
-            <!-- تهيئة -->
             <div id="adminResetPanel" class="admin-table hidden">
                 <div class="admin-table-header">
                     <div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div>
@@ -1065,25 +1097,12 @@
         }
 
         async function loadWheelHistory() {
+            // تُستخدم داخلياً فقط لتحديث الإحصائيات
             const res = await apiCall('/api/user/wheel-history');
             if (res?.ok) {
                 const data = await res.json();
                 if (data.success && data.spins) {
-                    const container = document.getElementById('prizeHistory');
-                    if (data.spins.length === 0) {
-                        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);">📜 سجل الجوائز</div><div style="text-align:center;color:var(--text-secondary);">لا توجد تدويرات سابقة</div>';
-                        return;
-                    }
-                    let html = '<div style="text-align:center;color:var(--primary-light);margin-bottom:10px;">📜 آخر التدويرات</div>';
-                    data.spins.slice(0, 10).forEach(spin => {
-                        const date = new Date(spin.timestamp).toLocaleString('ar');
-                        const isWin = spin.prizeAmount > 0;
-                        html += `<div class="prize-item">
-                            <span>${date}</span>
-                            <span class="${isWin ? 'prize-win' : 'prize-lose'}">${spin.sectorName} ${isWin ? `(+${spin.prizeAmount} SYP)` : ''}</span>
-                        </div>`;
-                    });
-                    container.innerHTML = html;
+                    console.log('تم تحميل تاريخ العجلة:', data.spins.length, 'تدويرة');
                 }
             }
         }
@@ -1300,35 +1319,6 @@
                     else statusHtml = '<span class="badge badge-danger">❌ مرفوض</span>'; 
                     return `<div class="request-card"><div><strong>💸 ${r.amount.toLocaleString()} SYP</strong></div><div>📍 العنوان: ${r.address}</div><div>📱 الطريقة: ${r.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div><div>الحالة: ${statusHtml}</div><div>📅 التاريخ: ${dateStr}</div></div>`; 
                 }).join(''); 
-            }
-        }
-
-        async function loadWheelHistoryForModal() {
-            const res = await apiCall('/api/user/wheel-history');
-            if (res?.ok) {
-                const data = await res.json();
-                const container = document.getElementById('wheelHistoryList');
-                if (!data.spins?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:20px">🎡 لا توجد تدويرات سابقة</p>';
-                    return;
-                }
-                container.innerHTML = data.spins.map(spin => {
-                    let dateStr = '-';
-                    if (spin.timestamp) {
-                        try {
-                            const date = new Date(spin.timestamp);
-                            if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar');
-                        } catch(e) {}
-                    }
-                    const isWin = spin.prizeAmount > 0;
-                    return `<div class="request-card">
-                        <div><strong>🎡 ${spin.sectorName}</strong></div>
-                        <div>💰 ${isWin ? `فزت بـ ${spin.prizeAmount} SYP` : 'حظ أوفر'}</div>
-                        <div>💸 التكلفة: ${spin.spinCost} SYP</div>
-                        <div>📅 التاريخ: ${dateStr}</div>
-                        <div><span class="badge ${isWin ? 'badge-success' : 'badge-danger'}">${isWin ? 'فوز' : 'خسارة'}</span></div>
-                    </div>`;
-                }).join('');
             }
         }
 
@@ -1611,7 +1601,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<td>
+                container.innerHTML = `<table>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
                     </thead>
@@ -1643,7 +1633,7 @@
                     } 
                     container.innerHTML = `<table>
                         <thead>
-                            <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
+                            <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> <tr>
                         </thead>
                         <tbody>
                             ${allUsers.map(u => `
@@ -1663,7 +1653,7 @@
                                 </tr>
                             `).join('')}
                         </tbody>
-                    点心`; 
+                    </table>`; 
                 } 
             } 
         }
@@ -1962,7 +1952,7 @@
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
                 return; 
             } 
-            container.innerHTML = `<tr>
+            container.innerHTML = `<table>
                 <thead>
                     <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                 </thead>
@@ -1973,7 +1963,7 @@
                             <td><strong>${u.name || '-'}</strong></td>
                             <td><code>${u.uniqueId || '-'}</code></td>
                             <td><span class="badge badge-info">${(u.balance || 0).toLocaleString()} SYP</span></td>
-                            <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span>
+                            <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span></td>
                             <td>${u.referralsCount || 0}</td>
                             <td>${u.referredByName || '-'}</td>
                             <td>${u.totalSpins || 0}</td>
@@ -2015,30 +2005,6 @@
             });
         });
 
-        document.querySelectorAll('[data-history-tab]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const target = btn.dataset.historyTab;
-                document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                if (target === 'deposits') {
-                    document.getElementById('depositsHistoryList').style.display = 'block';
-                    document.getElementById('withdrawsHistoryList').style.display = 'none';
-                    document.getElementById('wheelHistoryList').style.display = 'none';
-                    await loadDeposits();
-                } else if (target === 'withdraws') {
-                    document.getElementById('depositsHistoryList').style.display = 'none';
-                    document.getElementById('withdrawsHistoryList').style.display = 'block';
-                    document.getElementById('wheelHistoryList').style.display = 'none';
-                    await loadWithdrawals();
-                } else if (target === 'wheel') {
-                    document.getElementById('depositsHistoryList').style.display = 'none';
-                    document.getElementById('withdrawsHistoryList').style.display = 'none';
-                    document.getElementById('wheelHistoryList').style.display = 'block';
-                    await loadWheelHistoryForModal();
-                }
-            });
-        });
-
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {
                 const target = tab.dataset.tab;
@@ -2060,11 +2026,6 @@
                 } else if (target === 'earn') { 
                     await loadEarnPageInfo(); 
                     document.getElementById('earnModal').style.display = 'flex'; 
-                } else if (target === 'history') { 
-                    await loadDeposits(); 
-                    await loadWithdrawals();
-                    await loadWheelHistoryForModal();
-                    document.getElementById('historyModal').style.display = 'flex'; 
                 }
             });
         });
