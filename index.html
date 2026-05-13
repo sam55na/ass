@@ -36,16 +36,16 @@
         }
         
         /* ألوان متعددة يمكن تبديلها */
-        body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; }
-        body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; }
-        body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; }
-        body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; }
-        body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; }
-        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; }
-        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; }
-        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; }
-        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; }
-        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; }
+        body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; --primary-bg: rgba(255,0,0,0.1); }
+        body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; --primary-bg: rgba(33,150,243,0.1); }
+        body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; --primary-bg: rgba(76,175,80,0.1); }
+        body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; --primary-bg: rgba(156,39,176,0.1); }
+        body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; --primary-bg: rgba(255,152,0,0.1); }
+        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; --primary-bg: rgba(233,30,99,0.1); }
+        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; --primary-bg: rgba(0,150,136,0.1); }
+        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; --primary-bg: rgba(63,81,181,0.1); }
+        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; --primary-bg: rgba(0,188,212,0.1); }
+        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; --primary-bg: rgba(255,193,7,0.1); }
 
         body {
             font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
@@ -68,9 +68,11 @@
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--primary-glow); } 50% { box-shadow: 0 0 20px var(--primary-glow); } }
         
         .animate-fade { animation: fadeIn 0.5s ease; }
         .animate-pulse { animation: pulse 2s infinite; }
+        .animate-glow { animation: glow 2s infinite; }
         .loading-shimmer { background: linear-gradient(90deg, var(--surface) 25%, var(--surface-light) 50%, var(--surface) 75%); background-size: 1000px 100%; animation: shimmer 2s infinite; }
 
         /* ============= شاشة التحميل ============= */
@@ -163,7 +165,7 @@
             font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
         }
         .nav-tab:hover { background: var(--primary-bg); color: var(--primary-light); transform: translateY(-2px); }
-        .nav-tab i { font-size: 20px; }
+        .nav-tab.active { background: var(--primary-bg); color: var(--primary-light); }
 
         /* ============= لوحة المعلومات ============= */
         .info-panel {
@@ -284,13 +286,15 @@
         .badge-success { background: var(--success); color: white; }
         .badge-warning { background: var(--warning); color: white; }
         .badge-danger { background: var(--error); color: white; }
+        .badge-info { background: var(--info); color: white; }
 
         /* ============= تحسينات إضافية ============= */
         .commission-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        .theme-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-        .theme-color { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .theme-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
+        .theme-color { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
         .theme-color:hover { transform: scale(1.1); }
-        .theme-color.active { border-color: white; transform: scale(1.1); }
+        .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 10px white; }
+        .stat-icon { font-size: 24px; margin-bottom: 8px; }
         
         @media (max-width: 480px) {
             .btn { padding: 10px 6px; font-size: 13px; }
@@ -298,14 +302,15 @@
             .stat-number { font-size: 22px; }
             th, td { padding: 8px; font-size: 12px; }
             .game-sphere { width: 100px; height: 100px; font-size: 48px; }
+            .theme-color { width: 30px; height: 30px; }
         }
     </style>
 </head>
 <body class="theme-red">
     <div id="loader" class="loading-overlay">
         <div class="spinner"></div>
-        <div style="font-size: 24px; font-weight: bold;">BOOMB</div>
-        <button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:200px;display:none">🔐 تسجيل دخول Google</button>
+        <div style="font-size: 28px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
+        <button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:220px;display:none">🔐 تسجيل دخول Google</button>
     </div>
 
     <!-- ============= واجهة المستخدم ============= -->
@@ -313,7 +318,7 @@
         <div id="homeScreen">
             <div class="top-bar">
                 <div class="avatar-btn" id="openProfileBtn">👤</div>
-                <div class="balance-card">
+                <div class="balance-card animate-glow">
                     <div class="balance-label">الرصيد</div>
                     <div class="balance-value"><span id="mainBalance">0</span> SYP</div>
                 </div>
@@ -447,14 +452,14 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card"><div class="stat-number" id="statTotalUsers">0</div><div>👥 المستخدمين</div></div>
-                <div class="stat-card"><div class="stat-number" id="statNewToday">0</div><div>🆕 جدد اليوم</div></div>
-                <div class="stat-card"><div class="stat-number" id="statTotalBalance">0</div><div>💰 إجمالي الرصيد</div></div>
-                <div class="stat-card"><div class="stat-number" id="statTotalDeposited">0</div><div>📈 الإيداعات</div></div>
-                <div class="stat-card"><div class="stat-number" id="statTotalWithdrawn">0</div><div>📉 السحوبات</div></div>
-                <div class="stat-card"><div class="stat-number" id="statPendingWithdraws">0</div><div>⏳ طلبات معلقة</div></div>
-                <div class="stat-card"><div class="stat-number" id="statTodayDeposits">0</div><div>💰 إيداعات اليوم</div></div>
-                <div class="stat-card"><div class="stat-number" id="statReferralEarnings">0</div><div>🎁 أرباح الإحالات</div></div>
+                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div>المستخدمين</div></div>
+                <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number" id="statNewToday">0</div><div>جدد اليوم</div></div>
+                <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" id="statTotalBalance">0</div><div>إجمالي الرصيد</div></div>
+                <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" id="statTotalDeposited">0</div><div>الإيداعات</div></div>
+                <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" id="statTotalWithdrawn">0</div><div>السحوبات</div></div>
+                <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" id="statPendingWithdraws">0</div><div>طلبات معلقة</div></div>
+                <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-number" id="statTodayDeposits">0</div><div>إيداعات اليوم</div></div>
+                <div class="stat-card"><div class="stat-icon">🎁</div><div class="stat-number" id="statReferralEarnings">0</div><div>أرباح الإحالات</div></div>
             </div>
 
             <div class="tabs-bar">
@@ -466,9 +471,27 @@
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
-            <div id="adminWithdrawsPanel" class="admin-table"><div id="withdrawsTable"><p style="text-align:center;padding:20px">جاري التحميل...</p></div></div>
-            <div id="adminDepositsPanel" class="admin-table hidden"><div id="depositsTable"><p style="text-align:center;padding:20px">جاري التحميل...</p></div></div>
-            <div id="adminUsersPanel" class="admin-table hidden"><input type="text" id="searchUsers" placeholder="🔍 بحث بالبريد أو الاسم" style="margin-bottom:15px"><div id="usersTable"></div></div>
+            <div id="adminWithdrawsPanel" class="admin-table">
+                <div style="margin-bottom:15px;display:flex;gap:10px">
+                    <select id="filterWithdrawStatus" style="flex:1">
+                        <option value="all">جميع الطلبات</option>
+                        <option value="pending">⏳ قيد المراجعة</option>
+                        <option value="approved">✅ مقبولة</option>
+                        <option value="rejected">❌ مرفوضة</option>
+                    </select>
+                    <button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button>
+                </div>
+                <div id="withdrawsTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+            </div>
+            
+            <div id="adminDepositsPanel" class="admin-table hidden">
+                <div id="depositsTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+            </div>
+            
+            <div id="adminUsersPanel" class="admin-table hidden">
+                <input type="text" id="searchUsers" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="margin-bottom:15px">
+                <div id="usersTable"><p style="text-align:center;padding:40px">⏳ جاري التحميل...</p></div>
+            </div>
             
             <div id="adminSettingsPanel" class="admin-table hidden">
                 <h3 class="section-title">⚙️ الحدود العامة</h3>
@@ -477,7 +500,7 @@
                 <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
                 <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
                 
-                <h3 class="section-title">🏦 شام كاش</h3>
+                <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
                 <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
                 <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div>
                 <div class="form-group"><label>🏦 العنوان الخاص (للـ API)</label><input type="text" id="settingShamCashPrivateAddress"></div>
@@ -485,7 +508,7 @@
                 
                 <h3 class="section-title">💵 شام كاش (دولار)</h3>
                 <div class="form-group"><label>🔘 تفعيل شام كاش دولار</label><input type="checkbox" id="settingShamCashUsdEnabled"></div>
-                <div class="form-group"><label>💱 سعر صرف الدولار</label><input type="number" id="settingUsdToSypRate"></div>
+                <div class="form-group"><label>💱 سعر صرف الدولار إلى ليرة</label><input type="number" id="settingUsdToSypRate"></div>
                 <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashUsdApiKey"></div>
                 <div class="form-group"><label>🏦 العنوان الخاص</label><input type="text" id="settingShamCashUsdPrivateAddress"></div>
                 <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashUsdPublicAddress"></div>
@@ -502,16 +525,16 @@
             <div id="adminThemesPanel" class="admin-table hidden">
                 <h3 class="section-title">🎨 اختيار لون الموقع</h3>
                 <div class="theme-selector">
-                    <div class="theme-color" style="background: #ff0000;" data-theme="red"></div>
-                    <div class="theme-color" style="background: #2196f3;" data-theme="blue"></div>
-                    <div class="theme-color" style="background: #4caf50;" data-theme="green"></div>
-                    <div class="theme-color" style="background: #9c27b0;" data-theme="purple"></div>
-                    <div class="theme-color" style="background: #ff9800;" data-theme="orange"></div>
-                    <div class="theme-color" style="background: #e91e63;" data-theme="pink"></div>
-                    <div class="theme-color" style="background: #009688;" data-theme="teal"></div>
-                    <div class="theme-color" style="background: #3f51b5;" data-theme="indigo"></div>
-                    <div class="theme-color" style="background: #00bcd4;" data-theme="cyan"></div>
-                    <div class="theme-color" style="background: #ffc107;" data-theme="amber"></div>
+                    <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
+                    <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
+                    <div class="theme-color" style="background: #4caf50;" data-theme="green" title="أخضر"></div>
+                    <div class="theme-color" style="background: #9c27b0;" data-theme="purple" title="بنفسجي"></div>
+                    <div class="theme-color" style="background: #ff9800;" data-theme="orange" title="برتقالي"></div>
+                    <div class="theme-color" style="background: #e91e63;" data-theme="pink" title="وردي"></div>
+                    <div class="theme-color" style="background: #009688;" data-theme="teal" title="تركواز"></div>
+                    <div class="theme-color" style="background: #3f51b5;" data-theme="indigo" title="نيلي"></div>
+                    <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
+                    <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
                 </div>
                 <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
             </div>
@@ -572,6 +595,7 @@
                     headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers }
                 });
                 if (response.status === 401) { showMessage('انتهت الجلسة، سجل دخول مجدداً', true); await signOut(auth); return null; }
+                if (response.status === 403) { showMessage('غير مصرح بهذه العملية', true); return null; }
                 return response;
             } catch (error) { console.error('API error:', error); showMessage('خطأ في الاتصال بالخادم', true); return null; }
         }
@@ -580,6 +604,10 @@
         function setTheme(theme) {
             document.body.className = `theme-${theme}`;
             localStorage.setItem('site_theme', theme);
+            document.querySelectorAll('.theme-color').forEach(el => {
+                if (el.dataset.theme === theme) el.classList.add('active');
+                else el.classList.remove('active');
+            });
         }
         
         function loadTheme() {
@@ -595,13 +623,13 @@
 
         async function loadStats() {
             const res = await apiCall('/api/user/stats');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('profileRefCode').innerText = s.uniqueId || '---'; document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0).toLocaleString() + ' SYP'; document.getElementById('profileRefCount').innerText = s.referralCount || 0; document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`; const refInfo = document.getElementById('referrerInfoProfile'); if (s.referredBy && s.referrerInfo) { refInfo.classList.remove('hidden'); document.getElementById('referrerNameProfile').innerText = s.referredByName || s.referrerInfo.name; } else { refInfo.classList.add('hidden'); } document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div>`; } }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('profileRefCode').innerText = s.uniqueId || '---'; document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0).toLocaleString() + ' SYP'; document.getElementById('profileRefCount').innerText = s.referralCount || 0; document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`; const refInfo = document.getElementById('referrerInfoProfile'); if (s.referredBy && s.referrerInfo) { refInfo.classList.remove('hidden'); document.getElementById('referrerNameProfile').innerText = s.referredByName || s.referrerInfo.name; } else { refInfo.classList.add('hidden'); } document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>`; } }
         }
 
         async function loadDeposits() {
             try {
                 const res = await apiCall('/api/user/deposits');
-                if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsHistoryList'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات سابقة</p>'; return; } container.innerHTML = data.deposits.map(d => { let dateStr = '-'; if (d.verifiedAt) { try { const date = new Date(d.verifiedAt); if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar'); } catch(e) {} } let amountDisplay = `${d.amount.toLocaleString()} SYP`; if (d.originalAmount && d.originalCurrency === 'USD') amountDisplay = `${d.originalAmount} USD (${d.amount.toLocaleString()} SYP)`; return `<div class="request-card"><div><strong>${d.methodIcon || '💰'} ${amountDisplay}</strong></div><div>📱 طريقة الدفع: ${d.method}</div><div>🔢 رقم العملية: ${d.transactionId}</div><div>📅 التاريخ: ${dateStr}</div><div>✅ الحالة: مكتمل</div></div>`; }).join(''); } else { document.getElementById('depositsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">❌ حدث خطأ في تحميل الإيداعات</p>'; }
+                if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsHistoryList'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات سابقة</p>'; return; } container.innerHTML = data.deposits.map(d => { let dateStr = '-'; if (d.verifiedAt) { try { const date = new Date(d.verifiedAt); if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar'); } catch(e) {} } let amountDisplay = `${d.amount.toLocaleString()} SYP`; if (d.originalAmount && d.originalCurrency === 'USD') amountDisplay = `${d.originalAmount} USD (${d.amount.toLocaleString()} SYP)`; return `<div class="request-card"><div><strong>${d.methodIcon || '💰'} ${amountDisplay}</strong></div><div>📱 طريقة الدفع: ${d.method}</div><div>🔢 رقم العملية: ${d.transactionId}</div><div>📅 التاريخ: ${dateStr}</div><div><span class="badge badge-success">✅ مكتمل</span></div></div>`; }).join(''); } else { document.getElementById('depositsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">❌ حدث خطأ في تحميل الإيداعات</p>'; }
             } catch (error) { console.error('Load deposits error:', error); document.getElementById('depositsHistoryList').innerHTML = '<p style="text-align:center;padding:20px">❌ حدث خطأ في تحميل الإيداعات</p>'; }
         }
 
@@ -619,7 +647,7 @@
 
         async function loadDepositSettings() {
             const res = await apiCall('/api/user/deposit-settings');
-            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; currentMinDeposit = s.minDeposit; currentMinWithdraw = s.minWithdraw; currentUsdToSypRate = s.usdToSypRate || 13000; currentReferralCommission = s.referralCommission || 5; const gameImage = document.getElementById('gameImage'); const defaultIcon = document.getElementById('defaultGameIcon'); const container = document.getElementById('gameIconContainer'); if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { gameImage.src = s.gameImageUrl; gameImage.classList.remove('hidden'); defaultIcon.classList.add('hidden'); container.classList.remove('default-icon'); } else { gameImage.classList.add('hidden'); defaultIcon.classList.remove('hidden'); container.classList.add('default-icon'); } document.getElementById('minDepositHint').innerHTML = `الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; document.getElementById('minWithdrawHint').innerHTML = `الحد الأدنى: ${s.minWithdraw.toLocaleString()} SYP`; document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = ''; if (!s.methods?.length) { methodsContainer.innerHTML = '<div class="method-card disabled">لا توجد طرق دفع متاحة حالياً</div>'; return; } s.methods.forEach(method => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id; div.innerHTML = `<div class="method-icon">${method.icon || '🏦'}</div><div><div class="method-name">${method.name}</div>${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); let exchangeText = ''; if (method.currency === 'USD') exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`; document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>${exchangeText}`; const exchangeHint = document.getElementById('exchangeRateHint'); if (method.currency === 'USD') { exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`; exchangeHint.style.display = 'block'; } else { exchangeHint.style.display = 'none'; } }; methodsContainer.appendChild(div); }); if (s.methods[0]) document.querySelector('.method-card')?.click(); } }
+            if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.settings; currentMinDeposit = s.minDeposit; currentMinWithdraw = s.minWithdraw; currentUsdToSypRate = s.usdToSypRate || 13000; currentReferralCommission = s.referralCommission || 5; const gameImage = document.getElementById('gameImage'); const defaultIcon = document.getElementById('defaultGameIcon'); const container = document.getElementById('gameIconContainer'); if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { gameImage.src = s.gameImageUrl; gameImage.classList.remove('hidden'); defaultIcon.classList.add('hidden'); container.classList.remove('default-icon'); } else { gameImage.classList.add('hidden'); defaultIcon.classList.remove('hidden'); container.classList.add('default-icon'); } document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = ''; if (!s.methods?.length) { methodsContainer.innerHTML = '<div class="method-card disabled">🚫 لا توجد طرق دفع متاحة حالياً</div>'; return; } s.methods.forEach(method => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id; div.innerHTML = `<div class="method-icon">${method.icon || '🏦'}</div><div><div class="method-name">${method.name}</div>${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}</div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); let exchangeText = ''; if (method.currency === 'USD') exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`; document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم نسخ العنوان')">📋 نسخ</button></div>${exchangeText}`; const exchangeHint = document.getElementById('exchangeRateHint'); if (method.currency === 'USD') { exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`; exchangeHint.style.display = 'block'; } else { exchangeHint.style.display = 'none'; } }; methodsContainer.appendChild(div); }); if (s.methods[0]) document.querySelector('.method-card')?.click(); } }
         }
 
         async function deposit() {
@@ -645,16 +673,16 @@
         }
 
         // ============= دوال الإحالات =============
-        async function addReferrerCode() { const code = document.getElementById('referrerCodeInput').value.trim(); if (!code) { showMessage('الرجاء إدخال كود الإحالة', true); return; } const btn = document.getElementById('submitReferrerCodeBtn'); setButtonLoading(btn, true); const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) }); setButtonLoading(btn, false); if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('referrerCodeInput').value = ''; await loadStats(); await loadEarnPageInfo(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل إضافة الكود', true); } }
-        async function loadEarnPageInfo() { const res = await apiCall('/api/user/stats'); if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('earnCodeDisplay').innerHTML = s.uniqueId; const addSection = document.getElementById('addReferrerSection'); const infoSection = document.getElementById('referrerInfoSection'); if (s.referredBy && s.referrerInfo) { addSection.style.display = 'none'; infoSection.style.display = 'block'; document.getElementById('referrerNameDisplay').innerHTML = s.referredByName || s.referrerInfo.name; document.getElementById('referrerCodeDisplay').innerHTML = s.referrerInfo.uniqueId; } else { addSection.style.display = 'block'; infoSection.style.display = 'none'; } } } }
-        function copyReferralCode() { const code = document.getElementById('earnCodeDisplay').innerText; navigator.clipboard.writeText(code); showMessage('تم نسخ كود الإحالة: ' + code); }
+        async function addReferrerCode() { const code = document.getElementById('referrerCodeInput').value.trim().toUpperCase(); if (!code) { showMessage('الرجاء إدخال كود الإحالة', true); return; } const btn = document.getElementById('submitReferrerCodeBtn'); setButtonLoading(btn, true); const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) }); setButtonLoading(btn, false); if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('referrerCodeInput').value = ''; await loadStats(); await loadEarnPageInfo(); } else if (res) { const err = await res.json(); showMessage(err.error || 'فشل إضافة الكود', true); } }
+        async function loadEarnPageInfo() { const res = await apiCall('/api/user/stats'); if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('earnCodeDisplay').innerHTML = s.uniqueId || '---'; const addSection = document.getElementById('addReferrerSection'); const infoSection = document.getElementById('referrerInfoSection'); if (s.referredBy && s.referrerInfo) { addSection.style.display = 'none'; infoSection.style.display = 'block'; document.getElementById('referrerNameDisplay').innerHTML = s.referredByName || s.referrerInfo.name; document.getElementById('referrerCodeDisplay').innerHTML = s.referrerInfo.uniqueId; } else { addSection.style.display = 'block'; infoSection.style.display = 'none'; } } } }
+        function copyReferralCode() { const code = document.getElementById('earnCodeDisplay').innerText; if (code && code !== '---') { navigator.clipboard.writeText(code); showMessage('تم نسخ كود الإحالة: ' + code); } else { showMessage('لا يوجد كود إحالة لعرضه', true); } }
 
         // ============= دوال الأدمن =============
         let allUsers = [];
         async function loadAdminDashboard() { const res = await apiCall('/api/admin/dashboard'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('statTotalUsers').innerText = data.stats.totalUsers || 0; document.getElementById('statNewToday').innerText = data.stats.newToday || 0; document.getElementById('statTotalBalance').innerText = (data.stats.totalBalance || 0).toLocaleString(); document.getElementById('statTotalDeposited').innerText = (data.stats.totalDeposited || 0).toLocaleString(); document.getElementById('statTotalWithdrawn').innerText = (data.stats.totalWithdrawn || 0).toLocaleString(); document.getElementById('statPendingWithdraws').innerText = data.stats.pendingWithdrawals || 0; document.getElementById('statTodayDeposits').innerText = (data.stats.todayDeposits || 0).toLocaleString(); document.getElementById('statReferralEarnings').innerText = (data.stats.totalReferralEarnings || 0).toLocaleString(); } } }
-        async function loadAdminWithdraws() { const status = document.getElementById('filterWithdrawStatus')?.value || 'all'; const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`); if (res?.ok) { const data = await res.json(); const container = document.getElementById('withdrawsTable'); if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; return; } container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr><td>${r.userName || r.userEmail || r.userId}</td><td>${r.amount.toLocaleString()} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td><td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td><td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="rejectWithdraw('${r.id}')">❌ رفض</button>` : '✓ تمت المعالجة'}</td></tr>`).join('')}</tbody></table>`; } }
+        async function loadAdminWithdraws() { const status = document.getElementById('filterWithdrawStatus')?.value || 'all'; const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`); if (res?.ok) { const data = await res.json(); const container = document.getElementById('withdrawsTable'); if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; return; } container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr><td>${r.userName || r.userEmail || r.userId}</td><td>${r.amount.toLocaleString()} SYP</td><td>${r.address}</td><td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td><td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td><td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td></tr>`).join('')}</tbody></table>`; } }
         async function loadAdminDeposits() { const res = await apiCall('/api/admin/deposits'); if (res?.ok) { const data = await res.json(); const container = document.getElementById('depositsTable'); if (!data.deposits?.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; return; } container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th></tr></thead><tbody>${data.deposits.map(d => `<tr><td>${d.userName || d.userEmail || d.userId}</td><td>${d.amount.toLocaleString()} SYP${d.originalAmount ? ` (${d.originalAmount} ${d.originalCurrency})` : ''}</td><td>${d.method}</td><td>${d.transactionId}</td><td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td></tr>`).join('')}</tbody></table>`; } }
-        async function loadAdminUsers() { const res = await apiCall('/api/admin/users'); if (res?.ok) { const data = await res.json(); if (data.success) { allUsers = data.users; const container = document.getElementById('usersTable'); if (!allUsers.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; return; } container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🏆 أرباح الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️</th></tr></thead><tbody>${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${(u.balance || 0).toLocaleString()} SYP</td><td>${(u.referralEarnings || 0).toLocaleString()} SYP</td><td>${u.referralsCount || 0}</td><td>${u.referredByName || '-'}</td><td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td></tr>`).join('')}</tbody></table>`; } } }
+        async function loadAdminUsers() { const res = await apiCall('/api/admin/users'); if (res?.ok) { const data = await res.json(); if (data.success) { allUsers = data.users; const container = document.getElementById('usersTable'); if (!allUsers.length) { container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; return; } container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🏆 أرباح الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${allUsers.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td><span class="badge badge-info">${u.uniqueId || '-'}</span></td><td>${(u.balance || 0).toLocaleString()} SYP</td><td>${(u.referralEarnings || 0).toLocaleString()} SYP</td><td>${u.referralsCount || 0}</td><td>${u.referredByName || '-'}</td><td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td></tr>`).join('')}</tbody></table>`; } } }
         async function loadAdminSettings() { const res = await apiCall('/api/admin/settings'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('settingMinDeposit').value = data.settings.minDeposit; document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled; document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || ''; document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || ''; document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || ''; document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false; document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000; document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || ''; document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || ''; document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || ''; document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled; document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || ''; document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || ''; document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || ''; } } }
         async function saveAdminSettings() { const settings = { minDeposit: Number(document.getElementById('settingMinDeposit').value), minWithdraw: Number(document.getElementById('settingMinWithdraw').value), gameImageUrl: document.getElementById('settingGameImageUrl').value, referralCommission: Number(document.getElementById('settingReferralCommission').value), shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, shamCashApiKey: document.getElementById('settingShamCashApiKey').value, shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value }; const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); if (res?.ok) { showMessage('تم حفظ الإعدادات بنجاح'); await loadAdminSettings(); await loadDepositSettings(); } else { showMessage('فشل حفظ الإعدادات', true); } }
         async function saveTheme() { const currentTheme = document.body.className.replace('theme-', ''); const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify({ siteTheme: currentTheme }) }); if (res?.ok) showMessage('تم حفظ اللون بنجاح'); }
@@ -663,14 +691,14 @@
         window.approveWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); if (res?.ok) { showMessage('تم قبول الطلب'); loadAdminWithdraws(); loadAdminDashboard(); loadAdminUsers(); } };
         window.rejectWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); if (res?.ok) { showMessage('تم رفض الطلب'); loadAdminWithdraws(); loadAdminDashboard(); loadAdminUsers(); } };
         window.toggleBan = async (id) => { const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) }); if (res?.ok) { showMessage('تم تحديث حالة المستخدم'); loadAdminUsers(); } };
-        window.editBalance = async (id, bal) => { const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); if (val && val !== '0') { const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) }); if (res?.ok) { showMessage('تم تحديث الرصيد'); loadAdminUsers(); loadAdminDashboard(); } } };
+        window.editBalance = async (id, bal) => { const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)\nمثال: 1000 لإضافة 1000، أو -500 لخصم 500`, "0"); if (val && val !== '0') { const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val), reason: 'تعديل يدوي' }) }); if (res?.ok) { showMessage('تم تحديث الرصيد'); loadAdminUsers(); loadAdminDashboard(); } } };
 
         function showAdminInterface() { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); loadAdminDashboard(); loadAdminWithdraws(); loadAdminDeposits(); loadAdminUsers(); loadAdminSettings(); }
         function showUserInterface() { document.getElementById('adminApp').classList.add('hidden'); document.getElementById('userApp').classList.remove('hidden'); }
 
-        async function handleGoogleSignIn() { const btn = document.getElementById('loginBtn'); setButtonLoading(btn, true); try { await auth.signOut().catch(() => {}); const result = await signInWithPopup(auth, provider); currentUser = result.user; const params = new URLSearchParams(window.location.search); await registerUser(params.get('ref')); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); await loadEarnPageInfo(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } catch (err) { console.error(err); let msg = 'فشل تسجيل الدخول'; if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة'; else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة'; showMessage(msg, true); } finally { setButtonLoading(btn, false); } }
+        async function handleGoogleSignIn() { const btn = document.getElementById('loginBtn'); setButtonLoading(btn, true); try { await auth.signOut().catch(() => {}); const result = await signInWithPopup(auth, provider); currentUser = result.user; const params = new URLSearchParams(window.location.search); await registerUser(params.get('ref')); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); await loadEarnPageInfo(); document.getElementById('loader').style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } catch (err) { console.error(err); let msg = 'فشل تسجيل الدخول'; if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة'; else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت'; else if (err.code === 'auth/internal-error') msg = 'خطأ داخلي، حاول مرة أخرى'; showMessage(msg, true); } finally { setButtonLoading(btn, false); } }
 
-        onAuthStateChanged(auth, async (user) => { const loader = document.getElementById('loader'); const loginBtn = document.getElementById('loginBtn'); if (user) { currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); await loadEarnPageInfo(); loader.style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } else { loader.innerHTML = '<div class="spinner"></div><div style="font-size:24px;font-weight:bold;">BOOMB</div>'; loginBtn.style.display = 'block'; loader.appendChild(loginBtn); loader.style.display = 'flex'; document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); } });
+        onAuthStateChanged(auth, async (user) => { const loader = document.getElementById('loader'); const loginBtn = document.getElementById('loginBtn'); if (user) { currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDeposits(); await loadWithdrawals(); await loadDepositSettings(); await loadEarnPageInfo(); loader.style.display = 'none'; if (isAdmin) showAdminInterface(); else showUserInterface(); } else { loader.innerHTML = '<div class="spinner"></div><div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg, var(--primary), white);background-clip:text;-webkit-background-clip:text;color:transparent;">BOOMB</div>'; loginBtn.style.display = 'block'; loader.appendChild(loginBtn); loader.style.display = 'flex'; document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); } });
 
         // ============= الأحداث =============
         loadTheme();
@@ -693,17 +721,27 @@
         document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         
-        document.querySelectorAll('.theme-color').forEach(el => { el.addEventListener('click', () => { const theme = el.dataset.theme; setTheme(theme); document.querySelectorAll('.theme-color').forEach(c => c.classList.remove('active')); el.classList.add('active'); }); });
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; return; } container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🏆 أرباح الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td>${u.uniqueId || '-'}</td><td>${(u.balance || 0).toLocaleString()} SYP</td
+        document.querySelectorAll('.theme-color').forEach(el => { el.addEventListener('click', () => { const theme = el.dataset.theme; setTheme(theme); }); });
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); const container = document.getElementById('usersTable'); if (!filtered.length) { container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; return; } container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🏆 أرباح الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>⚙️ الإجراءات</th></tr></thead><tbody>${filtered.map(u => `<tr><td>${u.email || '-'}</td><td>${u.name || '-'}</td><td><span class="badge badge-info">${u.uniqueId || '-'}</span></td><td>${(u.balance || 0).toLocaleString()} SYP</td
                             <td>${(u.referralEarnings || 0).toLocaleString()} SYP</td
                             <td>${u.referralsCount || 0}</td
                             <td>${u.referredByName || '-'}</td
-                            <td><button class="admin-btn admin-btn-small" onclick="editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
-                           </tr>`).join('')}</tbody></table>`;
+                            <td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button></td
+                          </tr>`).join('')}
+                </tbody></table>`;
         });
 
-        document.querySelectorAll('.close-modal').forEach(btn => { btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; }); });
-        document.querySelectorAll('.modal').forEach(modal => { modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; }); });
+        document.querySelectorAll('.close-modal').forEach(btn => { 
+            btn.addEventListener('click', function() { 
+                this.closest('.modal').style.display = 'none'; 
+            }); 
+        });
+        
+        document.querySelectorAll('.modal').forEach(modal => { 
+            modal.addEventListener('click', function(e) { 
+                if (e.target === this) this.style.display = 'none'; 
+            }); 
+        });
 
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -725,27 +763,66 @@
                 const target = btn.dataset.historyTab;
                 document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById('depositsHistoryList').style.display = target === 'deposits' ? 'block' : 'none';
-                document.getElementById('withdrawsHistoryList').style.display = target === 'withdraws' ? 'block' : 'none';
+                if (target === 'deposits') {
+                    document.getElementById('depositsHistoryList').style.display = 'block';
+                    document.getElementById('withdrawsHistoryList').style.display = 'none';
+                } else {
+                    document.getElementById('depositsHistoryList').style.display = 'none';
+                    document.getElementById('withdrawsHistoryList').style.display = 'block';
+                }
             });
         });
 
         document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
             tab.addEventListener('click', async () => {
                 const target = tab.dataset.tab;
-                if (target === 'stats') document.getElementById('statsModal').style.display = 'flex';
-                else if (target === 'earn') { await loadEarnPageInfo(); document.getElementById('earnModal').style.display = 'flex'; }
-                else if (target === 'history') { await loadDeposits(); await loadWithdrawals(); document.getElementById('historyModal').style.display = 'flex'; }
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                if (target === 'stats') { 
+                    document.getElementById('statsModal').style.display = 'flex'; 
+                } else if (target === 'earn') { 
+                    await loadEarnPageInfo(); 
+                    document.getElementById('earnModal').style.display = 'flex'; 
+                } else if (target === 'history') { 
+                    await loadDeposits(); 
+                    await loadWithdrawals(); 
+                    document.getElementById('historyModal').style.display = 'flex'; 
+                }
             });
         });
 
-        // نسخ كود الإحالة عند النقر على البلوك
-        document.getElementById('refCodeBlock')?.addEventListener('click', () => {
-            const code = document.getElementById('profileRefCode').innerText;
-            if (code && code !== '---') { navigator.clipboard.writeText(code); showMessage('تم نسخ كود الإحالة: ' + code); }
-        });
-        
+        // نسخ كود الإحالة عند النقر على البلوك في الملف الشخصي
+        const refCodeBlock = document.getElementById('refCodeBlock');
+        if (refCodeBlock) {
+            refCodeBlock.addEventListener('click', () => {
+                const codeElement = document.getElementById('profileRefCode');
+                if (codeElement) {
+                    const code = codeElement.innerText;
+                    if (code && code !== '---' && code !== 'لم يتم إنشاؤه بعد') { 
+                        navigator.clipboard.writeText(code); 
+                        showMessage('تم نسخ كود الإحالة: ' + code); 
+                    } else { 
+                        showMessage('لا يوجد كود إحالة لعرضه', true); 
+                    }
+                }
+            });
+        }
+
+        // فلتر طلبات السحب في الأدمن
+        const filterWithdrawStatus = document.getElementById('filterWithdrawStatus');
+        if (filterWithdrawStatus) {
+            filterWithdrawStatus.addEventListener('change', loadAdminWithdraws);
+        }
+
+        // تفعيل التبويب النشط في البداية
+        const activeNavTab = document.querySelector('.nav-tab[data-tab="stats"]');
+        if (activeNavTab) activeNavTab.classList.add('active');
+
         console.log('✅ BOOMB App initialized successfully');
+        console.log('📱 Version: 2.0.0');
+        console.log('🎨 Theme system ready');
+        console.log('🔗 API_URL:', API_URL);
     </script>
 </body>
 </html>
