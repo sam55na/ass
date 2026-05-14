@@ -68,6 +68,7 @@ app.use('/api/user/deposit', strictLimiter);
 app.use('/api/user/withdraw', strictLimiter);
 app.use('/api/user/register', strictLimiter);
 app.use('/api/user/spin-wheel', strictLimiter);
+app.use('/api/game/', strictLimiter);
 app.use('/api/admin/', generalLimiter);
 
 // ============= الثوابت =============
@@ -75,14 +76,18 @@ const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
 // ============= إعدادات لعبة البرج الذهبي =============
-const GAME_MULTIPLIERS = { 1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3, 6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0, 11: 9.0, 12: 11.0, 13: 15.0 };
+const GAME_MULTIPLIERS = { 
+  1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3, 
+  6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0, 
+  11: 9.0, 12: 11.0, 13: 15.0 
+};
 const MAX_FLOOR = 13;
 const FIXED_BET = 2000;
 
 // ذاكرة مؤقتة للجولات النشطة (تحسين السرعة)
 const activeGames = new Map();
 
-// ============= دوال لعبة البرج الذهبي =============
+// ============= دوال لعبة البرج الذهبي المحسنة =============
 async function getGameState(userId) {
   if (activeGames.has(userId)) {
     const cached = activeGames.get(userId);
@@ -111,7 +116,7 @@ async function deleteGameState(userId) {
   activeGames.delete(userId);
 }
 
-// ============= دالة إنشاء كود فريد =============
+// دالة إنشاء كود فريد للإحالة
 async function generateUniqueReferralCode() {
   let uniqueId;
   let isUnique = false;
@@ -135,7 +140,7 @@ async function generateUniqueReferralCode() {
   return uniqueId || 'UID' + Date.now().toString().slice(-8);
 }
 
-// ============= المصادقة =============
+// ============= دوال المصادقة =============
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) {
@@ -227,7 +232,7 @@ async function getSettings() {
   }
 }
 
-// ============= كلاس شام كاش =============
+// ============= كلاسات طرق الدفع =============
 class ShamCashClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
@@ -580,9 +585,9 @@ app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API لعبة البرج الذهبي =============
+// ============= API لعبة البرج الذهبي المحسنة =============
 
-// بدء لعبة جديدة
+// 1. بدء جولة جديدة (يخصم 2000)
 app.post('/api/game/golden-tower/start', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -595,11 +600,13 @@ app.post('/api/game/golden-tower/start', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `رصيدك غير كافٍ! تحتاج ${FIXED_BET} SYP` });
     }
     
+    // التحقق من وجود لعبة نشطة
     const existing = await getGameState(uid);
     if (existing && existing.isGameActive) {
       return res.json({ success: true, hasActiveGame: true, gameState: existing, gameId: uid });
     }
     
+    // خصم الرهان
     await userRef.update({ balance: admin.firestore.FieldValue.increment(-FIXED_BET) });
     
     const gameState = {
@@ -623,12 +630,12 @@ app.post('/api/game/golden-tower/start', requireAuth, async (req, res) => {
   }
 });
 
-// إفلات الطابق
+// 2. إفلات الطابق (مع حساب دقيق للتداخل)
 app.post('/api/game/golden-tower/drop', requireAuth, async (req, res) => {
   const startTime = Date.now();
   try {
     const { uid } = req.user;
-    const { angle, positionX } = req.body;
+    const { positionX } = req.body;
     
     const gameState = await getGameState(uid);
     if (!gameState || !gameState.isGameActive) {
@@ -644,20 +651,23 @@ app.post('/api/game/golden-tower/drop', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'خطأ في حالة اللعبة' });
     }
     
-    const fallX = positionX || 400;
+    // إعدادات الطابق الساقط
     const fallW = 48;
     const fallH = 28;
+    const fallX = positionX || (lastFloor.x);
     const lastTop = lastFloor.y - lastFloor.h/2;
     const newY = lastTop - fallH/2;
     
+    // حساب التداخل
     const fallLeft = fallX - fallW/2;
     const fallRight = fallX + fallW/2;
     const lastLeft = lastFloor.x - lastFloor.w/2;
     const lastRight = lastFloor.x + lastFloor.w/2;
     const overlapWidth = Math.max(0, Math.min(fallRight, lastRight) - Math.max(fallLeft, lastLeft));
-    const requiredOverlap = fallW * 0.5;
+    const requiredOverlap = fallW * 0.5; // 50% تداخل مطلوب
     
     if (overlapWidth >= requiredOverlap) {
+      // نجاح: إضافة الطابق
       const newFloor = {
         x: fallX,
         y: newY,
@@ -680,14 +690,27 @@ app.post('/api/game/golden-tower/drop', requireAuth, async (req, res) => {
         message = "🏆 أكملت البرج! اضغط جمع لسحب أرباحك 🏆";
       }
       
-      console.log(`Drop success for ${uid}: floor ${gameState.currentFloor}, time: ${Date.now() - startTime}ms`);
-      res.json({ success: true, gameState, gameId: uid, floorPlaced: true, multiplier, floorY: newY, message });
+      console.log(`✅ نجاح [${uid}]: الطابق ${gameState.currentFloor} | وقت: ${Date.now() - startTime}ms`);
+      res.json({ 
+        success: true, 
+        gameState, 
+        gameId: uid, 
+        floorPlaced: true, 
+        multiplier, 
+        floorY: newY, 
+        message 
+      });
     } else {
+      // فشل: خسارة الجولة
       gameState.isGameActive = false;
       await deleteGameState(uid);
       
-      console.log(`Drop failed for ${uid}: overlap ${overlapWidth}/${requiredOverlap}`);
-      res.json({ success: false, gameOver: true, message: `💥 فشل! تداخل ${Math.floor(overlapWidth)}px من ${Math.floor(requiredOverlap)}px مطلوب. خسارة!` });
+      console.log(`❌ فشل [${uid}]: تداخل ${overlapWidth.toFixed(1)}px من ${requiredOverlap}px مطلوب`);
+      res.json({ 
+        success: false, 
+        gameOver: true, 
+        message: `💥 فشل! تداخل ${Math.floor(overlapWidth)}px من ${Math.floor(requiredOverlap)}px مطلوب. خسارة!` 
+      });
     }
   } catch (error) {
     console.error('Drop floor error:', error);
@@ -695,7 +718,7 @@ app.post('/api/game/golden-tower/drop', requireAuth, async (req, res) => {
   }
 });
 
-// جمع الأرباح
+// 3. جمع الأرباح
 app.post('/api/game/golden-tower/cashout', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -741,7 +764,7 @@ app.post('/api/game/golden-tower/cashout', requireAuth, async (req, res) => {
   }
 });
 
-// استعادة جولة موجودة
+// 4. استعادة جولة موجودة
 app.get('/api/game/golden-tower/resume', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -758,7 +781,7 @@ app.get('/api/game/golden-tower/resume', requireAuth, async (req, res) => {
   }
 });
 
-// إعادة تعيين
+// 5. إعادة تعيين
 app.post('/api/game/golden-tower/reset', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -1487,4 +1510,6 @@ app.listen(PORT, () => {
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
   console.log(`🏗️ Golden Tower game ready with 13 floors`);
+  console.log(`💰 Bet amount: ${FIXED_BET} SYP per round`);
+  console.log(`📊 Multipliers: 0.5x to 15x`);
 });
