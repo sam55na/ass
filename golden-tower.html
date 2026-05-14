@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>البرج الذهبي - BOOMB</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        :root {
+            --primary: #ff0000;
+            --primary-dark: #cc0000;
+            --primary-light: #ff3333;
+            --background: #0a0a0a;
+            --surface: #121212;
+            --surface-light: #1e1e1e;
+            --surface-lighter: #2a2a2a;
+            --text: #ffffff;
+            --text-secondary: #aaaaaa;
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --gold-light: #FFE44D;
+            --success: #00cc44;
+            --error: #ff4444;
+            --shadow-gold: 0 0 20px rgba(255,215,0,0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a2f2a 0%, #0a1a1a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* تحميل متقدم */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 30px;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .loading-spinner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-spinner::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            background: #0a0a0a;
+        }
+        
+        .loading-logo {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--gold), #fff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .loading-progress {
+            width: 250px;
+            height: 4px;
+            background: rgba(255,215,0,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; text-shadow: 0 0 20px var(--gold); } }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255,215,0,0.3); }
+            50% { box-shadow: 0 0 25px rgba(255,215,0,0.8); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .game-fullscreen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: linear-gradient(180deg, #0a2f2a 0%, #061a18 100%);
+        }
+        
+        .game-header {
+            background: linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(20,20,20,0.95) 100%);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        
+        .game-header h1 {
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+        
+        .back-btn {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .back-btn:hover { transform: scale(1.05); background: var(--gold); color: #000; box-shadow: 0 0 15px var(--gold); }
+        
+        .canvas-area {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at 30% 20%, #4a90c4, #1a4a6a);
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+        }
+        
+        .bottom-bar {
+            background: linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(20,20,20,0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 2px solid var(--gold);
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+        
+        .balance-card {
+            background: linear-gradient(145deg, #000000, #1a1a1a);
+            padding: 10px 24px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 1rem;
+            border: 1px solid var(--gold);
+            box-shadow: var(--shadow-gold);
+        }
+        
+        .balance-card span {
+            color: var(--gold);
+            font-size: 1.6rem;
+            font-weight: 900;
+            text-shadow: 0 0 8px rgba(255,215,0,0.5);
+        }
+        
+        .bet-fixed {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            padding: 10px 24px;
+            border-radius: 60px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+        
+        .multiplier-badge {
+            background: linear-gradient(145deg, #000000, #1c1c1c);
+            color: var(--gold);
+            border-radius: 60px;
+            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border: 1px solid var(--gold);
+            box-shadow: var(--shadow-gold);
+            transition: all 0.2s ease;
+        }
+        
+        .multiplier-badge.win {
+            animation: glowPulse 0.5s ease;
+            background: linear-gradient(145deg, #1a1a00, #3a3a00);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+        
+        button {
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 10px 28px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            font-family: inherit;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: var(--gold);
+            border: 1px solid rgba(255,215,0,0.5);
+            box-shadow: 0 4px 0 #000000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.2), transparent);
+            transition: left 0.4s;
+        }
+        
+        button:hover::before { left: 100%; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #000000; }
+        button:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+        
+        .drop-btn {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 900;
+            border: 1px solid #FFF8DC;
+            box-shadow: 0 4px 0 #8B6914;
+        }
+        
+        .cashout-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: 1px solid #a8ffd0;
+            box-shadow: 0 4px 0 #1f8f4b;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #e67e22, #b45f1b);
+            color: white;
+            border: 1px solid #ffcc88;
+            box-shadow: 0 4px 0 #8B4513;
+        }
+        
+        .status-bar {
+            background: linear-gradient(90deg, #000000dd, #1a0000dd, #000000dd);
+            text-align: center;
+            padding: 10px;
+            font-size: 13px;
+            color: var(--gold);
+            border-top: 1px solid rgba(255,215,0,0.2);
+            flex-shrink: 0;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #1a1a1a, #000000);
+            backdrop-filter: blur(20px);
+            padding: 14px 20px;
+            border-radius: 60px;
+            text-align: center;
+            z-index: 2000;
+            font-weight: 600;
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--gold);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .connection-status.disconnected {
+            background: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        
+        @media (max-width: 700px) {
+            .bottom-bar { gap: 10px; padding: 12px 15px; }
+            button { padding: 8px 18px; font-size: 0.85rem; }
+            .balance-card span { font-size: 1.3rem; }
+            .balance-card { padding: 8px 16px; }
+            .multiplier-badge { padding: 8px 14px; font-size: 0.8rem; }
+            .bet-fixed { padding: 8px 18px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-fullscreen">
+    <div class="game-header">
+        <button class="back-btn" id="backToSiteBtn">← العودة</button>
+        <h1>🏗️ البرج الذهبي</h1>
+        <div style="width: 70px;"></div>
+    </div>
+    <div class="canvas-area">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="bottom-bar">
+        <div class="balance-card">💰 <span id="balanceDisplay">0</span></div>
+        <div class="bet-fixed">🎲 2000 SYP</div>
+        <div class="multiplier-badge" id="multiplierBadge">🏆 0.00x</div>
+        <div class="btn-group">
+            <button id="dropBtn" class="drop-btn">⬇️ إفلات</button>
+            <button id="cashoutBtn" class="cashout-btn">💰 جمع</button>
+            <button id="resetGameBtn" class="reset-btn">🔄 إعادة</button>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span id="gameStatusMsg">✨ البرج الذهبي - ابنِ برجك واربح المضاعفات ✨</span>
+    </div>
+</div>
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-logo">🏗️ BOOMB GOLDEN TOWER</div>
+    <div class="loading-progress">
+        <div class="loading-progress-bar" id="loadingBar"></div>
+    </div>
+    <div class="loading-text" id="loadingText">جاري تحميل اللعبة...</div>
+</div>
+<div id="connectionStatus" class="connection-status"></div>
+
+<script>
+    (function(){
+        // ============= إعدادات اللعبة =============
+        const MULTIPLIERS = { 1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3, 6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0, 11: 9.0, 12: 11.0, 13: 15.0 };
+        const MAX_FLOOR = 13;
+        const FIXED_BET = 2000;
+        
+        // حالة اللعبة
+        let gameState = {
+            balance: 0,
+            currentBet: 0,
+            currentFloor: 0,
+            isGameActive: false,
+            pendingProfit: 0,
+            builtFloors: [],
+            cameraY: 0
+        };
+        
+        let gameId = null;
+        let currentUser = null;
+        let authToken = null;
+        let pendingRequest = false;
+        let lastActionTime = 0;
+        const MIN_ACTION_DELAY = 200;
+        
+        // عناصر الرسم
+        const canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+        let cameraY = 0;
+        let shakeIntensity = 0;
+        let shakeDuration = 0;
+        
+        let builtFloors = [];
+        let ground = { x: 0, y: 0, w: 210, h: 26 };
+        
+        let swinging = {
+            x: 0, y: 0, w: 48, h: 28,
+            angle: 0, speed: 0.048, direction: 1, maxAngle: 0.85,
+            pivotX: 0, pivotY: -30, ropeLength: 210
+        };
+        
+        let isFalling = false;
+        let fallVelY = 0;
+        let fallPosX = 0, fallPosY = 0;
+        let fallW = 48, fallH = 28;
+        let fallFloorNum = 0;
+        let waitingForLanding = false;
+        let floatingMultipliers = [];
+        
+        // ============= الاتصال بالخادم مع تحسين الأداء =============
+        const API_URL = "https://ass-yygm.onrender.com";
+        let connectionCheckInterval = null;
+        
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.classList.remove('disconnected');
+            } else {
+                statusEl.classList.add('disconnected');
+            }
+        }
+        
+        async function getAuthToken() {
+            return new Promise((resolve) => {
+                if (authToken) { resolve(authToken); return; }
+                const checkFirebase = setInterval(() => {
+                    if (window.firebaseAuthToken) {
+                        clearInterval(checkFirebase);
+                        authToken = window.firebaseAuthToken;
+                        resolve(authToken);
+                    }
+                }, 50);
+                setTimeout(() => { clearInterval(checkFirebase); resolve(null); }, 2000);
+            });
+        }
+        
+        async function apiCall(endpoint, options = {}, retries = 2) {
+            const token = await getAuthToken();
+            if (!token && endpoint !== '/api/site-theme') {
+                console.warn('No auth token available');
+                return null;
+            }
+            
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    
+                    const response = await fetch(`${API_URL}${endpoint}`, {
+                        ...options,
+                        signal: controller.signal,
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            ...(token && { 'Authorization': `Bearer ${token}` }),
+                            ...options.headers 
+                        }
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.status === 401) { 
+                        showToast('انتهت الجلسة، سجل دخول مجدداً', true); 
+                        return null; 
+                    }
+                    if (response.status === 403) { 
+                        showToast('غير مصرح بهذه العملية', true); 
+                        return null; 
+                    }
+                    
+                    updateConnectionStatus(true);
+                    return response;
+                } catch (error) {
+                    console.error(`API attempt ${attempt + 1} failed:`, error);
+                    updateConnectionStatus(false);
+                    if (attempt === retries) return null;
+                    await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+                }
+            }
+            return null;
+        }
+        
+        function showToast(msg, isErr = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = isErr ? 'linear-gradient(135deg, #8b0000, #cc0000)' : 'linear-gradient(135deg, #008000, #00cc44)';
+            toast.innerHTML = isErr ? `⚠️ ${msg}` : `✅ ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function updateLoadingProgress(percent, text) {
+            const bar = document.getElementById('loadingBar');
+            const textEl = document.getElementById('loadingText');
+            if (bar) bar.style.width = percent + '%';
+            if (textEl) textEl.innerText = text;
+        }
+        
+        // ============= دوال الخادم =============
+        async function serverStartGame() {
+            if (pendingRequest) return false;
+            pendingRequest = true;
+            try {
+                updateLoadingProgress(30, 'جاري بدء جولة جديدة...');
+                const res = await apiCall('/api/game/golden-tower/start', { method: 'POST' });
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        gameState = data.gameState;
+                        gameId = data.gameId;
+                        builtFloors = gameState.builtFloors || [];
+                        if (builtFloors.length === 0) addGround();
+                        cameraY = gameState.cameraY || 0;
+                        updateUI();
+                        updateBalanceDisplay();
+                        document.getElementById('gameStatusMsg').innerHTML = '🎉 جولة جديدة! اضغط "إفلات" لوضع الطابق الأول 🎉';
+                        return true;
+                    } else {
+                        showToast(data.message || 'فشل بدء الجولة', true);
+                        return false;
+                    }
+                }
+                return false;
+            } catch(e) { console.error(e); return false; }
+            finally { pendingRequest = false; }
+        }
+        
+        async function serverDropFloor(angle, positionX) {
+            if (pendingRequest || !gameState.isGameActive) return false;
+            
+            const now = Date.now();
+            if (now - lastActionTime < MIN_ACTION_DELAY) {
+                await new Promise(r => setTimeout(r, MIN_ACTION_DELAY - (now - lastActionTime)));
+            }
+            lastActionTime = Date.now();
+            pendingRequest = true;
+            
+            try {
+                const res = await apiCall('/api/game/golden-tower/drop', {
+                    method: 'POST',
+                    body: JSON.stringify({ gameId, angle, positionX })
+                });
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        gameState = data.gameState;
+                        gameId = data.gameId;
+                        builtFloors = gameState.builtFloors || [];
+                        cameraY = gameState.cameraY || 0;
+                        
+                        if (data.floorPlaced) {
+                            addFloatingMultiplier(fallPosX || positionX, data.floorY || 0, data.multiplier || 0);
+                            addShake(7, 160);
+                            const multiplierBadge = document.getElementById('multiplierBadge');
+                            multiplierBadge.classList.add('win');
+                            setTimeout(() => multiplierBadge.classList.remove('win'), 300);
+                        } else if (data.gameOver) {
+                            addShake(5, 120);
+                        }
+                        
+                        updateUI();
+                        updateBalanceDisplay();
+                        document.getElementById('gameStatusMsg').innerHTML = data.message;
+                        return true;
+                    } else {
+                        if (data.gameOver) {
+                            gameState.isGameActive = false;
+                            document.getElementById('gameStatusMsg').innerHTML = data.message;
+                            addShake(5, 120);
+                        }
+                        showToast(data.message || 'فشل وضع الطابق', true);
+                        return false;
+                    }
+                }
+                return false;
+            } catch(e) { console.error(e); return false; }
+            finally { pendingRequest = false; }
+        }
+        
+        async function serverCashout() {
+            if (pendingRequest || !gameState.isGameActive) return false;
+            pendingRequest = true;
+            try {
+                const res = await apiCall('/api/game/golden-tower/cashout', {
+                    method: 'POST',
+                    body: JSON.stringify({ gameId })
+                });
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        gameState = data.gameState;
+                        gameState.isGameActive = false;
+                        builtFloors = [];
+                        addGround();
+                        updateUI();
+                        updateBalanceDisplay();
+                        document.getElementById('gameStatusMsg').innerHTML = data.message;
+                        addShake(3, 100);
+                        
+                        showToast(`🎉 ${data.message}`, false);
+                        return true;
+                    } else {
+                        showToast(data.message || 'فشل الجمع', true);
+                        return false;
+                    }
+                }
+                return false;
+            } catch(e) { console.error(e); return false; }
+            finally { pendingRequest = false; }
+        }
+        
+        async function serverReset() {
+            if (pendingRequest) return false;
+            pendingRequest = true;
+            try {
+                if (gameId) {
+                    await apiCall('/api/game/golden-tower/reset', {
+                        method: 'POST',
+                        body: JSON.stringify({ gameId })
+                    });
+                }
+                return await serverStartGame();
+            } catch(e) { console.error(e); return false; }
+            finally { pendingRequest = false; }
+        }
+        
+        async function fetchUserBalance() {
+            const res = await apiCall('/api/user/profile');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success && data.user) {
+                    gameState.balance = data.user.balance || 0;
+                    updateBalanceDisplay();
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function updateBalanceDisplay() {
+            document.getElementById('balanceDisplay').innerText = Math.floor(gameState.balance || 0).toLocaleString();
+        }
+        
+        async function resumeGame() {
+            updateLoadingProgress(50, 'جاري استعادة الجولة السابقة...');
+            const res = await apiCall('/api/game/golden-tower/resume');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success && data.hasActiveGame) {
+                    gameState = data.gameState;
+                    gameId = data.gameId;
+                    builtFloors = gameState.builtFloors || [];
+                    if (builtFloors.length === 0) addGround();
+                    cameraY = gameState.cameraY || 0;
+                    updateUI();
+                    document.getElementById('gameStatusMsg').innerHTML = "🔄 تم استعادة الجولة السابقة!";
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // ============= تأثيرات بصرية =============
+        function addFloatingMultiplier(x, y, multiplier) {
+            floatingMultipliers.push({ 
+                x: x, y: y - 35, 
+                text: `+${multiplier.toFixed(2)}x`, 
+                alpha: 1.0, life: 1.0, yOffset: 0 
+            });
+        }
+        
+        function updateFloatingMultipliers() {
+            for(let i = 0; i < floatingMultipliers.length; i++) {
+                floatingMultipliers[i].life -= 0.025;
+                floatingMultipliers[i].alpha = floatingMultipliers[i].life;
+                floatingMultipliers[i].yOffset -= 1.5;
+                if(floatingMultipliers[i].life <= 0) { floatingMultipliers.splice(i, 1); i--; }
+            }
+        }
+        
+        function addShake(intensity = 6, duration = 150) { shakeIntensity = intensity; shakeDuration = duration; }
+        
+        function updateShake() {
+            if(shakeDuration > 0) { shakeDuration -= 16; if(shakeDuration <= 0) shakeIntensity = 0; }
+            else { shakeIntensity = 0; }
+        }
+        
+        function getShakeOffset() {
+            if(shakeIntensity <= 0) return { x: 0, y: 0 };
+            return { x: (Math.random() - 0.5) * shakeIntensity, y: (Math.random() - 0.5) * shakeIntensity * 0.5 };
+        }
+        
+        // ============= عناصر الرسم =============
+        let clouds = [];
+        function initClouds() {
+            clouds = [];
+            for(let i = 0; i < 8; i++) {
+                clouds.push({ 
+                    x: Math.random() * 800, y: 40 + Math.random() * 150, 
+                    w: 60 + Math.random() * 80, h: 30 + Math.random() * 30, 
+                    speed: 0.05 + Math.random() * 0.15,
+                    opacity: 0.6 + Math.random() * 0.4
+                });
+            }
+        }
+        
+        function updateClouds() {
+            for(let cloud of clouds) { cloud.x += cloud.speed; if(cloud.x > canvas.width + 200) cloud.x = -250; }
+        }
+        
+        function drawSkyAndClouds(camY) {
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, "#4a90c4");
+            grad.addColorStop(0.5, "#7ab8e0");
+            grad.addColorStop(1, "#a8d4f0");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for(let cloud of clouds) {
+                ctx.globalAlpha = cloud.opacity;
+                ctx.fillStyle = "rgba(255,255,250,0.9)";
+                ctx.beginPath();
+                ctx.ellipse(cloud.x, cloud.y + camY * 0.05, cloud.w/2, cloud.h/2, 0, 0, Math.PI*2);
+                ctx.ellipse(cloud.x + cloud.w*0.4, cloud.y - cloud.h*0.2, cloud.w*0.5, cloud.h*0.6, 0, 0, Math.PI*2);
+                ctx.ellipse(cloud.x - cloud.w*0.3, cloud.y - cloud.h*0.15, cloud.w*0.45, cloud.h*0.55, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            
+            // نجوم متلألئة
+            for(let i = 0; i < 60; i++) {
+                ctx.globalAlpha = 0.3 + Math.sin(Date.now() * 0.002 + i) * 0.2;
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect((i * 131) % canvas.width, (i * 73) % (canvas.height * 0.6), 2, 2);
+            }
+            ctx.globalAlpha = 1;
+        }
+        
+        const floorColors = ["#c9a84c", "#d4af37", "#FFD700", "#e6c85c", "#f0d060", "#d4af37", "#FFC125", "#F0E68C", "#e6c85c", "#CDAD00", "#FFF8DC", "#D4AF37", "#FFD700"];
+        
+        function getFloorColor(floorNum) {
+            if(floorNum === 0) return "#5a4a2a";
+            return floorColors[(floorNum - 1) % floorColors.length];
+        }
+        
+        function drawFancyFloor(x, y, w, h, floorNum, isGround = false) {
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            
+            const mainColor = isGround ? "#4a3a1a" : getFloorColor(floorNum);
+            const grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
+            grad.addColorStop(0, mainColor);
+            grad.addColorStop(1, isGround ? "#5a4a2a" : floorColors[Math.min(floorNum, floorColors.length-1)]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(x - w/2, y - h/2, w, h);
+            
+            // حواف ذهبية
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(x - w/2 + 3, y - h/2, w - 6, 3);
+            ctx.fillStyle = "rgba(255,215,0,0.5)";
+            ctx.fillRect(x - w/2 + 2, y - h/2 + 3, w - 4, 2);
+            
+            if(!isGround) {
+                ctx.fillStyle = "#FFF8DC";
+                ctx.fillRect(x - w/3 - 6, y - 4, 14, 14);
+                ctx.fillRect(x + w/3 - 8, y - 4, 14, 14);
+                ctx.fillStyle = "#8B6914";
+                ctx.fillRect(x - w/3 - 5, y - 3, 12, 12);
+                ctx.fillRect(x + w/3 - 7, y - 3, 12, 12);
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(x - w/3 - 5, y - 3, 4, 12);
+                ctx.fillRect(x + w/3 - 7, y - 3, 4, 12);
+                
+                ctx.font = "bold 13px 'Segoe UI'";
+                ctx.fillStyle = "#FFD700";
+                ctx.shadowBlur = 2;
+                ctx.fillText(`${floorNum}`, x - 7, y + 6);
+                
+                // زخرفة
+                ctx.fillStyle = "rgba(255,215,0,0.3)";
+                for(let i = -2; i <= 2; i++) {
+                    ctx.fillRect(x + i * 8 - 4, y + h/2 - 12, 3, 8);
+                }
+            }
+            ctx.shadowBlur = 0;
+        }
+        
+        function addGround() {
+            let groundY = canvas.height - 55;
+            let groundX = canvas.width/2 - 105;
+            ground = { x: groundX, y: groundY, w: 210, h: 28 };
+            builtFloors = [{ x: groundX + ground.w/2, y: groundY + ground.h/2, w: ground.w, h: ground.h, floorNumber: 0, isGround: true }];
+        }
+        
+        function updateSwingPosition() {
+            let offsetX = Math.sin(swinging.angle) * swinging.ropeLength;
+            let centerX = swinging.pivotX + offsetX;
+            let verticalOffset = (1 - Math.cos(swinging.angle * 0.65)) * 22;
+            let centerY = swinging.pivotY + swinging.ropeLength * 0.75 + verticalOffset;
+            swinging.x = centerX;
+            swinging.y = centerY;
+        }
+        
+        function resetSwingingPosition() {
+            swinging.pivotX = canvas.width/2;
+            swinging.pivotY = -30;
+            swinging.angle = 0;
+            swinging.direction = 1;
+            updateSwingPosition();
+        }
+        
+        function updateSwing() {
+            if(gameState.isGameActive && !waitingForLanding && !isFalling && gameState.currentFloor < MAX_FLOOR) {
+                swinging.angle += swinging.direction * swinging.speed;
+                if(swinging.angle > swinging.maxAngle) { swinging.angle = swinging.maxAngle; swinging.direction = -1; }
+                else if(swinging.angle < -swinging.maxAngle) { swinging.angle = -swinging.maxAngle; swinging.direction = 1; }
+                updateSwingPosition();
+            }
+        }
+        
+        function calcSwingSpeed(baseFloor) { return 0.048 + Math.min(0.095, baseFloor * 0.008); }
+        function getMultiplier(floorNum) { if(floorNum <= 0) return 0; return MULTIPLIERS[floorNum] || MULTIPLIERS[MAX_FLOOR]; }
+        
+        function updateUI() {
+            let currentFloorNum = gameState.currentFloor;
+            if(gameState.isGameActive && currentFloorNum < MAX_FLOOR) {
+                let nextMulti = getMultiplier(currentFloorNum+1);
+                document.getElementById('multiplierBadge').innerHTML = `🎯 طابق ${currentFloorNum+1}: ${nextMulti.toFixed(2)}x`;
+            } else if(gameState.isGameActive && currentFloorNum >= MAX_FLOOR) {
+                document.getElementById('multiplierBadge').innerHTML = `🏆 اكتمل! ${getMultiplier(MAX_FLOOR).toFixed(2)}x`;
+            } else {
+                document.getElementById('multiplierBadge').innerHTML = `🏆 مضاعف: ---`;
+            }
+        }
+        
+        // محاكاة السقوط المحلية
+        let simulatedFall = false;
+        let simulationFrame = null;
+        
+        function startFallSimulation(angle, xPos) {
+            if (simulatedFall) return;
+            simulatedFall = true;
+            
+            fallPosX = xPos;
+            fallPosY = swinging.y;
+            fallW = swinging.w;
+            fallH = swinging.h;
+            fallFloorNum = gameState.currentFloor + 1;
+            isFalling = true;
+            fallVelY = 3.0;
+            waitingForLanding = true;
+            document.getElementById('gameStatusMsg').innerHTML = `💨 الطابق ${fallFloorNum} يسقط... جاري التحقق 💨`;
+            
+            // إرسال للخادم
+            serverDropFloor(angle, xPos).finally(() => {
+                setTimeout(() => {
+                    isFalling = false;
+                    waitingForLanding = false;
+                    simulatedFall = false;
+                }, 300);
+            });
+        }
+        
+        function updateFallSimulation() {
+            if(!isFalling) return;
+            fallVelY += 0.85;
+            fallPosY += fallVelY;
+            
+            let lastFloor = builtFloors[builtFloors.length-1];
+            if (lastFloor && fallPosY + fallH/2 >= lastFloor.y - lastFloor.h/2) {
+                // توقف عند الارتطام
+                isFalling = false;
+            }
+            
+            if (fallPosY + fallH/2 > canvas.height + 100) {
+                isFalling = false;
+            }
+        }
+        
+        function dropFloorLocal() {
+            if(!gameState.isGameActive) {
+                serverStartGame();
+                return;
+            }
+            if(waitingForLanding || isFalling || simulatedFall) {
+                document.getElementById('gameStatusMsg').innerHTML = "الطابق في حالة سقوط! انتظر.";
+                return;
+            }
+            if(gameState.currentFloor >= MAX_FLOOR) {
+                document.getElementById('gameStatusMsg').innerHTML = "🏆 البرج مكتمل! قم بجمع الأرباح.";
+                return;
+            }
+            
+            startFallSimulation(swinging.angle, swinging.x);
+        }
+        
+        function drawWithCamera() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSkyAndClouds(cameraY);
+            let shake = getShakeOffset();
+            ctx.save();
+            ctx.translate(shake.x, shake.y - cameraY);
+            
+            for(let i=0; i<builtFloors.length; i++) {
+                let f = builtFloors[i];
+                if(f.isGround) {
+                    ctx.fillStyle = "#3a2a1a";
+                    ctx.fillRect(f.x - f.w/2, f.y - f.h/2, f.w, f.h);
+                    ctx.fillStyle = "#FFD700";
+                    ctx.fillRect(f.x - f.w/2 + 6, f.y - f.h/2, f.w-12, 5);
+                    ctx.fillStyle = "#5a4a2a";
+                    ctx.fillRect(f.x - f.w/2 + 3, f.y - f.h/2 + 5, f.w-6, 3);
+                } else {
+                    drawFancyFloor(f.x, f.y, f.w, f.h, f.floorNumber, false);
+                }
+            }
+            
+            if(gameState.isGameActive && !waitingForLanding && !isFalling && gameState.currentFloor < MAX_FLOOR) {
+                ctx.beginPath();
+                ctx.moveTo(swinging.pivotX, swinging.pivotY);
+                ctx.lineTo(swinging.x, swinging.y - swinging.h/2 + 5);
+                ctx.strokeStyle = "#FFD700";
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = "#FFD700";
+                ctx.stroke();
+                drawFancyFloor(swinging.x, swinging.y, swinging.w, swinging.h, gameState.currentFloor+1, false);
+            } else if(isFalling && simulatedFall) {
+                drawFancyFloor(fallPosX, fallPosY, fallW, fallH, fallFloorNum, false);
+            }
+            
+            if(gameState.isGameActive && gameState.pendingProfit > 0) {
+                ctx.font = "bold 24px 'Poppins'";
+                ctx.fillStyle = "#FFD700";
+                ctx.shadowBlur = 8;
+                ctx.fillText(`💰 ${Math.floor(gameState.pendingProfit).toLocaleString()}`, canvas.width-130, 55 + cameraY);
+            }
+            
+            ctx.restore();
+            
+            for(let fm of floatingMultipliers) {
+                ctx.save();
+                ctx.globalAlpha = fm.alpha * 0.9;
+                ctx.font = `bold ${24 + (1 - fm.life) * 10}px 'Poppins'`;
+                ctx.fillStyle = "#FFD700";
+                ctx.shadowBlur = 8;
+                ctx.fillText(fm.text, fm.x - 35, fm.y + fm.yOffset - cameraY);
+                ctx.restore();
+            }
+            
+            ctx.strokeStyle = "#FFD700";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(5, 5, canvas.width-10, canvas.height-10);
+        }
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (builtFloors.length === 0) addGround();
+            resetSwingingPosition();
+            initClouds();
+        }
+        
+        function gameLoop() {
+            updateShake();
+            if (simulatedFall) updateFallSimulation();
+            updateSwing();
+            updateClouds();
+            updateFloatingMultipliers();
+            drawWithCamera();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ============= التهيئة =============
+        async function initGame() {
+            updateLoadingProgress(10, 'جاري الاتصال بالخادم...');
+            await fetchUserBalance();
+            
+            updateLoadingProgress(40, 'جاري استعادة البيانات...');
+            const hasResumed = await resumeGame();
+            if (!hasResumed) {
+                builtFloors = [];
+                addGround();
+                resetSwingingPosition();
+            }
+            
+            updateLoadingProgress(70, 'جاري تجهيز الواجهة...');
+            updateUI();
+            resizeCanvas();
+            initClouds();
+            
+            updateLoadingProgress(90, 'تقريباً انتهينا...');
+            gameLoop();
+            
+            updateLoadingProgress(100, 'جاهز!');
+            setTimeout(() => {
+                const loader = document.getElementById('loadingOverlay');
+                if (loader) loader.style.opacity = '0';
+                setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
+            }, 500);
+            
+            document.getElementById('gameStatusMsg').innerHTML = "✨ اضغط 'إفلات' لبدء اللعب - تحتاج تداخل 50% من الطابق ✨";
+        }
+        
+        // ربط الأزرار
+        document.getElementById('dropBtn').addEventListener('click', () => { dropFloorLocal(); });
+        document.getElementById('cashoutBtn').addEventListener('click', () => { serverCashout(); });
+        document.getElementById('resetGameBtn').addEventListener('click', () => { serverReset(); });
+        document.getElementById('backToSiteBtn').addEventListener('click', () => {
+            window.parent.postMessage({ type: 'BACK_TO_SITE' }, '*');
+        });
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        // استلام بيانات المستخدم
+        window.addEventListener('message', async (event) => {
+            if (event.data && event.data.type === 'USER_DATA') {
+                currentUser = event.data.user;
+                if (event.data.token) {
+                    window.firebaseAuthToken = event.data.token;
+                    authToken = event.data.token;
+                }
+                await initGame();
+            }
+            if (event.data && event.data.type === 'LOGOUT') {
+                currentUser = null;
+                authToken = null;
+                window.firebaseAuthToken = null;
+            }
+        });
+        
+        window.parent.postMessage({ type: 'GAME_READY', game: 'golden_tower' }, '*');
+    })();
+</script>
+</body>
+</html>
