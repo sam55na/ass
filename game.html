@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BOOMBING - البرج الذهبي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0f1a;
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
+        }
+
+        /* ============= شاشة التحميل الاحترافية ============= */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a0a 100%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .loading-logo {
+            text-align: center;
+        }
+
+        .slot-letters {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            perspective: 500px;
+        }
+
+        .slot-letter {
+            font-size: 60px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            animation: slotSpin 0.3s ease-out infinite alternate;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        @keyframes slotSpin {
+            0% { transform: translateY(-10px) rotateX(0deg); opacity: 0.7; text-shadow: 0 0 5px #FFD700; }
+            100% { transform: translateY(10px) rotateX(360deg); opacity: 1; text-shadow: 0 0 25px #FFD700; }
+        }
+
+        .slot-letter:nth-child(1) { animation-delay: 0s; }
+        .slot-letter:nth-child(2) { animation-delay: 0.1s; }
+        .slot-letter:nth-child(3) { animation-delay: 0.05s; }
+        .slot-letter:nth-child(4) { animation-delay: 0.15s; }
+        .slot-letter:nth-child(5) { animation-delay: 0.08s; }
+        .slot-letter:nth-child(6) { animation-delay: 0.12s; }
+        .slot-letter:nth-child(7) { animation-delay: 0.03s; }
+        .slot-letter:nth-child(8) { animation-delay: 0.18s; }
+
+        .loading-bar-container {
+            width: 280px;
+            height: 8px;
+            background: rgba(255,215,0,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .loading-percent {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+            font-family: monospace;
+        }
+
+        .loading-tip {
+            font-size: 14px;
+            color: rgba(255,215,0,0.6);
+            margin-top: 20px;
+        }
+
+        /* ============= شاشة اختيار الرهان ============= */
+        .bet-selection-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .bet-selection-container {
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border-radius: 40px;
+            padding: 30px;
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 50px rgba(255,215,0,0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .bet-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 25px;
+        }
+
+        .bet-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .bet-option {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 60px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+            font-size: 18px;
+            color: #FFD700;
+        }
+
+        .bet-option:hover {
+            transform: scale(1.05);
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255,215,0,0.4);
+        }
+
+        .bet-option.selected {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            border-color: #FFF8DC;
+            box-shadow: 0 0 30px rgba(255,215,0,0.6);
+        }
+
+        .custom-bet-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .custom-bet-input input {
+            flex: 1;
+            background: #2a2a2a;
+            border: 2px solid #FFD70055;
+            border-radius: 60px;
+            padding: 12px 20px;
+            color: #FFD700;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+        }
+
+        .custom-bet-input input:focus {
+            border-color: #FFD700;
+        }
+
+        .start-game-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            border: none;
+            border-radius: 60px;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .start-game-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255,215,0,0.5);
+        }
+
+        .current-balance-bet {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,215,0,0.1);
+            border-radius: 60px;
+            color: #FFD700;
+        }
+
+        /* ============= واجهة اللعبة الرئيسية ============= */
+        .game-fullscreen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #0a2f2a;
+        }
+
+        .game-header {
+            background: linear-gradient(135deg, #000000, #1a1a1a);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #FFD700;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .game-balance {
+            background: rgba(0,0,0,0.8);
+            padding: 8px 20px;
+            border-radius: 60px;
+            border: 1px solid #FFD700;
+        }
+
+        .game-balance span {
+            color: #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .game-bet-info {
+            background: rgba(0,0,0,0.8);
+            padding: 8px 20px;
+            border-radius: 60px;
+            border: 1px solid #FFA500;
+        }
+
+        .game-multiplier {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .canvas-area {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            background: #87CEEB;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+        }
+
+        .bottom-bar {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            backdrop-filter: blur(20px);
+            border-top: 3px solid #FFD700;
+            padding: 20px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+        }
+
+        .action-btn {
+            border: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 12px 32px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-btn {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #000;
+            font-weight: 900;
+            box-shadow: 0 5px 0 #8B6914;
+        }
+
+        .cashout-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 5px 0 #1f8f4b;
+        }
+
+        .exit-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 5px 0 #8B0000;
+        }
+
+        .action-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #000;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .profit-display {
+            background: linear-gradient(145deg, #000000, #1a1a1a);
+            padding: 10px 24px;
+            border-radius: 60px;
+            border: 2px solid #2ecc71;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #2ecc71;
+        }
+
+        .status-bar {
+            background: #000000dd;
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            color: #FFD700;
+            border-top: 1px solid #FFD70033;
+        }
+
+        @keyframes pulse-gold {
+            0%, 100% { text-shadow: 0 0 5px #FFD700; }
+            50% { text-shadow: 0 0 20px #FFD700, 0 0 30px #FFA500; }
+        }
+
+        @keyframes shake-game {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .shake-effect {
+            animation: shake-game 0.1s ease-in-out 3;
+        }
+
+        @media (max-width: 700px) {
+            .slot-letter { font-size: 35px; min-width: 40px; }
+            .bottom-bar { padding: 12px 16px; gap: 10px; }
+            .action-btn { padding: 8px 20px; font-size: 0.9rem; }
+            .profit-display { padding: 6px 16px; font-size: 1rem; }
+            .game-balance span { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- شاشة التحميل -->
+<div id="loadingScreen" class="loading-screen">
+    <div class="loading-logo">
+        <div class="slot-letters">
+            <span class="slot-letter">B</span>
+            <span class="slot-letter">O</span>
+            <span class="slot-letter">O</span>
+            <span class="slot-letter">M</span>
+            <span class="slot-letter">B</span>
+            <span class="slot-letter">I</span>
+            <span class="slot-letter">N</span>
+            <span class="slot-letter">G</span>
+        </div>
+    </div>
+    <div class="loading-bar-container">
+        <div id="loadingBar" class="loading-bar"></div>
+    </div>
+    <div id="loadingPercent" class="loading-percent">0%</div>
+    <div class="loading-tip">✨ جاري تجهيز البرج الذهبي... ✨</div>
+</div>
+
+<!-- شاشة اختيار الرهان -->
+<div id="betSelectionScreen" class="bet-selection-screen" style="display: none;">
+    <div class="bet-selection-container">
+        <div class="bet-title">🏆 اختر مبلغ الرهان 🏆</div>
+        <div class="bet-options" id="betOptions">
+            <div class="bet-option" data-bet="500">500 SYP</div>
+            <div class="bet-option" data-bet="1000">1,000 SYP</div>
+            <div class="bet-option" data-bet="2000">2,000 SYP</div>
+            <div class="bet-option" data-bet="5000">5,000 SYP</div>
+            <div class="bet-option" data-bet="10000">10,000 SYP</div>
+        </div>
+        <div class="custom-bet-input">
+            <input type="number" id="customBetInput" placeholder="مبلغ مخصص">
+        </div>
+        <button id="startGameBtn" class="start-game-btn">🎲 بدء الجولة 🎲</button>
+        <div class="current-balance-bet">
+            💰 رصيدك الحالي: <span id="currentBalanceDisplay">0</span> SYP
+        </div>
+    </div>
+</div>
+
+<!-- واجهة اللعبة -->
+<div id="gameInterface" class="game-fullscreen" style="display: none;">
+    <div class="game-header">
+        <div class="game-balance">💰 <span id="gameBalance">0</span> SYP</div>
+        <div class="game-bet-info">🎲 الرهان: <span id="gameBetAmount">0</span> SYP</div>
+        <div class="game-multiplier" id="multiplierBadge">🏆 0.00x</div>
+    </div>
+    
+    <div class="canvas-area">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div class="bottom-bar">
+        <div class="profit-display" id="profitDisplay">💰 0 SYP</div>
+        <button id="dropBtn" class="action-btn drop-btn">⬇️ إفلات</button>
+        <button id="cashoutBtn" class="action-btn cashout-btn">💰 جمع</button>
+        <button id="exitGameBtn" class="action-btn exit-btn">🚪 خروج</button>
+    </div>
+    
+    <div class="status-bar">
+        <span id="gameStatusMsg">✨ اضغط "إفلات" لوضع الطابق (يلزم تداخل 50%) ✨</span>
+    </div>
+</div>
+
+<script>
+    // ============= تكامل مع الخادم =============
+    const API_URL = "https://ass-yygm.onrender.com";
+    
+    // متغيرات اللعبة
+    let currentUser = null;
+    let userBalance = 0;
+    let currentGameId = null;
+    let currentBetAmount = 0;
+    let currentFloor = 0;
+    let currentMultiplier = 0;
+    let currentProfit = 0;
+    let isGameActive = false;
+    let isFalling = false;
+    let waitingForLanding = false;
+    
+    // متغيرات الرسم
+    let canvas, ctx;
+    let cameraY = 0;
+    let shakeIntensity = 0;
+    let shakeDuration = 0;
+    let builtFloors = [];
+    let ground = { x: 0, y: 0, w: 210, h: 26 };
+    let floatingMultipliers = [];
+    let clouds = [];
+    
+    let swinging = {
+        x: 0, y: 0, w: 48, h: 28,
+        angle: 0, speed: 0.048, direction: 1, maxAngle: 0.85,
+        pivotX: 0, pivotY: -30, ropeLength: 210
+    };
+    
+    let fallPosX = 0, fallPosY = 0, fallVelY = 0;
+    let fallW = 48, fallH = 28;
+    let fallFloorNum = 0;
+    
+    const MULTIPLIERS = {
+        1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+        6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+        11: 9.0, 12: 11.0, 13: 15.0
+    };
+    const MAX_FLOOR = 13;
+    
+    // ============= شاشة التحميل =============
+    let loadingProgress = 0;
+    const loadingInterval = setInterval(() => {
+        loadingProgress += Math.random() * 15 + 5;
+        if (loadingProgress >= 100) {
+            loadingProgress = 100;
+            clearInterval(loadingInterval);
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none';
+                showBetSelection();
+            }, 500);
+        }
+        document.getElementById('loadingBar').style.width = loadingProgress + '%';
+        document.getElementById('loadingPercent').innerText = Math.floor(loadingProgress) + '%';
+    }, 150);
+    
+    // ============= دوال التوكن والمستخدم =============
+    async function getToken() {
+        return new Promise((resolve) => {
+            const checkAuth = setInterval(() => {
+                if (window.parent && window.parent.authToken) {
+                    clearInterval(checkAuth);
+                    resolve(window.parent.authToken);
+                } else if (window.authToken) {
+                    clearInterval(checkAuth);
+                    resolve(window.authToken);
+                }
+            }, 100);
+            setTimeout(() => {
+                clearInterval(checkAuth);
+                const token = localStorage.getItem('firebase_token');
+                resolve(token);
+            }, 3000);
+        });
+    }
+    
+    async function apiCall(endpoint, options = {}) {
+        const token = await getToken();
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` }),
+                    ...options.headers
+                }
+            });
+            if (response.status === 401) {
+                showMessage('انتهت الجلسة، يرجى إعادة تحميل الصفحة', true);
+                return null;
+            }
+            return response;
+        } catch (error) {
+            console.error('API error:', error);
+            showMessage('خطأ في الاتصال بالخادم', true);
+            return null;
+        }
+    }
+    
+    function showMessage(msg, isErr = false) {
+        const statusSpan = document.getElementById('gameStatusMsg');
+        if (statusSpan) {
+            statusSpan.innerHTML = isErr ? `⚠️ ${msg}` : `✅ ${msg}`;
+            setTimeout(() => {
+                if (document.getElementById('gameStatusMsg')) {
+                    document.getElementById('gameStatusMsg').innerHTML = '✨ اضغط "إفلات" لوضع الطابق (يلزم تداخل 50%) ✨';
+                }
+            }, 3000);
+        } else {
+            alert(msg);
+        }
+    }
+    
+    async function loadUserBalance() {
+        const res = await apiCall('/api/user/profile');
+        if (res && res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+                userBalance = data.user.balance || 0;
+                document.getElementById('gameBalance').innerText = userBalance.toLocaleString();
+                document.getElementById('currentBalanceDisplay').innerText = userBalance.toLocaleString();
+                return userBalance;
+            }
+        }
+        return 0;
+    }
+    
+    // ============= شاشة اختيار الرهان =============
+    let selectedBet = 2000;
+    
+    function showBetSelection() {
+        document.getElementById('betSelectionScreen').style.display = 'flex';
+        loadUserBalance();
+        
+        document.querySelectorAll('.bet-option').forEach(opt => {
+            opt.classList.remove('selected');
+            if (parseInt(opt.dataset.bet) === selectedBet) {
+                opt.classList.add('selected');
+            }
+            opt.onclick = () => {
+                document.querySelectorAll('.bet-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedBet = parseInt(opt.dataset.bet);
+                document.getElementById('customBetInput').value = '';
+            };
+        });
+        
+        document.getElementById('customBetInput').oninput = (e) => {
+            const val = parseInt(e.target.value);
+            if (val > 0) {
+                selectedBet = val;
+                document.querySelectorAll('.bet-option').forEach(o => o.classList.remove('selected'));
+            }
+        };
+        
+        document.getElementById('startGameBtn').onclick = async () => {
+            if (selectedBet <= 0) {
+                showMessage('الرجاء اختيار مبلغ صالح', true);
+                return;
+            }
+            if (selectedBet > userBalance) {
+                showMessage(`الرصيد غير كافٍ! رصيدك: ${userBalance.toLocaleString()} SYP`, true);
+                return;
+            }
+            
+            const btn = document.getElementById('startGameBtn');
+            btn.disabled = true;
+            btn.innerText = 'جاري البدء...';
+            
+            const res = await apiCall('/api/game/tower/start', {
+                method: 'POST',
+                body: JSON.stringify({ betAmount: selectedBet })
+            });
+            
+            btn.disabled = false;
+            btn.innerText = '🎲 بدء الجولة 🎲';
+            
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    currentGameId = data.gameId;
+                    currentBetAmount = data.betAmount;
+                    userBalance = data.newBalance;
+                    startGameUI();
+                }
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل بدء الجولة', true);
+            }
+        };
+    }
+    
+    // ============= بدء واجهة اللعبة =============
+    function startGameUI() {
+        document.getElementById('betSelectionScreen').style.display = 'none';
+        document.getElementById('gameInterface').style.display = 'flex';
+        
+        document.getElementById('gameBalance').innerText = userBalance.toLocaleString();
+        document.getElementById('gameBetAmount').innerText = currentBetAmount.toLocaleString();
+        document.getElementById('profitDisplay').innerHTML = `💰 0 SYP`;
+        document.getElementById('multiplierBadge').innerHTML = `🏆 0.00x`;
+        
+        isGameActive = true;
+        isFalling = false;
+        waitingForLanding = false;
+        currentFloor = 0;
+        currentMultiplier = 0;
+        currentProfit = 0;
+        cameraY = 0;
+        builtFloors = [];
+        floatingMultipliers = [];
+        
+        addGround();
+        resetSwingingPosition();
+        swinging.speed = 0.048;
+        
+        document.getElementById('dropBtn').disabled = false;
+        document.getElementById('cashoutBtn').disabled = true;
+        document.getElementById('exitGameBtn').disabled = false;
+        
+        gameLoop();
+    }
+    
+    // ============= دوال اللعبة الأساسية =============
+    function addGround() {
+        if (canvas) {
+            let groundY = canvas.height - 48;
+            let groundX = canvas.width/2 - 105;
+            ground = { x: groundX, y: groundY, w: 210, h: 26 };
+            builtFloors = [];
+            builtFloors.push({
+                x: groundX + ground.w/2,
+                y: groundY + ground.h/2,
+                w: ground.w,
+                h: ground.h,
+                floorNumber: 0,
+                isGround: true
+            });
+        }
+    }
+    
+    function resetSwingingPosition() {
+        if (canvas) {
+            swinging.pivotX = canvas.width/2;
+            swinging.pivotY = -30;
+            swinging.angle = 0;
+            swinging.direction = 1;
+            updateSwingPosition();
+        }
+    }
+    
+    function updateSwingPosition() {
+        let offsetX = Math.sin(swinging.angle) * swinging.ropeLength;
+        let centerX = swinging.pivotX + offsetX;
+        let verticalOffset = (1 - Math.cos(swinging.angle * 0.65)) * 22;
+        let centerY = swinging.pivotY + swinging.ropeLength * 0.75 + verticalOffset;
+        swinging.x = centerX;
+        swinging.y = centerY;
+    }
+    
+    function updateSwing() {
+        if (isGameActive && !waitingForLanding && !isFalling && currentFloor < MAX_FLOOR && canvas) {
+            swinging.angle += swinging.direction * swinging.speed;
+            if (swinging.angle > swinging.maxAngle) {
+                swinging.angle = swinging.maxAngle;
+                swinging.direction = -1;
+            } else if (swinging.angle < -swinging.maxAngle) {
+                swinging.angle = -swinging.maxAngle;
+                swinging.direction = 1;
+            }
+            updateSwingPosition();
+        }
+    }
+    
+    function calcSwingSpeed(baseFloor) {
+        let extra = Math.min(0.095, baseFloor * 0.008);
+        return 0.048 + extra;
+    }
+    
+    function addFloatingMultiplier(x, y, multiplier) {
+        floatingMultipliers.push({
+            x: x, y: y - 25,
+            text: `${multiplier.toFixed(2)}x`,
+            alpha: 1.0, life: 1.0, yOffset: 0
+        });
+    }
+    
+    function updateFloatingMultipliers() {
+        for (let i = 0; i < floatingMultipliers.length; i++) {
+            floatingMultipliers[i].life -= 0.025;
+            floatingMultipliers[i].alpha = floatingMultipliers[i].life;
+            floatingMultipliers[i].yOffset -= 1.2;
+            if (floatingMultipliers[i].life <= 0) {
+                floatingMultipliers.splice(i, 1);
+                i--;
+            }
+        }
+    }
+    
+    function addShake(intensity, duration) {
+        shakeIntensity = intensity;
+        shakeDuration = duration;
+    }
+    
+    function updateShake() {
+        if (shakeDuration > 0) {
+            shakeDuration -= 16;
+            if (shakeDuration <= 0) shakeIntensity = 0;
+        } else {
+            shakeIntensity = 0;
+        }
+    }
+    
+    function getShakeOffset() {
+        if (shakeIntensity <= 0) return { x: 0, y: 0 };
+        return {
+            x: (Math.random() - 0.5) * shakeIntensity,
+            y: (Math.random() - 0.5) * shakeIntensity * 0.5
+        };
+    }
+    
+    function initClouds() {
+        if (!canvas) return;
+        clouds = [];
+        for (let i = 0; i < 6; i++) {
+            clouds.push({
+                x: Math.random() * canvas.width,
+                y: 40 + Math.random() * 130,
+                w: 70 + Math.random() * 70,
+                h: 35 + Math.random() * 25,
+                speed: 0.08 + Math.random() * 0.2
+            });
+        }
+    }
+    
+    function updateClouds() {
+        if (!canvas) return;
+        for (let cloud of clouds) {
+            cloud.x += cloud.speed;
+            if (cloud.x > canvas.width + 200) cloud.x = -250;
+        }
+    }
+    
+    function drawSkyAndClouds(camY) {
+        if (!ctx) return;
+        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, "#87CEEB");
+        grad.addColorStop(0.5, "#B0E0FF");
+        grad.addColorStop(1, "#D6EAF8");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        for (let cloud of clouds) {
+            ctx.fillStyle = "rgba(255,255,250,0.9)";
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.ellipse(cloud.x, cloud.y + camY * 0.05, cloud.w/2, cloud.h/2, 0, 0, Math.PI*2);
+            ctx.ellipse(cloud.x + cloud.w*0.4, cloud.y - cloud.h*0.2, cloud.w*0.5, cloud.h*0.6, 0, 0, Math.PI*2);
+            ctx.ellipse(cloud.x - cloud.w*0.3, cloud.y - cloud.h*0.15, cloud.w*0.45, cloud.h*0.55, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+    
+    function drawFancyFloor(x, y, w, h, floorNum, isGround = false) {
+        const mainColor = isGround ? "#3a2a1a" : (floorNum === 0 ? "#4a3b1a" : `hsl(${45 + floorNum * 5}, 70%, 45%)`);
+        ctx.fillStyle = mainColor;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.fillRect(x - w/2, y - h/2, w, h);
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(x - w/2 + 4, y - h/2, w - 8, 4);
+        ctx.fillStyle = isGround ? "#2a1a0a" : "#000000aa";
+        ctx.fillRect(x - w/2 + 2, y - h/2 + 4, w - 4, 3);
+        
+        if (!isGround) {
+            ctx.fillStyle = "#FFF8DC";
+            ctx.fillRect(x - w/3 - 5, y - 3, 12, 12);
+            ctx.fillRect(x + w/3 - 7, y - 3, 12, 12);
+            ctx.font = "bold 12px 'Segoe UI'";
+            ctx.fillStyle = "#FFD700";
+            ctx.fillText(`${floorNum}`, x - 6, y + 5);
+        }
+    }
+    
+    function drawFloatingMultipliers(camY) {
+        for (let fm of floatingMultipliers) {
+            ctx.save();
+            ctx.globalAlpha = fm.alpha * 0.9;
+            ctx.font = `bold ${22 + (1 - fm.life) * 8}px 'Poppins'`;
+            ctx.fillStyle = "#FFD700";
+            ctx.shadowBlur = 8;
+            ctx.fillText(fm.text, fm.x - 30, fm.y + fm.yOffset - camY);
+            ctx.restore();
+        }
+    }
+    
+    function drawWithCamera() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSkyAndClouds(cameraY);
+        
+        let shake = getShakeOffset();
+        ctx.save();
+        ctx.translate(shake.x, shake.y - cameraY);
+        
+        for (let i = 0; i < builtFloors.length; i++) {
+            let f = builtFloors[i];
+            if (f.isGround) {
+                ctx.fillStyle = "#2a2a1a";
+                ctx.fillRect(f.x - f.w/2, f.y - f.h/2, f.w, f.h);
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(f.x - f.w/2 + 5, f.y - f.h/2, f.w-10, 4);
+            } else {
+                drawFancyFloor(f.x, f.y, f.w, f.h, f.floorNumber, false);
+            }
+        }
+        
+        if (isGameActive && !waitingForLanding && !isFalling && currentFloor < MAX_FLOOR) {
+            ctx.beginPath();
+            ctx.moveTo(swinging.pivotX, swinging.pivotY);
+            ctx.lineTo(swinging.x, swinging.y - swinging.h/2 + 5);
+            ctx.strokeStyle = "#FFD700";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            drawFancyFloor(swinging.x, swinging.y, swinging.w, swinging.h, currentFloor+1, false);
+        } else if (isFalling) {
+            drawFancyFloor(fallPosX, fallPosY, fallW, fallH, fallFloorNum, false);
+        }
+        
+        ctx.restore();
+        drawFloatingMultipliers(cameraY);
+    }
+    
+    // ============= دوال التفاعل مع الخادم =============
+    async function dropFloor() {
+        if (!isGameActive || waitingForLanding || isFalling) return;
+        if (currentFloor >= MAX_FLOOR) {
+            showMessage("🏆 البرج مكتمل! قم بجمع الأرباح");
+            return;
+        }
+        
+        // حساب التداخل المحاكي (في الواقع الحقيقي سيتم إرسال position)
+        let lastFloor = builtFloors[builtFloors.length - 1];
+        let overlapPercent = 0;
+        if (lastFloor) {
+            let fallLeft = swinging.x - fallW/2;
+            let fallRight = swinging.x + fallW/2;
+            let lastLeft = lastFloor.x - lastFloor.w/2;
+            let lastRight = lastFloor.x + lastFloor.w/2;
+            let overlapLeft = Math.max(fallLeft, lastLeft);
+            let overlapRight = Math.min(fallRight, lastRight);
+            let overlapWidth = Math.max(0, overlapRight - overlapLeft);
+            overlapPercent = (overlapWidth / fallW) * 100;
+        } else {
+            overlapPercent = 100;
+        }
+        
+        // بدء السقوط المحلي
+        isFalling = true;
+        waitingForLanding = true;
+        fallPosX = swinging.x;
+        fallPosY = swinging.y;
+        fallFloorNum = currentFloor + 1;
+        fallVelY = 3.0;
+        
+        document.getElementById('dropBtn').disabled = true;
+        
+        // إرسال الطلب للخادم
+        const res = await apiCall('/api/game/tower/drop-floor', {
+            method: 'POST',
+            body: JSON.stringify({
+                gameId: currentGameId,
+                floorNumber: fallFloorNum,
+                positionX: swinging.x,
+                overlapPercent: overlapPercent
+            })
+        });
+        
+        if (res && res.ok) {
+            const data = await res.json();
+            
+            if (!data.success && data.lost) {
+                // خسارة
+                showMessage(data.message, true);
+                addShake(8, 200);
+                endGameLoss();
+                return;
+            }
+            
+            if (data.success) {
+                // نجاح
+                currentFloor = data.floorNumber;
+                currentMultiplier = data.multiplier;
+                currentProfit = data.currentProfit;
+                
+                document.getElementById('profitDisplay').innerHTML = `💰 ${Math.floor(currentProfit).toLocaleString()} SYP`;
+                document.getElementById('multiplierBadge').innerHTML = `🏆 ${currentMultiplier.toFixed(2)}x`;
+                
+                addFloatingMultiplier(fallPosX, fallPosY - fallH/2, currentMultiplier);
+                addShake(5, 120);
+                
+                // محاكاة الهبوط
+                let lastFloorBuilt = builtFloors[builtFloors.length - 1];
+                let newYpos = lastFloorBuilt.y - lastFloorBuilt.h/2 - fallH/2;
+                builtFloors.push({
+                    x: fallPosX,
+                    y: newYpos,
+                    w: fallW,
+                    h: fallH,
+                    floorNumber: fallFloorNum
+                });
+                
+                cameraY -= 23;
+                isFalling = false;
+                waitingForLanding = false;
+                
+                if (data.completed) {
+                    showMessage(data.message);
+                    document.getElementById('cashoutBtn').disabled = true;
+                    document.getElementById('dropBtn').disabled = true;
+                    isGameActive = false;
+                    await loadUserBalance();
+                    document.getElementById('gameBalance').innerText = userBalance.toLocaleString();
+                } else {
+                    swinging.speed = calcSwingSpeed(currentFloor);
+                    resetSwingingPosition();
+                    document.getElementById('dropBtn').disabled = false;
+                    document.getElementById('cashoutBtn').disabled = false;
+                    showMessage(data.message);
+                }
+                return;
+            }
+        }
+        
+        // فشل الاتصال أو خطأ
+        isFalling = false;
+        waitingForLanding = false;
+        document.getElementById('dropBtn').disabled = false;
+        showMessage("حدث خطأ، حاول مرة أخرى", true);
+    }
+    
+    async function cashout() {
+        if (!isGameActive || currentFloor === 0) {
+            showMessage("لا توجد أرباح لجمعها", true);
+            return;
+        }
+        
+        document.getElementById('cashoutBtn').disabled = true;
+        document.getElementById('dropBtn').disabled = true;
+        
+        const res = await apiCall('/api/game/tower/cashout', {
+            method: 'POST',
+            body: JSON.stringify({ gameId: currentGameId })
+        });
+        
+        if (res && res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showMessage(data.message);
+                await loadUserBalance();
+                document.getElementById('gameBalance').innerText = userBalance.toLocaleString();
+                isGameActive = false;
+                document.getElementById('profitDisplay').innerHTML = `💰 0 SYP`;
+            }
+        } else {
+            showMessage("فشل في جمع الأرباح", true);
+            document.getElementById('cashoutBtn').disabled = false;
+            document.getElementById('dropBtn').disabled = false;
+        }
+    }
+    
+    function endGameLoss() {
+        isGameActive = false;
+        isFalling = false;
+        waitingForLanding = false;
+        document.getElementById('dropBtn').disabled = true;
+        document.getElementById('cashoutBtn').disabled = true;
+        showMessage("😭 خسارة! ابدأ جولة جديدة", true);
+        loadUserBalance().then(() => {
+            document.getElementById('gameBalance').innerText = userBalance.toLocaleString();
+        });
+    }
+    
+    function exitGame() {
+        isGameActive = false;
+        document.getElementById('gameInterface').style.display = 'none';
+        showBetSelection();
+    }
+    
+    function updateFall() {
+        if (!isFalling) return;
+        fallVelY += 0.85;
+        fallPosY += fallVelY;
+        
+        if (fallPosY + fallH/2 > canvas.height + 120) {
+            isFalling = false;
+            waitingForLanding = false;
+        }
+    }
+    
+    // ============= إعدادات Canvas =============
+    function resizeCanvas() {
+        if (!canvas) return;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        addGround();
+        resetSwingingPosition();
+        initClouds();
+    }
+    
+    function gameLoop() {
+        if (!canvas || !ctx) return;
+        updateShake();
+        updateFall();
+        updateSwing();
+        updateClouds();
+        updateFloatingMultipliers();
+        drawWithCamera();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    // ============= تهيئة Canvas وأحداث الأزرار =============
+    canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        ctx = canvas.getContext('2d');
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        initClouds();
+        addGround();
+        resetSwingingPosition();
+    }
+    
+    document.getElementById('dropBtn')?.addEventListener('click', dropFloor);
+    document.getElementById('cashoutBtn')?.addEventListener('click', cashout);
+    document.getElementById('exitGameBtn')?.addEventListener('click', exitGame);
+    
+    // استماع التوكن من الصفحة الرئيسية
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'AUTH_TOKEN') {
+            window.authToken = event.data.token;
+            localStorage.setItem('firebase_token', event.data.token);
+        }
+    });
+    
+    console.log('🎮 BOOMBING Tower Game Loaded');
+</script>
+</body>
+</html>
