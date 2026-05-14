@@ -68,22 +68,11 @@ app.use('/api/user/deposit', strictLimiter);
 app.use('/api/user/withdraw', strictLimiter);
 app.use('/api/user/register', strictLimiter);
 app.use('/api/user/spin-wheel', strictLimiter);
-app.use('/api/user/play-game', strictLimiter);
 app.use('/api/admin/', generalLimiter);
 
 // ============= الثوابت =============
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
-
-// ============= مضاعفات اللعبة الجديدة (الدرج) =============
-const MULTIPLIERS = [
-  0.2, 0.4, 0.6, 0.8,  // الخسارة الجزئية (تنفجر الكرة هنا إن لم يوجد مخزن ممتلئ)
-  1.0, 1.3, 1.6, 1.9, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2, 8.2, 9.2,
-  10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5, 22.0, 25.0
-];
-
-// الفيش المسموحة
-const ALLOWED_BETS = [1000, 2000, 5000, 10000, 20000];
 
 // ============= دالة إنشاء كود فريد =============
 async function generateUniqueReferralCode() {
@@ -169,7 +158,8 @@ async function getSettings() {
       gameImageUrl: '',
       siteTheme: 'red',
       siteName: 'BOOMB',
-      maintenanceMode: false
+      maintenanceMode: false,
+      games: []  // إضافة مصفوفة الألعاب للإعدادات
     };
     await db.collection('settings').doc('config').set(defaultSettings);
     return defaultSettings;
@@ -196,53 +186,10 @@ async function getSettings() {
       gameImageUrl: '',
       siteTheme: 'red',
       siteName: 'BOOMB',
-      maintenanceMode: false
+      maintenanceMode: false,
+      games: []
     };
   }
-}
-
-// ============= نظام المخازن السرية للعبة الجديدة =============
-async function getBanksForBet(betAmount) {
-  const bankRef = db.collection('secret_banks').doc(betAmount.toString());
-  const bankDoc = await bankRef.get();
-  if (!bankDoc.exists) {
-    const initialBanks = {};
-    for (let i = 4; i < MULTIPLIERS.length; i++) {
-      initialBanks[i] = 0;
-    }
-    await bankRef.set({ banks: initialBanks, betAmount: betAmount });
-    return initialBanks;
-  }
-  return bankDoc.data().banks;
-}
-
-async function saveBanksForBet(betAmount, banks) {
-  const bankRef = db.collection('secret_banks').doc(betAmount.toString());
-  await bankRef.set({ banks: banks, betAmount: betAmount, updatedAt: new Date() });
-}
-
-async function distributeLoss(betAmount, lossAmount, explodedMultiplierIndex) {
-  const banks = await getBanksForBet(betAmount);
-  const eligibleBankIndices = [];
-  
-  for (let i = 4; i < MULTIPLIERS.length; i++) {
-    eligibleBankIndices.push(i);
-  }
-  
-  if (eligibleBankIndices.length === 0) return;
-  
-  const sharePerBank = Math.floor(lossAmount / eligibleBankIndices.length);
-  const remainder = lossAmount - (sharePerBank * eligibleBankIndices.length);
-  
-  for (const index of eligibleBankIndices) {
-    banks[index] = (banks[index] || 0) + sharePerBank;
-  }
-  
-  if (remainder > 0 && eligibleBankIndices.length > 0) {
-    banks[eligibleBankIndices[0]] += remainder;
-  }
-  
-  await saveBanksForBet(betAmount, banks);
 }
 
 // ============= كلاس شام كاش =============
@@ -384,13 +331,13 @@ class SyriatelCashClient {
 // ============= دالة عجلة الحظ =============
 const WHEEL_SECTORS = [
   { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
-  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 10 },
-  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 5 },
-  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 5 },
+  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 },
   { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
-  { id: 6, name: '10 SYP', type: 'balance', value: 10, probability: 10 },
-  { id: 7, name: '20 SYP', type: 'balance', value: 20, probability: 5 },
-  { id: 8, name: '30 SYP', type: 'balance', value: 30, probability: 5 }
+  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 }
 ];
 
 function getRandomSector() {
@@ -406,6 +353,75 @@ function getRandomSector() {
   return WHEEL_SECTORS[0];
 }
 
+// ============= API الألعاب =============
+
+// جلب قائمة الألعاب (للمستخدمين العاديين)
+app.get('/api/games', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    const games = settings.games || [];
+    // إرجاع فقط الألعاب الظاهرة للمستخدمين
+    const visibleGames = games.filter(game => game.visible === true);
+    res.json({ success: true, games: visibleGames });
+  } catch (error) {
+    console.error('Get games error:', error);
+    res.json({ success: true, games: [] });
+  }
+});
+
+// جلب جميع الألعاب (للوحة التحكم - للأدمن)
+app.get('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const settings = await getSettings();
+    const games = settings.games || [];
+    res.json({ success: true, games });
+  } catch (error) {
+    console.error('Admin get games error:', error);
+    res.status(500).json({ error: 'فشل في جلب الألعاب' });
+  }
+});
+
+// حفظ قائمة الألعاب (للوحة التحكم - للأدمن)
+app.post('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const { games } = req.body;
+    
+    if (!Array.isArray(games)) {
+      return res.status(400).json({ error: 'يجب أن تكون الألعاب مصفوفة' });
+    }
+    
+    // التأكد من أن الحد الأقصى 10 ألعاب
+    if (games.length > 10) {
+      return res.status(400).json({ error: 'لا يمكن إضافة أكثر من 10 ألعاب' });
+    }
+    
+    // التحقق من صحة كل لعبة
+    for (const game of games) {
+      if (!game.name || typeof game.name !== 'string') {
+        return res.status(400).json({ error: 'اسم اللعبة مطلوب' });
+      }
+      if (!game.id) {
+        game.id = Date.now().toString() + Math.random().toString(36).substr(2, 6);
+      }
+      if (typeof game.visible !== 'boolean') {
+        game.visible = true;
+      }
+      if (!game.icon) {
+        game.icon = '🎮';
+      }
+      if (!game.imageUrl) {
+        game.imageUrl = '';
+      }
+    }
+    
+    await db.collection('settings').doc('config').update({ games });
+    res.json({ success: true, message: 'تم حفظ الألعاب بنجاح', games });
+  } catch (error) {
+    console.error('Save games error:', error);
+    res.status(500).json({ error: 'فشل في حفظ الألعاب' });
+  }
+});
+
 // ============= API عجلة الحظ =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
@@ -415,14 +431,15 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
     const userData = userDoc.data();
     const settings = await getSettings();
     
+    // التحقق من آخر تدوير
     const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
     const now = new Date();
     let canSpin = true;
     let remainingSeconds = 0;
     
     if (lastSpin) {
-      const timeDiff = (now - lastSpin) / 1000;
-      if (timeDiff < 300) {
+      const timeDiff = (now - lastSpin) / 1000; // بالثواني
+      if (timeDiff < 300) { // 5 دقائق = 300 ثانية
         canSpin = false;
         remainingSeconds = Math.ceil(300 - timeDiff);
       }
@@ -453,6 +470,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'مستخدم غير موجود' });
     }
     
+    // التحقق من آخر تدوير
     const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
     const now = new Date();
     
@@ -468,6 +486,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       }
     }
     
+    // التحقق من رصيد الإحالات
     const settings = await getSettings();
     const spinCost = settings.wheelSpinCost || 50;
     
@@ -475,14 +494,17 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير` });
     }
     
+    // اختيار الجائزة العشوائية
     const selectedSector = getRandomSector();
     let prizeAmount = 0;
     let prizeMessage = '';
     
+    // معالجة الجائزة
     if (selectedSector.type === 'balance') {
       prizeAmount = selectedSector.value;
       prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP! تم إضافتها إلى رصيدك الأساسي`;
       
+      // إضافة الجائزة إلى الرصيد الأساسي
       await userRef.update({
         balance: admin.firestore.FieldValue.increment(prizeAmount),
         referralBalance: admin.firestore.FieldValue.increment(-spinCost),
@@ -491,8 +513,10 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
         totalWinnings: admin.firestore.FieldValue.increment(prizeAmount)
       });
     } else {
+      // حظ أوفر
       prizeMessage = `😅 حظ أوفر! لم تربح هذه المرة. حظاً أفضل في المرة القادمة`;
       
+      // خصم تكلفة التدويرة فقط
       await userRef.update({
         referralBalance: admin.firestore.FieldValue.increment(-spinCost),
         lastSpinTime: now,
@@ -500,6 +524,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       });
     }
     
+    // تسجيل التدويرة
     await db.collection('wheel_spins').add({
       userId: uid,
       sector: selectedSector.id,
@@ -512,6 +537,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       userName: userData.name
     });
     
+    // جلب البيانات المحدثة
     const updatedUser = await userRef.get();
     const updatedData = updatedUser.data();
     
@@ -533,6 +559,7 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
   }
 });
 
+// ============= API تاريخ التدويرات =============
 app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -559,155 +586,6 @@ app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Wheel history error:', error);
     res.json({ success: true, spins: [] });
-  }
-});
-
-// ============= اللعبة الجديدة (Plinko مع المخازن السرية) =============
-app.post('/api/user/play-game', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const { betAmount } = req.body;
-    
-    if (!ALLOWED_BETS.includes(betAmount)) {
-      return res.status(400).json({ error: 'مبلغ الرهان غير مسموح' });
-    }
-    
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
-    const userData = userDoc.data();
-    
-    if (!userData || userData.isBanned) {
-      return res.status(403).json({ error: 'حسابك غير نشط' });
-    }
-    
-    if ((userData.balance || 0) < betAmount) {
-      return res.status(400).json({ error: 'الرصيد غير كافٍ' });
-    }
-    
-    // خصم الرهان فوراً
-    await userRef.update({
-      balance: admin.firestore.FieldValue.increment(-betAmount)
-    });
-    
-    // جلب المخازن السرية لهذه الفيشة
-    const banks = await getBanksForBet(betAmount);
-    
-    let finalMultiplier = 0;
-    let explodedAtIndex = -1;
-    let message = '';
-    
-    // البحث عن مخزن ممتلئ
-    let fullBankIndex = -1;
-    const fullBanks = [];
-    for (let i = 4; i < MULTIPLIERS.length; i++) {
-      if (banks[i] >= betAmount) {
-        fullBanks.push(i);
-      }
-    }
-    
-    if (fullBanks.length > 0) {
-      // يوجد مخزن ممتلئ - اختيار عشوائي
-      const randomIndex = Math.floor(Math.random() * fullBanks.length);
-      fullBankIndex = fullBanks[randomIndex];
-      finalMultiplier = MULTIPLIERS[fullBankIndex];
-      explodedAtIndex = fullBankIndex;
-      message = `🎉 فوز كبير! ربحت ${(betAmount * finalMultiplier).toLocaleString()} SYP`;
-      
-      // خصم قيمة المخزن
-      banks[fullBankIndex] = Math.max(0, banks[fullBankIndex] - betAmount);
-      await saveBanksForBet(betAmount, banks);
-      
-      // إضافة الربح للمستخدم
-      const winAmount = Math.floor(betAmount * finalMultiplier);
-      await userRef.update({
-        balance: admin.firestore.FieldValue.increment(winAmount),
-        totalWinnings: admin.firestore.FieldValue.increment(winAmount)
-      });
-      
-    } else {
-      // لا يوجد مخزن ممتلئ - خسارة جزئية
-      const lossIndices = [0, 1, 2, 3];
-      const randomLossIndex = lossIndices[Math.floor(Math.random() * lossIndices.length)];
-      finalMultiplier = MULTIPLIERS[randomLossIndex];
-      explodedAtIndex = randomLossIndex;
-      
-      const returnAmount = Math.floor(betAmount * finalMultiplier);
-      const lossAmount = betAmount - returnAmount;
-      
-      if (returnAmount > 0) {
-        await userRef.update({
-          balance: admin.firestore.FieldValue.increment(returnAmount)
-        });
-        message = `💥 انفجرت الكرة! ربحت ${returnAmount.toLocaleString()} SYP من أصل ${betAmount.toLocaleString()}`;
-      } else {
-        message = `💥 انفجرت الكرة! خسرت ${betAmount.toLocaleString()} SYP`;
-      }
-      
-      // توزيع الخسارة على المخازن
-      if (lossAmount > 0) {
-        await distributeLoss(betAmount, lossAmount, explodedAtIndex);
-      }
-    }
-    
-    const winAmount = Math.floor(betAmount * finalMultiplier);
-    
-    await db.collection('game_history').add({
-      userId: uid,
-      betAmount: betAmount,
-      multiplier: finalMultiplier,
-      winAmount: winAmount,
-      explodedAtMultiplier: MULTIPLIERS[explodedAtIndex],
-      timestamp: new Date(),
-      userEmail: userData.email,
-      userName: userData.name
-    });
-    
-    const updatedUser = await userRef.get();
-    
-    res.json({
-      success: true,
-      result: {
-        betAmount: betAmount,
-        multiplier: finalMultiplier,
-        winAmount: winAmount,
-        explodedAt: MULTIPLIERS[explodedAtIndex],
-        message: message,
-        newBalance: updatedUser.data().balance
-      }
-    });
-    
-  } catch (error) {
-    console.error('Game error:', error);
-    res.status(500).json({ error: 'حدث خطأ أثناء اللعب' });
-  }
-});
-
-app.get('/api/user/game-history', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const snapshot = await db.collection('game_history')
-      .where('userId', '==', uid)
-      .orderBy('timestamp', 'desc')
-      .limit(30)
-      .get();
-    
-    const history = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      history.push({
-        id: doc.id,
-        betAmount: data.betAmount,
-        multiplier: data.multiplier,
-        winAmount: data.winAmount,
-        explodedAtMultiplier: data.explodedAtMultiplier,
-        timestamp: data.timestamp?.toDate() || new Date()
-      });
-    });
-    
-    res.json({ success: true, history });
-  } catch (error) {
-    console.error('History error:', error);
-    res.json({ success: true, history: [] });
   }
 });
 
@@ -1202,6 +1080,7 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تغيير الثيم =============
 app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   try {
     const { theme } = req.body;
@@ -1217,6 +1096,7 @@ app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API جلب الثيم الحالي =============
 app.get('/api/site-theme', async (req, res) => {
   try {
     const settings = await getSettings();
@@ -1224,20 +1104,6 @@ app.get('/api/site-theme', async (req, res) => {
   } catch (error) {
     console.error('Get theme error:', error);
     res.json({ success: true, theme: 'red' });
-  }
-});
-
-app.get('/api/admin/secret-banks', requireAdmin, async (req, res) => {
-  try {
-    const banksSnapshot = await db.collection('secret_banks').get();
-    const allBanks = {};
-    banksSnapshot.forEach(doc => {
-      allBanks[doc.id] = doc.data().banks;
-    });
-    res.json({ success: true, banks: allBanks });
-  } catch (error) {
-    console.error('Get secret banks error:', error);
-    res.status(500).json({ error: 'خطأ في جلب المخازن' });
   }
 });
 
@@ -1262,13 +1128,10 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       return date > today;
     }).length;
     
+    // إحصائيات عجلة الحظ
     const wheelSpinsSnapshot = await db.collection('wheel_spins').get();
     const totalSpins = wheelSpinsSnapshot.size;
     const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
-    
-    const gameHistorySnapshot = await db.collection('game_history').get();
-    const totalGamesPlayed = gameHistorySnapshot.size;
-    const totalGameWinnings = gameHistorySnapshot.docs.reduce((sum, doc) => sum + (doc.data().winAmount || 0), 0);
     
     res.json({
       success: true,
@@ -1281,9 +1144,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
         totalReferralEarnings,
         pendingWithdrawals: pendingSnapshot.size,
         totalSpins,
-        totalWinnings,
-        totalGamesPlayed,
-        totalGameWinnings
+        totalWinnings
       }
     });
   } catch (error) {
@@ -1431,6 +1292,7 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تحديث سعر عجلة الحظ =============
 app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   try {
     const { cost } = req.body;
@@ -1452,7 +1314,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'game_history', 'secret_banks'];
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins'];
     for (const col of collections) {
       const snapshot = await db.collection(col).get();
       const deletions = [];
@@ -1466,7 +1328,8 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
       shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
       syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
-      gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false
+      gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false,
+      games: []  // إضافة الألعاب الافتراضية
     };
     await db.collection('settings').doc('config').set(defaultSettings);
     
@@ -1483,6 +1346,5 @@ app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
-  console.log(`🎲 New Plinko game ready with multipliers: ${MULTIPLIERS.length} levels`);
-  console.log(`💰 Allowed bets: ${ALLOWED_BETS.join(', ')} SYP`);
+  console.log(`🎮 Games management system ready`);
 });
