@@ -514,6 +514,51 @@
             .stat-number { font-size: 20px; }
             .stat-icon { font-size: 22px; }
         }
+        
+        /* حاوية اللعبة المدمجة */
+        #gameContainer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            background: #0a0a0a;
+            flex-direction: column;
+        }
+        
+        .game-header-bar {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold);
+            flex-shrink: 0;
+        }
+        
+        .close-game-btn {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .close-game-btn:hover {
+            background: var(--gold);
+            color: #000;
+        }
+        
+        #gameIframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #0a2f2a;
+        }
     </style>
 </head>
 <body>
@@ -578,6 +623,16 @@
             <div class="nav-tab" data-tab="wheel">🎡<span>عجلة الحظ</span></div>
             <div class="nav-tab" data-tab="earn">🎁<span>اكسب مجانا</span></div>
         </div>
+    </div>
+
+    <!-- حاوية اللعبة المدمجة -->
+    <div id="gameContainer">
+        <div class="game-header-bar">
+            <button id="closeGameBtn" class="close-game-btn">✖️ إغلاق</button>
+            <h2 style="color: var(--gold);">🏗️ البرج الذهبي</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <iframe id="gameIframe" src=""></iframe>
     </div>
 
     <div id="wheelModal" class="modal">
@@ -1560,7 +1615,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table>
+                container.innerHTML = `<tr>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
                     </thead>
@@ -1590,7 +1645,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `</table>
+                    container.innerHTML = `<table>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                         </thead>
@@ -1877,31 +1932,25 @@
         
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
-        let gameWindow = null;
+        
+        // ============= فتح لعبة البرج الذهبي (داخل الموقع) =============
+        const gameContainer = document.getElementById('gameContainer');
+        const gameIframe = document.getElementById('gameIframe');
         
         function openGoldenTowerGame() {
-            // التحقق من الرصيد
             if (userData && userData.balance < 2000) {
                 showMessage(`⚠️ رصيدك غير كافٍ! تحتاج 2000 SYP للعب`, true);
                 return;
             }
             
-            // إغلاق النافذة السابقة إذا كانت مفتوحة
-            if (gameWindow && !gameWindow.closed) {
-                gameWindow.focus();
-                return;
-            }
+            const gamePath = window.location.pathname.includes('/sam5/') ? './golden-tower.html' : '/sam5/golden-tower.html';
+            gameIframe.src = gamePath;
+            gameContainer.style.display = 'flex';
             
-            // فتح نافذة اللعبة
-            gameWindow = window.open('/ass/golden-tower.html', 'GoldenTowerGame', 
-                'width=480,height=850,toolbar=no,menubar=no,scrollbars=no,resizable=yes,status=no'
-            );
-            
-            // إرسال بيانات المستخدم إلى اللعبة
-            const sendUserData = () => {
-                if (gameWindow && !gameWindow.closed && auth.currentUser) {
+            gameIframe.onload = () => {
+                if (auth.currentUser) {
                     auth.currentUser.getIdToken().then(token => {
-                        gameWindow.postMessage({
+                        gameIframe.contentWindow.postMessage({
                             type: 'USER_DATA',
                             user: { 
                                 uid: auth.currentUser.uid, 
@@ -1910,58 +1959,29 @@
                             },
                             token: token
                         }, '*');
-                    }).catch(console.error);
-                    return true;
+                    });
                 }
-                return false;
             };
-            
-            // محاولة إرسال البيانات عدة مرات
-            let attempts = 0;
-            const interval = setInterval(() => {
-                attempts++;
-                if (sendUserData() || attempts > 20) {
-                    clearInterval(interval);
-                }
-            }, 200);
-            
-            // تنظيف عند إغلاق النافذة
-            const checkClosed = setInterval(() => {
-                if (gameWindow && gameWindow.closed) {
-                    clearInterval(checkClosed);
-                    gameWindow = null;
-                }
-            }, 1000);
         }
+        
+        document.getElementById('closeGameBtn')?.addEventListener('click', () => {
+            gameContainer.style.display = 'none';
+            gameIframe.src = '';
+        });
+        
+        document.getElementById('playNowBtn')?.addEventListener('click', openGoldenTowerGame);
         
         // استقبال رسائل من اللعبة
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'GAME_READY' && event.data.game === 'golden_tower') {
-                // إرسال بيانات المستخدم عندما تصبح اللعبة جاهزة
-                if (auth.currentUser) {
-                    auth.currentUser.getIdToken().then(token => {
-                        event.source.postMessage({
-                            type: 'USER_DATA',
-                            user: { 
-                                uid: auth.currentUser.uid, 
-                                email: auth.currentUser.email, 
-                                displayName: auth.currentUser.displayName 
-                            },
-                            token: token
-                        }, event.origin);
-                    });
-                }
+            if (event.data && event.data.type === 'CLOSE_GAME') {
+                gameContainer.style.display = 'none';
+                gameIframe.src = '';
             }
-            if (event.data && event.data.type === 'BACK_TO_SITE') {
-                if (gameWindow && !gameWindow.closed) {
-                    gameWindow.close();
-                    gameWindow = null;
-                }
+            if (event.data && event.data.type === 'UPDATE_BALANCE') {
+                loadProfile();
             }
         });
         
-        // ربط زر العب الآن (استبدل السطر القديم بهذا)
-        document.getElementById('playNowBtn')?.addEventListener('click', openGoldenTowerGame);
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
