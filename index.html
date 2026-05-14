@@ -514,51 +514,6 @@
             .stat-number { font-size: 20px; }
             .stat-icon { font-size: 22px; }
         }
-        
-        /* حاوية اللعبة المدمجة */
-        #gameContainer {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 1000;
-            background: #0a0a0a;
-            flex-direction: column;
-        }
-        
-        .game-header-bar {
-            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--gold);
-            flex-shrink: 0;
-        }
-        
-        .close-game-btn {
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 8px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .close-game-btn:hover {
-            background: var(--gold);
-            color: #000;
-        }
-        
-        #gameIframe {
-            flex: 1;
-            width: 100%;
-            border: none;
-            background: #0a2f2a;
-        }
     </style>
 </head>
 <body>
@@ -623,16 +578,6 @@
             <div class="nav-tab" data-tab="wheel">🎡<span>عجلة الحظ</span></div>
             <div class="nav-tab" data-tab="earn">🎁<span>اكسب مجانا</span></div>
         </div>
-    </div>
-
-    <!-- حاوية اللعبة المدمجة -->
-    <div id="gameContainer">
-        <div class="game-header-bar">
-            <button id="closeGameBtn" class="close-game-btn">✖️ إغلاق</button>
-            <h2 style="color: var(--gold);">🏗️ البرج الذهبي</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <iframe id="gameIframe" src=""></iframe>
     </div>
 
     <div id="wheelModal" class="modal">
@@ -1231,6 +1176,17 @@
                     document.getElementById('profileTotalSpins').innerText = (userData.totalSpins || 0).toLocaleString();
                     document.getElementById('profileTotalWinnings').innerText = (userData.totalWinnings || 0).toLocaleString() + ' SYP';
                     isAdmin = data.isAdmin; 
+                    
+                    // تحديث زر الأدمن في البروفايل
+                    const adminSwitchContainer = document.getElementById('adminSwitchContainer');
+                    if (isAdmin && adminSwitchContainer && !adminSwitchContainer.querySelector('.admin-btn')) {
+                        const btn = document.createElement('button');
+                        btn.className = 'admin-btn';
+                        btn.innerText = '🔧 لوحة الأدمن';
+                        btn.onclick = showAdminInterface;
+                        adminSwitchContainer.innerHTML = '';
+                        adminSwitchContainer.appendChild(btn);
+                    }
                 } 
             }
         }
@@ -1586,7 +1542,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<tr>
+                container.innerHTML = `<table>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th> </tr>
                     </thead>
@@ -1615,7 +1571,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<tr>
+                container.innerHTML = `<table>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
                     </thead>
@@ -1645,7 +1601,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table>
+                    container.innerHTML = `</table>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                         </thead>
@@ -1663,7 +1619,7 @@
                                     <td>
                                         <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
                                         <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
-                                     </td>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1861,6 +1817,20 @@
             } 
         }
 
+        // فتح لعبة البرج الذهبي
+        function openTowerGame() {
+            const gameWindow = window.open('/tower-game.html', '_blank');
+            const sendTokenInterval = setInterval(() => {
+                if (gameWindow && auth.currentUser) {
+                    auth.currentUser.getIdToken().then(token => {
+                        gameWindow.postMessage({ type: 'AUTH_TOKEN', token: token }, '*');
+                        clearInterval(sendTokenInterval);
+                    }).catch(() => {});
+                }
+            }, 200);
+            setTimeout(() => clearInterval(sendTokenInterval), 5000);
+        }
+
         function initWheel() {
             wheelCanvas = document.getElementById('wheelCanvas');
             if (wheelCanvas) {
@@ -1902,17 +1872,6 @@
         document.getElementById('openProfileBtn')?.addEventListener('click', () => { 
             document.getElementById('homeScreen').classList.add('hidden'); 
             document.getElementById('profileScreen').classList.remove('hidden'); 
-            if (isAdmin) { 
-                const container = document.getElementById('adminSwitchContainer'); 
-                if (container && !container.querySelector('.admin-btn')) { 
-                    const btn = document.createElement('button'); 
-                    btn.className = 'admin-btn'; 
-                    btn.innerText = '🔧 لوحة الأدمن'; 
-                    btn.onclick = showAdminInterface; 
-                    container.innerHTML = ''; 
-                    container.appendChild(btn); 
-                } 
-            } 
         });
         
         document.getElementById('backHomeBtn')?.addEventListener('click', () => { 
@@ -1933,54 +1892,8 @@
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
         
-        // ============= فتح لعبة البرج الذهبي (داخل الموقع) =============
-        const gameContainer = document.getElementById('gameContainer');
-        const gameIframe = document.getElementById('gameIframe');
-        
-        function openGoldenTowerGame() {
-            if (userData && userData.balance < 2000) {
-                showMessage(`⚠️ رصيدك غير كافٍ! تحتاج 2000 SYP للعب`, true);
-                return;
-            }
-            
-            const gamePath = window.location.pathname.includes('/ass/') ? './golden-tower.html' : '/ass/golden-tower.html';
-            gameIframe.src = gamePath;
-            gameContainer.style.display = 'flex';
-            
-            gameIframe.onload = () => {
-                if (auth.currentUser) {
-                    auth.currentUser.getIdToken().then(token => {
-                        gameIframe.contentWindow.postMessage({
-                            type: 'USER_DATA',
-                            user: { 
-                                uid: auth.currentUser.uid, 
-                                email: auth.currentUser.email, 
-                                displayName: auth.currentUser.displayName 
-                            },
-                            token: token
-                        }, '*');
-                    });
-                }
-            };
-        }
-        
-        document.getElementById('closeGameBtn')?.addEventListener('click', () => {
-            gameContainer.style.display = 'none';
-            gameIframe.src = '';
-        });
-        
-        document.getElementById('playNowBtn')?.addEventListener('click', openGoldenTowerGame);
-        
-        // استقبال رسائل من اللعبة
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'CLOSE_GAME') {
-                gameContainer.style.display = 'none';
-                gameIframe.src = '';
-            }
-            if (event.data && event.data.type === 'UPDATE_BALANCE') {
-                loadProfile();
-            }
-        });
+        // زر العب الآن - يفتح لعبة البرج الذهبي
+        document.getElementById('playNowBtn')?.addEventListener('click', openTowerGame);
         
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
@@ -2014,7 +1927,7 @@
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
                 return; 
             } 
-            container.innerHTML = `<table>
+            container.innerHTML = `<td>
                 <thead>
                     <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                 </thead>
@@ -2150,7 +2063,7 @@
 
         console.log('✅ BOOMB App initialized successfully');
         console.log('🎰 Golden and Blue shiny wheel ready!');
-        console.log('⏱️ Perfect alignment between pointer and prize!');
+        console.log('🏰 Tower game integration ready!');
     </script>
 </body>
 </html>

@@ -75,48 +75,7 @@ app.use('/api/admin/', generalLimiter);
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
-// ============= إعدادات لعبة البرج الذهبي =============
-const GAME_MULTIPLIERS = { 
-  1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3, 
-  6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0, 
-  11: 9.0, 12: 11.0, 13: 15.0 
-};
-const MAX_FLOOR = 13;
-const FIXED_BET = 2000;
-
-// ذاكرة مؤقتة للجولات النشطة (تحسين السرعة)
-const activeGames = new Map();
-
-// ============= دوال لعبة البرج الذهبي المحسنة =============
-async function getGameState(userId) {
-  if (activeGames.has(userId)) {
-    const cached = activeGames.get(userId);
-    if (Date.now() - cached.timestamp < 30000) {
-      return cached.state;
-    }
-  }
-  
-  const doc = await db.collection('game_states').doc(userId).get();
-  if (doc.exists) {
-    const state = doc.data();
-    activeGames.set(userId, { state, timestamp: Date.now() });
-    return state;
-  }
-  return null;
-}
-
-async function saveGameState(userId, state) {
-  state.updatedAt = new Date();
-  await db.collection('game_states').doc(userId).set(state, { merge: true });
-  activeGames.set(userId, { state, timestamp: Date.now() });
-}
-
-async function deleteGameState(userId) {
-  await db.collection('game_states').doc(userId).delete();
-  activeGames.delete(userId);
-}
-
-// دالة إنشاء كود فريد للإحالة
+// ============= دالة إنشاء كود فريد =============
 async function generateUniqueReferralCode() {
   let uniqueId;
   let isUnique = false;
@@ -140,7 +99,7 @@ async function generateUniqueReferralCode() {
   return uniqueId || 'UID' + Date.now().toString().slice(-8);
 }
 
-// ============= دوال المصادقة =============
+// ============= المصادقة =============
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) {
@@ -200,7 +159,15 @@ async function getSettings() {
       gameImageUrl: '',
       siteTheme: 'red',
       siteName: 'BOOMB',
-      maintenanceMode: false
+      maintenanceMode: false,
+      // إعدادات لعبة البرج
+      towerMinBet: 500,
+      towerMaxBet: 100000,
+      towerMultipliers: {
+        1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+        6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+        11: 9.0, 12: 11.0, 13: 15.0
+      }
     };
     await db.collection('settings').doc('config').set(defaultSettings);
     return defaultSettings;
@@ -227,12 +194,19 @@ async function getSettings() {
       gameImageUrl: '',
       siteTheme: 'red',
       siteName: 'BOOMB',
-      maintenanceMode: false
+      maintenanceMode: false,
+      towerMinBet: 500,
+      towerMaxBet: 100000,
+      towerMultipliers: {
+        1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+        6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+        11: 9.0, 12: 11.0, 13: 15.0
+      }
     };
   }
 }
 
-// ============= كلاسات طرق الدفع =============
+// ============= كلاس شام كاش =============
 class ShamCashClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
@@ -393,42 +367,6 @@ function getRandomSector() {
   return WHEEL_SECTORS[0];
 }
 
-// ============= عمولة الإحالة =============
-async function addReferralCommission(userId, depositAmount) {
-  try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-    
-    if (userData && userData.referredBy) {
-      const settings = await getSettings();
-      const commissionPercent = settings.referralCommission || 5;
-      const commissionAmount = (depositAmount * commissionPercent) / 100;
-      
-      if (commissionAmount > 0) {
-        const referrerRef = db.collection('users').doc(userData.referredBy);
-        
-        await referrerRef.update({
-          referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
-          referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
-        });
-        
-        await db.collection('referral_commissions').add({
-          userId: userData.referredBy,
-          fromUserId: userId,
-          amount: commissionAmount,
-          depositAmount: depositAmount,
-          percent: commissionPercent,
-          createdAt: new Date()
-        });
-        
-        console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
-      }
-    }
-  } catch (error) {
-    console.error('Commission error:', error);
-  }
-}
-
 // ============= API عجلة الحظ =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
@@ -585,213 +523,41 @@ app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API لعبة البرج الذهبي المحسنة =============
-
-// 1. بدء جولة جديدة (يخصم 2000)
-app.post('/api/game/golden-tower/start', requireAuth, async (req, res) => {
+// ============= عمولة الإحالة =============
+async function addReferralCommission(userId, depositAmount) {
   try {
-    const { uid } = req.user;
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+    const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
     
-    if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
-    if (userData.balance < FIXED_BET) {
-      return res.status(400).json({ error: `رصيدك غير كافٍ! تحتاج ${FIXED_BET} SYP` });
-    }
-    
-    // التحقق من وجود لعبة نشطة
-    const existing = await getGameState(uid);
-    if (existing && existing.isGameActive) {
-      return res.json({ success: true, hasActiveGame: true, gameState: existing, gameId: uid });
-    }
-    
-    // خصم الرهان
-    await userRef.update({ balance: admin.firestore.FieldValue.increment(-FIXED_BET) });
-    
-    const gameState = {
-      userId: uid,
-      balance: (userData.balance || 0) - FIXED_BET,
-      currentBet: FIXED_BET,
-      currentFloor: 0,
-      isGameActive: true,
-      pendingProfit: 0,
-      builtFloors: [],
-      cameraY: 0,
-      createdAt: new Date()
-    };
-    
-    await saveGameState(uid, gameState);
-    
-    res.json({ success: true, gameState, gameId: uid });
-  } catch (error) {
-    console.error('Start game error:', error);
-    res.status(500).json({ error: 'فشل بدء اللعبة' });
-  }
-});
-
-// 2. إفلات الطابق (مع حساب دقيق للتداخل)
-app.post('/api/game/golden-tower/drop', requireAuth, async (req, res) => {
-  const startTime = Date.now();
-  try {
-    const { uid } = req.user;
-    const { positionX } = req.body;
-    
-    const gameState = await getGameState(uid);
-    if (!gameState || !gameState.isGameActive) {
-      return res.status(400).json({ error: 'لا توجد جولة نشطة', gameOver: true });
-    }
-    
-    if (gameState.currentFloor >= MAX_FLOOR) {
-      return res.status(400).json({ error: 'البرج مكتمل! قم بجمع الأرباح' });
-    }
-    
-    const lastFloor = gameState.builtFloors[gameState.builtFloors.length - 1];
-    if (!lastFloor) {
-      return res.status(400).json({ error: 'خطأ في حالة اللعبة' });
-    }
-    
-    // إعدادات الطابق الساقط
-    const fallW = 48;
-    const fallH = 28;
-    const fallX = positionX || (lastFloor.x);
-    const lastTop = lastFloor.y - lastFloor.h/2;
-    const newY = lastTop - fallH/2;
-    
-    // حساب التداخل
-    const fallLeft = fallX - fallW/2;
-    const fallRight = fallX + fallW/2;
-    const lastLeft = lastFloor.x - lastFloor.w/2;
-    const lastRight = lastFloor.x + lastFloor.w/2;
-    const overlapWidth = Math.max(0, Math.min(fallRight, lastRight) - Math.max(fallLeft, lastLeft));
-    const requiredOverlap = fallW * 0.5; // 50% تداخل مطلوب
-    
-    if (overlapWidth >= requiredOverlap) {
-      // نجاح: إضافة الطابق
-      const newFloor = {
-        x: fallX,
-        y: newY,
-        w: fallW,
-        h: fallH,
-        floorNumber: gameState.currentFloor + 1
-      };
-      gameState.builtFloors.push(newFloor);
-      gameState.currentFloor++;
-      gameState.cameraY -= 23;
+    if (userData && userData.referredBy) {
+      const settings = await getSettings();
+      const commissionPercent = settings.referralCommission || 5;
+      const commissionAmount = (depositAmount * commissionPercent) / 100;
       
-      const multiplier = GAME_MULTIPLIERS[gameState.currentFloor] || 0;
-      gameState.pendingProfit = gameState.currentBet * multiplier;
-      
-      await saveGameState(uid, gameState);
-      
-      let message = `✅ الطابق ${gameState.currentFloor} ثبُت! مضاعف ${multiplier.toFixed(2)}x | الأرباح: ${Math.floor(gameState.pendingProfit)}`;
-      
-      if (gameState.currentFloor >= MAX_FLOOR) {
-        message = "🏆 أكملت البرج! اضغط جمع لسحب أرباحك 🏆";
+      if (commissionAmount > 0) {
+        const referrerRef = db.collection('users').doc(userData.referredBy);
+        
+        await referrerRef.update({
+          referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
+          referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
+        });
+        
+        await db.collection('referral_commissions').add({
+          userId: userData.referredBy,
+          fromUserId: userId,
+          amount: commissionAmount,
+          depositAmount: depositAmount,
+          percent: commissionPercent,
+          createdAt: new Date()
+        });
+        
+        console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
       }
-      
-      console.log(`✅ نجاح [${uid}]: الطابق ${gameState.currentFloor} | وقت: ${Date.now() - startTime}ms`);
-      res.json({ 
-        success: true, 
-        gameState, 
-        gameId: uid, 
-        floorPlaced: true, 
-        multiplier, 
-        floorY: newY, 
-        message 
-      });
-    } else {
-      // فشل: خسارة الجولة
-      gameState.isGameActive = false;
-      await deleteGameState(uid);
-      
-      console.log(`❌ فشل [${uid}]: تداخل ${overlapWidth.toFixed(1)}px من ${requiredOverlap}px مطلوب`);
-      res.json({ 
-        success: false, 
-        gameOver: true, 
-        message: `💥 فشل! تداخل ${Math.floor(overlapWidth)}px من ${Math.floor(requiredOverlap)}px مطلوب. خسارة!` 
-      });
     }
   } catch (error) {
-    console.error('Drop floor error:', error);
-    res.status(500).json({ error: 'فشل وضع الطابق' });
+    console.error('Commission error:', error);
   }
-});
-
-// 3. جمع الأرباح
-app.post('/api/game/golden-tower/cashout', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const gameState = await getGameState(uid);
-    
-    if (!gameState || !gameState.isGameActive) {
-      return res.status(400).json({ error: 'لا توجد أرباح نشطة' });
-    }
-    
-    if (gameState.pendingProfit <= 0 || gameState.currentFloor === 0) {
-      return res.status(400).json({ error: 'لم تحقق أرباحاً بعد! ابنِ طابقاً أولاً' });
-    }
-    
-    const profit = Math.floor(gameState.pendingProfit);
-    
-    const userRef = db.collection('users').doc(uid);
-    await userRef.update({
-      balance: admin.firestore.FieldValue.increment(profit)
-    });
-    
-    await db.collection('game_transactions').add({
-      userId: uid,
-      game: 'golden_tower',
-      type: 'cashout',
-      amount: profit,
-      floorsBuilt: gameState.currentFloor,
-      multiplier: gameState.pendingProfit / gameState.currentBet,
-      timestamp: new Date()
-    });
-    
-    await deleteGameState(uid);
-    
-    const updatedUser = await userRef.get();
-    
-    res.json({ 
-      success: true, 
-      message: `💰 تم جمع ${profit.toLocaleString()} SYP إلى رصيدك!`, 
-      gameState: { balance: updatedUser.data().balance, isGameActive: false } 
-    });
-  } catch (error) {
-    console.error('Cashout error:', error);
-    res.status(500).json({ error: 'فشل جمع الأرباح' });
-  }
-});
-
-// 4. استعادة جولة موجودة
-app.get('/api/game/golden-tower/resume', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const gameState = await getGameState(uid);
-    
-    if (gameState && gameState.isGameActive) {
-      res.json({ success: true, hasActiveGame: true, gameState, gameId: uid });
-    } else {
-      res.json({ success: true, hasActiveGame: false });
-    }
-  } catch (error) {
-    console.error('Resume error:', error);
-    res.json({ success: true, hasActiveGame: false });
-  }
-});
-
-// 5. إعادة تعيين
-app.post('/api/game/golden-tower/reset', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    await deleteGameState(uid);
-    res.json({ success: true, message: 'تم إعادة تعيين اللعبة' });
-  } catch (error) {
-    console.error('Reset error:', error);
-    res.status(500).json({ error: 'فشل إعادة التعيين' });
-  }
-});
+}
 
 // ============= API التسجيل =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
@@ -841,7 +607,11 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       lastLogin: new Date(),
       lastSpinTime: null,
       totalSpins: 0,
-      totalWinnings: 0
+      totalWinnings: 0,
+      // إحصائيات لعبة البرج
+      towerGamesPlayed: 0,
+      towerGamesWon: 0,
+      towerTotalProfit: 0
     };
     
     await userRef.set(newUser);
@@ -905,7 +675,10 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
         referrerInfo: referrerInfo,
         siteTheme: settings.siteTheme || 'red',
         totalSpins: data.totalSpins || 0,
-        totalWinnings: data.totalWinnings || 0
+        totalWinnings: data.totalWinnings || 0,
+        towerGamesPlayed: data.towerGamesPlayed || 0,
+        towerGamesWon: data.towerGamesWon || 0,
+        towerTotalProfit: data.towerTotalProfit || 0
       }
     });
   } catch (error) {
@@ -961,7 +734,9 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         usdToSypRate: settings.usdToSypRate || 13000,
         referralCommission: settings.referralCommission || 5,
         siteTheme: settings.siteTheme || 'red',
-        wheelSpinCost: settings.wheelSpinCost || 50
+        wheelSpinCost: settings.wheelSpinCost || 50,
+        towerMinBet: settings.towerMinBet || 500,
+        towerMaxBet: settings.towerMaxBet || 100000
       }
     });
   } catch (error) {
@@ -1232,6 +1007,360 @@ app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
   }
 });
 
+// ==================== لعبة البرج الذهبي ====================
+
+// الحصول على إعدادات اللعبة
+app.get('/api/game/tower/settings', requireAuth, async (req, res) => {
+  try {
+    const settings = await getSettings();
+    res.json({
+      success: true,
+      minBet: settings.towerMinBet || 500,
+      maxBet: settings.towerMaxBet || 100000,
+      multipliers: settings.towerMultipliers || {
+        1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+        6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+        11: 9.0, 12: 11.0, 13: 15.0
+      },
+      maxFloors: 13
+    });
+  } catch (error) {
+    console.error('Get tower settings error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// بدء جولة جديدة
+app.post('/api/game/tower/start', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { betAmount } = req.body;
+    
+    if (!betAmount || betAmount <= 0) {
+      return res.status(400).json({ error: 'مبلغ الرهان غير صالح' });
+    }
+    
+    const settings = await getSettings();
+    const minBet = settings.towerMinBet || 500;
+    const maxBet = settings.towerMaxBet || 100000;
+    
+    if (betAmount < minBet) {
+      return res.status(400).json({ error: `الحد الأدنى للرهان هو ${minBet} SYP` });
+    }
+    if (betAmount > maxBet) {
+      return res.status(400).json({ error: `الحد الأقصى للرهان هو ${maxBet} SYP` });
+    }
+    
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
+    if (userData.isBanned) return res.status(403).json({ error: 'حسابك محظور' });
+    if (userData.balance < betAmount) {
+      return res.status(400).json({ error: `الرصيد غير كافٍ. رصيدك: ${userData.balance.toLocaleString()} SYP` });
+    }
+    
+    // خصم الرهان
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(-betAmount),
+      towerGamesPlayed: admin.firestore.FieldValue.increment(1)
+    });
+    
+    // إنشاء جولة جديدة
+    const gameId = `tower_${uid}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const gameData = {
+      id: gameId,
+      userId: uid,
+      betAmount: betAmount,
+      currentFloor: 0,
+      currentMultiplier: 0,
+      currentProfit: 0,
+      isActive: true,
+      isCompleted: false,
+      status: 'playing',
+      createdAt: new Date(),
+      floors: [],
+      totalOverlap: 0
+    };
+    
+    await db.collection('tower_games').doc(gameId).set(gameData);
+    
+    const updatedUser = await userRef.get();
+    
+    res.json({
+      success: true,
+      gameId: gameId,
+      betAmount: betAmount,
+      newBalance: updatedUser.data().balance,
+      message: `تم بدء الجولة برهان ${betAmount.toLocaleString()} SYP`
+    });
+    
+  } catch (error) {
+    console.error('Start tower game error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء بدء الجولة' });
+  }
+});
+
+// وضع طابق (إفلات)
+app.post('/api/game/tower/drop-floor', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { gameId, floorNumber, positionX, overlapPercent } = req.body;
+    
+    if (!gameId || !floorNumber) {
+      return res.status(400).json({ error: 'بيانات غير مكتملة' });
+    }
+    
+    const gameRef = db.collection('tower_games').doc(gameId);
+    const gameDoc = await gameRef.get();
+    const gameData = gameDoc.data();
+    
+    if (!gameData || gameData.userId !== uid) {
+      return res.status(404).json({ error: 'الجولة غير موجودة' });
+    }
+    
+    if (!gameData.isActive) {
+      return res.status(400).json({ error: 'الجولة منتهية' });
+    }
+    
+    if (gameData.currentFloor + 1 !== floorNumber) {
+      return res.status(400).json({ error: 'ترتيب الطوابق غير صحيح' });
+    }
+    
+    const settings = await getSettings();
+    const multipliers = settings.towerMultipliers || {
+      1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+      6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+      11: 9.0, 12: 11.0, 13: 15.0
+    };
+    const MAX_FLOOR = 13;
+    
+    // التحقق من النجاح (تداخل 50% على الأقل)
+    const isSuccess = overlapPercent >= 50;
+    
+    if (!isSuccess) {
+      // فشل - انتهاء الجولة بدون ربح
+      await gameRef.update({
+        isActive: false,
+        isCompleted: true,
+        endedAt: new Date(),
+        status: 'lost',
+        failedAtFloor: floorNumber,
+        overlapPercent: overlapPercent
+      });
+      
+      // تسجيل الإحصائيات
+      const userRef = db.collection('users').doc(uid);
+      await userRef.update({
+        towerGamesPlayed: admin.firestore.FieldValue.increment(1)
+      });
+      
+      return res.json({
+        success: false,
+        lost: true,
+        message: `💥 فشل! تداخل ${Math.floor(overlapPercent)}% فقط (مطلوب 50%)`,
+        floorNumber: floorNumber,
+        overlapPercent: overlapPercent
+      });
+    }
+    
+    // نجاح - تقدم للطابق التالي
+    const currentMultiplier = multipliers[floorNumber] || 0;
+    const currentProfit = gameData.betAmount * currentMultiplier;
+    
+    await gameRef.update({
+      currentFloor: floorNumber,
+      currentMultiplier: currentMultiplier,
+      currentProfit: currentProfit,
+      floors: admin.firestore.FieldValue.arrayUnion({
+        floorNumber: floorNumber,
+        positionX: positionX,
+        overlapPercent: overlapPercent,
+        timestamp: new Date()
+      }),
+      totalOverlap: admin.firestore.FieldValue.increment(overlapPercent)
+    });
+    
+    // التحقق من إكمال البرج
+    const isComplete = floorNumber >= MAX_FLOOR;
+    
+    if (isComplete) {
+      // إضافة الأرباح للرصيد
+      const userRef = db.collection('users').doc(uid);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(currentProfit),
+        towerGamesWon: admin.firestore.FieldValue.increment(1),
+        towerTotalProfit: admin.firestore.FieldValue.increment(currentProfit)
+      });
+      
+      await gameRef.update({
+        isActive: false,
+        isCompleted: true,
+        endedAt: new Date(),
+        status: 'completed',
+        finalProfit: currentProfit
+      });
+      
+      const updatedUser = await userRef.get();
+      
+      return res.json({
+        success: true,
+        completed: true,
+        floorNumber: floorNumber,
+        multiplier: currentMultiplier,
+        profit: currentProfit,
+        newBalance: updatedUser.data().balance,
+        message: `🎉 أكملت البرج! ربحت ${currentProfit.toLocaleString()} SYP 🎉`
+      });
+    }
+    
+    res.json({
+      success: true,
+      completed: false,
+      floorNumber: floorNumber,
+      nextFloor: floorNumber + 1,
+      multiplier: currentMultiplier,
+      currentProfit: currentProfit,
+      message: `✅ الطابق ${floorNumber} ثبُت! المضاعف ${currentMultiplier}x | الربح الحالي: ${currentProfit.toLocaleString()} SYP`
+    });
+    
+  } catch (error) {
+    console.error('Drop floor error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء وضع الطابق' });
+  }
+});
+
+// جمع الأرباح (Cashout)
+app.post('/api/game/tower/cashout', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { gameId } = req.body;
+    
+    if (!gameId) {
+      return res.status(400).json({ error: 'معرف الجولة مطلوب' });
+    }
+    
+    const gameRef = db.collection('tower_games').doc(gameId);
+    const gameDoc = await gameRef.get();
+    const gameData = gameDoc.data();
+    
+    if (!gameData || gameData.userId !== uid) {
+      return res.status(404).json({ error: 'الجولة غير موجودة' });
+    }
+    
+    if (!gameData.isActive) {
+      return res.status(400).json({ error: 'الجولة منتهية' });
+    }
+    
+    if (gameData.currentFloor === 0) {
+      return res.status(400).json({ error: 'لا توجد أرباح لجمعها' });
+    }
+    
+    const profit = gameData.currentProfit;
+    
+    // إضافة الأرباح للرصيد
+    const userRef = db.collection('users').doc(uid);
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(profit),
+      towerGamesWon: admin.firestore.FieldValue.increment(1),
+      towerTotalProfit: admin.firestore.FieldValue.increment(profit)
+    });
+    
+    await gameRef.update({
+      isActive: false,
+      isCompleted: true,
+      endedAt: new Date(),
+      status: 'cashed_out',
+      finalProfit: profit
+    });
+    
+    const updatedUser = await userRef.get();
+    
+    res.json({
+      success: true,
+      profit: profit,
+      newBalance: updatedUser.data().balance,
+      message: `💰 تم جمع ${profit.toLocaleString()} SYP بنجاح!`
+    });
+    
+  } catch (error) {
+    console.error('Cashout error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جمع الأرباح' });
+  }
+});
+
+// الحصول على حالة الجولة الحالية
+app.get('/api/game/tower/current', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    
+    const gamesQuery = await db.collection('tower_games')
+      .where('userId', '==', uid)
+      .where('isActive', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+    
+    if (gamesQuery.empty) {
+      return res.json({ success: true, hasActiveGame: false });
+    }
+    
+    const game = gamesQuery.docs[0];
+    const gameData = game.data();
+    
+    res.json({
+      success: true,
+      hasActiveGame: true,
+      gameId: game.id,
+      betAmount: gameData.betAmount,
+      currentFloor: gameData.currentFloor,
+      currentMultiplier: gameData.currentMultiplier,
+      currentProfit: gameData.currentProfit,
+      floors: gameData.floors || []
+    });
+    
+  } catch (error) {
+    console.error('Get current game error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// تاريخ جولات اللاعب
+app.get('/api/game/tower/history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { limit = 20 } = req.query;
+    
+    const gamesQuery = await db.collection('tower_games')
+      .where('userId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .limit(parseInt(limit))
+      .get();
+    
+    const games = [];
+    gamesQuery.forEach(doc => {
+      const data = doc.data();
+      games.push({
+        id: doc.id,
+        betAmount: data.betAmount,
+        currentFloor: data.currentFloor,
+        currentProfit: data.currentProfit,
+        finalProfit: data.finalProfit,
+        status: data.status,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+        endedAt: data.endedAt?.toDate ? data.endedAt.toDate() : null
+      });
+    });
+    
+    res.json({ success: true, games });
+    
+  } catch (error) {
+    console.error('Get tower history error:', error);
+    res.json({ success: true, games: [] });
+  }
+});
+
 // ============= APIs الأدمن =============
 app.get('/api/admin/settings', requireAdmin, async (req, res) => {
   const settings = await getSettings();
@@ -1248,6 +1377,7 @@ app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تغيير الثيم =============
 app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   try {
     const { theme } = req.body;
@@ -1263,6 +1393,7 @@ app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API جلب الثيم الحالي =============
 app.get('/api/site-theme', async (req, res) => {
   try {
     const settings = await getSettings();
@@ -1298,6 +1429,14 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
     const totalSpins = wheelSpinsSnapshot.size;
     const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
     
+    // إحصائيات لعبة البرج
+    const towerGamesSnapshot = await db.collection('tower_games').get();
+    const totalTowerGames = towerGamesSnapshot.size;
+    const totalTowerProfit = towerGamesSnapshot.docs.reduce((sum, doc) => {
+      const data = doc.data();
+      return sum + (data.finalProfit > 0 ? data.finalProfit : 0);
+    }, 0);
+    
     res.json({
       success: true,
       stats: {
@@ -1309,7 +1448,9 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
         totalReferralEarnings,
         pendingWithdrawals: pendingSnapshot.size,
         totalSpins,
-        totalWinnings
+        totalWinnings,
+        totalTowerGames,
+        totalTowerProfit
       }
     });
   } catch (error) {
@@ -1421,7 +1562,10 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         referralEarnings: data.referralEarnings || 0,
         referralsCount: data.referrals?.length || 0,
         totalSpins: data.totalSpins || 0,
-        totalWinnings: data.totalWinnings || 0
+        totalWinnings: data.totalWinnings || 0,
+        towerGamesPlayed: data.towerGamesPlayed || 0,
+        towerGamesWon: data.towerGamesWon || 0,
+        towerTotalProfit: data.towerTotalProfit || 0
       });
     });
     res.json({ success: true, users });
@@ -1457,6 +1601,7 @@ app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تحديث سعر عجلة الحظ =============
 app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   try {
     const { cost } = req.body;
@@ -1471,6 +1616,24 @@ app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= API تحديث إعدادات لعبة البرج =============
+app.post('/api/admin/update-tower-settings', requireAdmin, async (req, res) => {
+  try {
+    const { minBet, maxBet, multipliers } = req.body;
+    const updateData = {};
+    
+    if (minBet && minBet > 0) updateData.towerMinBet = minBet;
+    if (maxBet && maxBet > 0) updateData.towerMaxBet = maxBet;
+    if (multipliers) updateData.towerMultipliers = multipliers;
+    
+    await db.collection('settings').doc('config').update(updateData);
+    res.json({ success: true, message: 'تم تحديث إعدادات اللعبة' });
+  } catch (error) {
+    console.error('Update tower settings error:', error);
+    res.status(500).json({ error: 'فشل تحديث الإعدادات' });
+  }
+});
+
 app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
   try {
     const { password } = req.body;
@@ -1478,7 +1641,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'game_states'];
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'tower_games'];
     for (const col of collections) {
       const snapshot = await db.collection(col).get();
       const deletions = [];
@@ -1492,7 +1655,13 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
       shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
       syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
-      gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false
+      gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false,
+      towerMinBet: 500, towerMaxBet: 100000,
+      towerMultipliers: {
+        1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+        6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+        11: 9.0, 12: 11.0, 13: 15.0
+      }
     };
     await db.collection('settings').doc('config').set(defaultSettings);
     
@@ -1509,7 +1678,5 @@ app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
-  console.log(`🏗️ Golden Tower game ready with 13 floors`);
-  console.log(`💰 Bet amount: ${FIXED_BET} SYP per round`);
-  console.log(`📊 Multipliers: 0.5x to 15x`);
+  console.log(`🏰 Tower game system ready with 13 floors`);
 });
