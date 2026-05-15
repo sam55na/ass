@@ -374,6 +374,132 @@ function getRandomSector() {
   return WHEEL_SECTORS[0];
 }
 
+// ============= إعدادات الألعاب المتعددة (الإضافة الجديدة) =============
+const DEFAULT_GAMES = [
+  { id: 1, name: "🎮 لعبة الحظ", icon: "🎮", imageUrl: "", enabled: true, order: 1, playUrl: "https://example.com/game1" },
+  { id: 2, name: "🎲 لعبة النرد", icon: "🎲", imageUrl: "", enabled: true, order: 2, playUrl: "https://example.com/game2" },
+  { id: 3, name: "🎰 ماكينات", icon: "🎰", imageUrl: "", enabled: true, order: 3, playUrl: "https://example.com/game3" },
+  { id: 4, name: "🃏 ورق", icon: "🃏", imageUrl: "", enabled: true, order: 4, playUrl: "https://example.com/game4" },
+  { id: 5, name: "⚽ كرة قدم", icon: "⚽", imageUrl: "", enabled: true, order: 5, playUrl: "https://example.com/game5" },
+  { id: 6, name: "🏀 كرة سلة", icon: "🏀", imageUrl: "", enabled: true, order: 6, playUrl: "https://example.com/game6" },
+  { id: 7, name: "🎯 سهام", icon: "🎯", imageUrl: "", enabled: true, order: 7, playUrl: "https://example.com/game7" },
+  { id: 8, name: "🧩 ألغاز", icon: "🧩", imageUrl: "", enabled: true, order: 8, playUrl: "https://example.com/game8" },
+  { id: 9, name: "🏎️ سباقات", icon: "🏎️", imageUrl: "", enabled: true, order: 9, playUrl: "https://example.com/game9" },
+  { id: 10, name: "👑 ألعاب القوى", icon: "👑", imageUrl: "", enabled: true, order: 10, playUrl: "https://example.com/game10" }
+];
+
+async function getGamesSettings() {
+  try {
+    const doc = await db.collection('settings').doc('games').get();
+    if (doc.exists) return doc.data().games || DEFAULT_GAMES;
+    
+    await db.collection('settings').doc('games').set({ games: DEFAULT_GAMES });
+    return DEFAULT_GAMES;
+  } catch (error) {
+    console.error('Error getting games settings:', error);
+    return DEFAULT_GAMES;
+  }
+}
+
+async function saveGamesSettings(games) {
+  try {
+    await db.collection('settings').doc('games').set({ games });
+    settingsCache.del('games');
+    return true;
+  } catch (error) {
+    console.error('Error saving games settings:', error);
+    return false;
+  }
+}
+
+// ============= APIs الألعاب (الإضافة الجديدة) =============
+// API لجلب الألعاب للمستخدمين العاديين
+app.get('/api/user/games', requireAuth, async (req, res) => {
+  try {
+    const games = await getGamesSettings();
+    const enabledGames = games.filter(g => g.enabled).sort((a, b) => a.order - b.order);
+    res.json({ success: true, games: enabledGames });
+  } catch (error) {
+    console.error('Get games error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الألعاب' });
+  }
+});
+
+// API لجلب جميع الألعاب للأدمن
+app.get('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const games = await getGamesSettings();
+    res.json({ success: true, games });
+  } catch (error) {
+    console.error('Admin get games error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الألعاب' });
+  }
+});
+
+// API لتحديث لعبة (الاسم، الأيقونة، الصورة، الرابط، التفعيل)
+app.post('/api/admin/update-game', requireAdmin, async (req, res) => {
+  try {
+    const { gameId, updates } = req.body;
+    const games = await getGamesSettings();
+    const gameIndex = games.findIndex(g => g.id === gameId);
+    
+    if (gameIndex === -1) {
+      return res.status(404).json({ error: 'اللعبة غير موجودة' });
+    }
+    
+    // تحديث الحقول المسموح بها فقط
+    const allowedFields = ['name', 'icon', 'imageUrl', 'playUrl', 'enabled'];
+    const sanitizedUpdates = {};
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        sanitizedUpdates[field] = updates[field];
+      }
+    }
+    
+    games[gameIndex] = { ...games[gameIndex], ...sanitizedUpdates };
+    await saveGamesSettings(games);
+    
+    res.json({ success: true, message: 'تم تحديث اللعبة بنجاح' });
+  } catch (error) {
+    console.error('Update game error:', error);
+    res.status(500).json({ error: 'فشل تحديث اللعبة' });
+  }
+});
+
+// API لإعادة ترتيب الألعاب
+app.post('/api/admin/reorder-games', requireAdmin, async (req, res) => {
+  try {
+    const { games } = req.body;
+    if (!Array.isArray(games) || games.length !== 10) {
+      return res.status(400).json({ error: 'بيانات غير صالحة' });
+    }
+    
+    // التحقق من صحة البيانات
+    for (const game of games) {
+      if (!game.id || typeof game.order !== 'number') {
+        return res.status(400).json({ error: 'بيانات غير صالحة' });
+      }
+    }
+    
+    await saveGamesSettings(games);
+    res.json({ success: true, message: 'تم إعادة ترتيب الألعاب' });
+  } catch (error) {
+    console.error('Reorder games error:', error);
+    res.status(500).json({ error: 'فشل إعادة الترتيب' });
+  }
+});
+
+// API لإعادة ضبط الألعاب إلى الإعدادات الافتراضية
+app.post('/api/admin/reset-games', requireAdmin, async (req, res) => {
+  try {
+    await saveGamesSettings(DEFAULT_GAMES);
+    res.json({ success: true, message: 'تم إعادة ضبط الألعاب إلى الإعدادات الافتراضية' });
+  } catch (error) {
+    console.error('Reset games error:', error);
+    res.status(500).json({ error: 'فشل إعادة الضبط' });
+  }
+});
+
 // ============= API عجلة الحظ (مع Transaction وقفل) =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
@@ -999,6 +1125,291 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Add referrer error:', error);
     res.status(500).json({ error: 'حدث خطأ' });
+  } finally {
+    await lock.release();
+  }
+});
+
+// ============= APIs الأدمن (الإضافية) =============
+app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+  const settings = await getSettings();
+  res.json({ success: true, settings });
+});
+
+app.post('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    await db.collection('settings').doc('config').update(req.body);
+    settingsCache.del('settings');
+    res.json({ success: true, message: 'تم تحديث الإعدادات' });
+  } catch (error) {
+    console.error('Save settings error:', error);
+    res.status(500).json({ error: 'فشل تحديث الإعدادات' });
+  }
+});
+
+app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
+  try {
+    const { theme } = req.body;
+    if (!theme) {
+      return res.status(400).json({ error: 'اللون مطلوب' });
+    }
+    
+    await db.collection('settings').doc('config').update({ siteTheme: theme });
+    settingsCache.del('settings');
+    res.json({ success: true, message: `تم تغيير لون الموقع إلى ${theme}` });
+  } catch (error) {
+    console.error('Update theme error:', error);
+    res.status(500).json({ error: 'فشل تغيير اللون' });
+  }
+});
+
+app.get('/api/site-theme', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    res.json({ success: true, theme: settings.siteTheme || 'red' });
+  } catch (error) {
+    console.error('Get theme error:', error);
+    res.json({ success: true, theme: 'red' });
+  }
+});
+
+app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const users = [];
+    usersSnapshot.forEach(doc => users.push(doc.data()));
+    
+    const totalBalance = users.reduce((s, u) => s + (u.balance || 0), 0);
+    const totalDeposited = users.reduce((s, u) => s + (u.totalDeposited || 0), 0);
+    const totalWithdrawn = users.reduce((s, u) => s + (u.totalWithdrawn || 0), 0);
+    const totalReferralEarnings = users.reduce((s, u) => s + (u.referralEarnings || 0), 0);
+    
+    const pendingSnapshot = await db.collection('withdraw_requests').where('status', '==', 'pending').get();
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const newToday = users.filter(u => {
+      if (!u.createdAt) return false;
+      const date = u.createdAt.toDate ? u.createdAt.toDate() : u.createdAt;
+      return date > today;
+    }).length;
+    
+    const wheelSpinsSnapshot = await db.collection('wheel_spins').get();
+    const totalSpins = wheelSpinsSnapshot.size;
+    const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
+    
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: usersSnapshot.size,
+        newToday,
+        totalBalance,
+        totalDeposited,
+        totalWithdrawn,
+        totalReferralEarnings,
+        pendingWithdrawals: pendingSnapshot.size,
+        totalSpins,
+        totalWinnings
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
+  }
+});
+
+app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
+  try {
+    const { status = 'all' } = req.query;
+    let query = db.collection('withdraw_requests').orderBy('createdAt', 'desc');
+    if (status !== 'all') query = query.where('status', '==', status);
+    
+    const snapshot = await query.get();
+    const requests = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const userDoc = await db.collection('users').doc(data.userId).get();
+      requests.push({
+        id: doc.id,
+        userId: data.userId,
+        userEmail: data.userEmail,
+        userName: data.userName,
+        amount: data.amount,
+        address: data.address,
+        status: data.status,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
+      });
+    }
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Admin withdraws error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الطلبات' });
+  }
+});
+
+app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
+  try {
+    const { requestId, action } = req.body;
+    const requestRef = db.collection('withdraw_requests').doc(requestId);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) return res.status(404).json({ error: 'طلب غير موجود' });
+    
+    const request = requestDoc.data();
+    if (request.status !== 'pending') return res.status(400).json({ error: 'تم معالجة هذا الطلب' });
+    
+    if (action === 'reject') {
+      await db.collection('users').doc(request.userId).update({
+        balance: admin.firestore.FieldValue.increment(request.amount)
+      });
+      userCache.del(`user_${request.userId}`);
+    }
+    
+    await requestRef.update({
+      status: action === 'approve' ? 'approved' : 'rejected',
+      processedAt: new Date(),
+      processedBy: req.user.email
+    });
+    
+    res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب` });
+  } catch (error) {
+    console.error('Process withdraw error:', error);
+    res.status(500).json({ error: 'فشل معالجة الطلب' });
+  }
+});
+
+app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('deposits').orderBy('verifiedAt', 'desc').limit(100).get();
+    const deposits = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const userDoc = await db.collection('users').doc(data.userId).get();
+      deposits.push({
+        id: doc.id,
+        userId: data.userId,
+        userEmail: userDoc.exists ? userDoc.data().email : null,
+        userName: userDoc.exists ? userDoc.data().name : null,
+        amount: data.amount,
+        method: data.method,
+        transactionId: data.transactionId,
+        verifiedAt: data.verifiedAt?.toDate ? data.verifiedAt.toDate() : new Date(data.verifiedAt)
+      });
+    }
+    res.json({ success: true, deposits });
+  } catch (error) {
+    console.error('Admin deposits error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
+  }
+});
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      users.push({
+        id: doc.id,
+        email: data.email,
+        name: data.name,
+        uniqueId: data.uniqueId,
+        balance: data.balance,
+        referralBalance: data.referralBalance || 0,
+        isBanned: data.isBanned || false,
+        referredBy: data.referredBy,
+        referredByName: data.referredByName,
+        referralEarnings: data.referralEarnings || 0,
+        referralsCount: data.referrals?.length || 0,
+        totalSpins: data.totalSpins || 0,
+        totalWinnings: data.totalWinnings || 0
+      });
+    });
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
+  }
+});
+
+app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    await db.collection('users').doc(userId).update({
+      balance: admin.firestore.FieldValue.increment(Number(amount))
+    });
+    userCache.del(`user_${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update balance error:', error);
+    res.status(500).json({ error: 'فشل تحديث الرصيد' });
+  }
+});
+
+app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const userDoc = await db.collection('users').doc(userId).get();
+    const currentBan = userDoc.data()?.isBanned || false;
+    await db.collection('users').doc(userId).update({ isBanned: !currentBan });
+    userCache.del(`user_${userId}`);
+    res.json({ success: true, isBanned: !currentBan });
+  } catch (error) {
+    console.error('Toggle ban error:', error);
+    res.status(500).json({ error: 'فشل تحديث حالة الحظر' });
+  }
+});
+
+app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
+  try {
+    const { cost } = req.body;
+    if (!cost || cost < 10 || cost > 10000) {
+      return res.status(400).json({ error: 'سعر غير صالح (يجب أن يكون بين 10 و 10000)' });
+    }
+    await db.collection('settings').doc('config').update({ wheelSpinCost: cost });
+    settingsCache.del('settings');
+    res.json({ success: true, message: `تم تحديث سعر التدويرة إلى ${cost} SYP` });
+  } catch (error) {
+    console.error('Update wheel cost error:', error);
+    res.status(500).json({ error: 'فشل تحديث السعر' });
+  }
+});
+
+app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (password !== RESET_PASSWORD) {
+      return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
+    }
+    
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'locks'];
+    for (const col of collections) {
+      const snapshot = await db.collection(col).get();
+      const deletions = [];
+      snapshot.forEach(doc => deletions.push(db.collection(col).doc(doc.id).delete()));
+      await Promise.all(deletions);
+    }
+    
+    const defaultSettings = {
+      minDeposit: 1000, minWithdraw: 5000, shamCashEnabled: true, syriatelEnabled: true,
+      shamCashUsdEnabled: false, usdToSypRate: 13000, referralCommission: 5, wheelSpinCost: 50,
+      shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
+      shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
+      syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
+      gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false
+    };
+    await db.collection('settings').doc('config').set(defaultSettings);
+    
+    // إعادة ضبط الألعاب
+    await db.collection('settings').doc('games').set({ games: DEFAULT_GAMES });
+    
+    settingsCache.flushAll();
+    userCache.flushAll();
+    
+    res.json({ success: true, message: 'تم تهيئة قاعدة البيانات بنجاح' });
+  } catch (error) {
+    console.error('Reset error:', error);
+    res.status(500).json({ error: 'فشل التهيئة' });
   }
 });
 
@@ -1008,6 +1419,7 @@ const server = app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
+  console.log(`🎮 Games management system ready with 10 games`);
   console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
 });
 
