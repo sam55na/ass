@@ -52,6 +52,7 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 // ============= ذاكرة التخزين المؤقت =============
 const settingsCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 const userCache = new NodeCache({ stdTTL: 30, checkperiod: 60, maxKeys: 1000 });
+const gamesCache = new NodeCache({ stdTTL: 300, checkperiod: 600 });
 
 // ============= منع التكرار المتقدم =============
 const generalLimiter = rateLimit({
@@ -82,7 +83,21 @@ app.use('/api/admin/', generalLimiter);
 // ============= الثوابت =============
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
-const SPIN_COOLDOWN_SECONDS = 300; // 5 دقائق
+const SPIN_COOLDOWN_SECONDS = 300;
+
+// ============= الألعاب الافتراضية =============
+const DEFAULT_GAMES = [
+  { id: "game_1", name: "🎲 لعبة الحظ", description: "اختبر حظك واربح جوائز فورية", icon: "🎲", imageUrl: "", gameUrl: "https://example.com/game1", isActive: true, displayOrder: 1, category: "casual", createdAt: new Date() },
+  { id: "game_2", name: "🎯 الرمية الذهبية", description: "ارمِ السهم واحصل على نقاط", icon: "🎯", imageUrl: "", gameUrl: "https://example.com/game2", isActive: true, displayOrder: 2, category: "skill", createdAt: new Date() },
+  { id: "game_3", name: "🃏 لعبة الورق", description: "ألعاب ورق كلاسيكية ممتعة", icon: "🃏", imageUrl: "", gameUrl: "https://example.com/game3", isActive: true, displayOrder: 3, category: "cards", createdAt: new Date() },
+  { id: "game_4", name: "💎 الكنز المفقود", description: "ابحث عن الكنز واكسب الجوائز", icon: "💎", imageUrl: "", gameUrl: "https://example.com/game4", isActive: true, displayOrder: 4, category: "adventure", createdAt: new Date() },
+  { id: "game_5", name: "⚡ سباق السرعة", description: "تحدي السرعة وردود الأفعال", icon: "⚡", imageUrl: "", gameUrl: "https://example.com/game5", isActive: true, displayOrder: 5, category: "racing", createdAt: new Date() },
+  { id: "game_6", name: "🧩 لغز الأرقام", description: "ألغاز ذهنية تنشط العقل", icon: "🧩", imageUrl: "", gameUrl: "https://example.com/game6", isActive: true, displayOrder: 6, category: "puzzle", createdAt: new Date() },
+  { id: "game_7", name: "🎨 لعبة الذاكرة", description: "اختبر قوة ذاكرتك", icon: "🎨", imageUrl: "", gameUrl: "https://example.com/game7", isActive: true, displayOrder: 7, category: "memory", createdAt: new Date() },
+  { id: "game_8", name: "🤝 لعبة التحدي", description: "تحدى أصدقائك واربح", icon: "🤝", imageUrl: "", gameUrl: "https://example.com/game8", isActive: true, displayOrder: 8, category: "multiplayer", createdAt: new Date() },
+  { id: "game_9", name: "🎪 ألعاب الترفيه", description: "مجموعة متنوعة من الألعاب", icon: "🎪", imageUrl: "", gameUrl: "https://example.com/game9", isActive: true, displayOrder: 9, category: "entertainment", createdAt: new Date() },
+  { id: "game_10", name: "🏆 البطل الخارق", description: "كن البطل واجمع النقاط", icon: "🏆", imageUrl: "", gameUrl: "https://example.com/game10", isActive: true, displayOrder: 10, category: "action", createdAt: new Date() }
+];
 
 // ============= قفل موزع باستخدام Firestore =============
 class DistributedLock {
@@ -121,7 +136,7 @@ class DistributedLock {
   }
 }
 
-// ============= دالة إنشاء كود فريد محسنة =============
+// ============= دالة إنشاء كود فريد =============
 async function generateUniqueReferralCode() {
   for (let attempts = 0; attempts < 15; attempts++) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -129,7 +144,6 @@ async function generateUniqueReferralCode() {
     for (let i = 0; i < 8; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
     const existing = await db.collection('users').where('uniqueId', '==', result).limit(1).get();
     if (existing.empty) return result;
   }
@@ -140,7 +154,6 @@ async function generateUniqueReferralCode() {
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'غير مصرح' });
-  
   try {
     req.user = await admin.auth().verifyIdToken(token);
     next();
@@ -153,7 +166,6 @@ const requireAuth = async (req, res, next) => {
 const requireAdmin = async (req, res, next) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'غير مصرح' });
-  
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     if (decoded.email !== ADMIN_EMAIL) {
@@ -167,17 +179,15 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-// ============= إعدادات النظام مع التخزين المؤقت =============
+// ============= إعدادات النظام =============
 async function getSettings(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = settingsCache.get('settings');
     if (cached) return cached;
   }
-  
   try {
     const doc = await db.collection('settings').doc('config').get();
     let settings;
-    
     if (doc.exists) {
       settings = doc.data();
     } else {
@@ -191,7 +201,6 @@ async function getSettings(forceRefresh = false) {
       };
       await db.collection('settings').doc('config').set(settings);
     }
-    
     settingsCache.set('settings', settings);
     return settings;
   } catch (error) {
@@ -200,29 +209,18 @@ async function getSettings(forceRefresh = false) {
   }
 }
 
-// ============= كلاس شام كاش (محسن) =============
+// ============= كلاسات الدفع =============
 class ShamCashClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
     this.accountAddress = accountAddress;
     this.baseUrl = "https://apisyria.com/api/v1";
   }
-
   async verifyTransaction(txid, expectedAmount = null, expectedCurrency = null) {
-    if (!this.apiKey || !this.accountAddress) {
-      return { success: false, message: "شام كاش غير مفعل" };
-    }
-    
+    if (!this.apiKey || !this.accountAddress) return { success: false, message: "شام كاش غير مفعل" };
     try {
-      const params = {
-        resource: "shamcash",
-        action: "logs",
-        account_address: this.accountAddress,
-        api_key: this.apiKey
-      };
-      
+      const params = { resource: "shamcash", action: "logs", account_address: this.accountAddress, api_key: this.apiKey };
       const response = await axios.get(this.baseUrl, { params, timeout: 15000 });
-      
       if (response.status === 200 && response.data.success) {
         const items = response.data.data?.items || [];
         for (const item of items) {
@@ -230,19 +228,9 @@ class ShamCashClient {
             const apiAmount = parseFloat(item.amount);
             const apiCurrency = item.currency || 'SYP';
             const timestamp = item.created_at || Date.now() / 1000;
-            
-            if ((Date.now() / 1000 - timestamp) > 86400) {
-              return { success: false, message: "العملية أقدم من 24 ساعة" };
-            }
-            
-            if (expectedCurrency && apiCurrency !== expectedCurrency) {
-              return { success: false, message: `نوع العملة غير متطابق: ${apiCurrency}` };
-            }
-            
-            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير متطابق: ${apiAmount}` };
-            }
-            
+            if ((Date.now() / 1000 - timestamp) > 86400) return { success: false, message: "العملية أقدم من 24 ساعة" };
+            if (expectedCurrency && apiCurrency !== expectedCurrency) return { success: false, message: `نوع العملة غير متطابق: ${apiCurrency}` };
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) return { success: false, message: `المبلغ غير متطابق: ${apiAmount}` };
             return { success: true, amount: apiAmount, currency: apiCurrency };
           }
         }
@@ -262,21 +250,11 @@ class ShamCashUsdClient {
     this.accountAddress = accountAddress;
     this.baseUrl = "https://apisyria.com/api/v1";
   }
-
   async verifyTransaction(txid, expectedAmount = null) {
-    if (!this.apiKey || !this.accountAddress) {
-      return { success: false, message: "شام كاش دولار غير مفعل" };
-    }
-    
+    if (!this.apiKey || !this.accountAddress) return { success: false, message: "شام كاش دولار غير مفعل" };
     try {
-      const params = {
-        resource: "shamcash",
-        action: "logs",
-        account_address: this.accountAddress,
-        api_key: this.apiKey
-      };
+      const params = { resource: "shamcash", action: "logs", account_address: this.accountAddress, api_key: this.apiKey };
       const response = await axios.get(this.baseUrl, { params, timeout: 15000 });
-      
       if (response.status === 200 && response.data.success) {
         const items = response.data.data?.items || [];
         for (const item of items) {
@@ -284,19 +262,9 @@ class ShamCashUsdClient {
             const apiAmount = parseFloat(item.amount);
             const apiCurrency = item.currency || 'USD';
             const timestamp = item.created_at || Date.now() / 1000;
-            
-            if ((Date.now() / 1000 - timestamp) > 86400) {
-              return { success: false, message: "العملية أقدم من 24 ساعة" };
-            }
-            
-            if (apiCurrency !== 'USD') {
-              return { success: false, message: `يجب أن تكون العملية بالدولار، وجدت ${apiCurrency}` };
-            }
-            
-            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير متطابق: ${apiAmount} USD` };
-            }
-            
+            if ((Date.now() / 1000 - timestamp) > 86400) return { success: false, message: "العملية أقدم من 24 ساعة" };
+            if (apiCurrency !== 'USD') return { success: false, message: `يجب أن تكون العملية بالدولار، وجدت ${apiCurrency}` };
+            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) return { success: false, message: `المبلغ غير متطابق: ${apiAmount} USD` };
             return { success: true, amount: apiAmount, currency: apiCurrency };
           }
         }
@@ -316,29 +284,16 @@ class SyriatelCashClient {
     this.gsmNumbers = gsmNumbers;
     this.baseUrl = "https://apisyria.com/api/v1";
   }
-
   async verifyTransaction(txid, expectedAmount = null) {
-    if (!this.apiKey || !this.gsmNumbers.length) {
-      return { success: false, message: "سيرياتيل كاش غير مفعل" };
-    }
-    
+    if (!this.apiKey || !this.gsmNumbers.length) return { success: false, message: "سيرياتيل كاش غير مفعل" };
     for (const gsm of this.gsmNumbers) {
       try {
-        const params = {
-          api_key: this.apiKey,
-          resource: "syriatel",
-          action: "find_tx",
-          tx: txid,
-          gsm: gsm
-        };
+        const params = { api_key: this.apiKey, resource: "syriatel", action: "find_tx", tx: txid, gsm: gsm };
         const response = await axios.get(this.baseUrl, { params, timeout: 15000 });
-        
         if (response.status === 200 && response.data.success && response.data.data?.found) {
           const transaction = response.data.data.transaction || {};
           const apiAmount = parseFloat(transaction.amount || 0);
-          if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-            return { success: false, message: "المبلغ غير متطابق" };
-          }
+          if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) return { success: false, message: "المبلغ غير متطابق" };
           return { success: true, amount: apiAmount, currency: "SYP" };
         }
       } catch (error) {
@@ -364,39 +319,165 @@ const WHEEL_SECTORS = [
 function getRandomSector() {
   const random = Math.random() * 100;
   let cumulative = 0;
-  
   for (const sector of WHEEL_SECTORS) {
     cumulative += sector.probability;
-    if (random < cumulative) {
-      return sector;
-    }
+    if (random < cumulative) return sector;
   }
   return WHEEL_SECTORS[0];
 }
 
-// ============= API عجلة الحظ (مع Transaction وقفل) =============
+// ============= APIs الألعاب =============
+app.get('/api/user/games', requireAuth, async (req, res) => {
+  try {
+    let games = gamesCache.get('all_games');
+    if (!games) {
+      const gamesSnapshot = await db.collection('games').orderBy('displayOrder').get();
+      if (gamesSnapshot.empty) {
+        const batch = db.batch();
+        for (const game of DEFAULT_GAMES) {
+          batch.set(db.collection('games').doc(game.id), game);
+        }
+        await batch.commit();
+        games = DEFAULT_GAMES;
+      } else {
+        games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+      gamesCache.set('all_games', games, 300);
+    }
+    const activeGames = games.filter(game => game.isActive === true);
+    res.json({ success: true, games: activeGames, totalGames: games.length, activeGames: activeGames.length });
+  } catch (error) {
+    console.error('Error fetching games:', error);
+    res.status(500).json({ error: 'حدث خطأ في جلب الألعاب' });
+  }
+});
+
+app.get('/api/user/game/:gameId', requireAuth, async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const gameDoc = await db.collection('games').doc(gameId).get();
+    if (!gameDoc.exists) return res.status(404).json({ error: 'اللعبة غير موجودة' });
+    const game = { id: gameDoc.id, ...gameDoc.data() };
+    if (!game.isActive) return res.status(403).json({ error: 'هذه اللعبة غير متاحة حالياً' });
+    await db.collection('game_logs').add({ userId: req.user.uid, gameId: gameId, gameName: game.name, timestamp: new Date(), action: 'play' });
+    res.json({ success: true, game: game, gameUrl: game.gameUrl });
+  } catch (error) {
+    console.error('Error fetching game:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/user/games-stats', requireAuth, async (req, res) => {
+  try {
+    const logsSnapshot = await db.collection('game_logs').where('userId', '==', req.user.uid).orderBy('timestamp', 'desc').limit(100).get();
+    const gamePlays = {};
+    logsSnapshot.forEach(doc => {
+      const log = doc.data();
+      if (!gamePlays[log.gameId]) gamePlays[log.gameId] = { gameName: log.gameName, plays: 0, lastPlay: log.timestamp };
+      gamePlays[log.gameId].plays++;
+    });
+    res.json({ success: true, stats: Object.values(gamePlays), totalPlays: logsSnapshot.size });
+  } catch (error) {
+    console.error('Error fetching game stats:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// ============= APIs الأدمن للألعاب =============
+app.get('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const gamesSnapshot = await db.collection('games').orderBy('displayOrder').get();
+    let games = [];
+    if (gamesSnapshot.empty) {
+      const batch = db.batch();
+      for (const game of DEFAULT_GAMES) {
+        batch.set(db.collection('games').doc(game.id), game);
+        games.push(game);
+      }
+      await batch.commit();
+    } else {
+      games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+    res.json({ success: true, games: games });
+  } catch (error) {
+    console.error('Error fetching admin games:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/update-game', requireAdmin, async (req, res) => {
+  try {
+    const { gameId, name, description, icon, imageUrl, gameUrl, isActive, displayOrder, category } = req.body;
+    if (!gameId) return res.status(400).json({ error: 'معرف اللعبة مطلوب' });
+    const gameRef = db.collection('games').doc(gameId);
+    const gameDoc = await gameRef.get();
+    if (!gameDoc.exists) return res.status(404).json({ error: 'اللعبة غير موجودة' });
+    const updates = { updatedAt: new Date() };
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (icon !== undefined) updates.icon = icon;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+    if (gameUrl !== undefined) updates.gameUrl = gameUrl;
+    if (isActive !== undefined) updates.isActive = isActive;
+    if (displayOrder !== undefined) updates.displayOrder = displayOrder;
+    if (category !== undefined) updates.category = category;
+    await gameRef.update(updates);
+    gamesCache.del('all_games');
+    res.json({ success: true, message: 'تم تحديث اللعبة بنجاح' });
+  } catch (error) {
+    console.error('Error updating game:', error);
+    res.status(500).json({ error: 'حدث خطأ في تحديث اللعبة' });
+  }
+});
+
+app.post('/api/admin/add-game', requireAdmin, async (req, res) => {
+  try {
+    const { name, description, icon, imageUrl, gameUrl, displayOrder, category } = req.body;
+    if (!name || !gameUrl) return res.status(400).json({ error: 'اسم اللعبة ورابط اللعبة مطلوبان' });
+    const gameId = `game_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const newGame = {
+      id: gameId, name, description: description || '', icon: icon || '🎮', imageUrl: imageUrl || '',
+      gameUrl, isActive: true, displayOrder: displayOrder || 999, category: category || 'general',
+      createdAt: new Date(), updatedAt: new Date()
+    };
+    await db.collection('games').doc(gameId).set(newGame);
+    gamesCache.del('all_games');
+    res.json({ success: true, message: 'تم إضافة اللعبة بنجاح', game: newGame });
+  } catch (error) {
+    console.error('Error adding game:', error);
+    res.status(500).json({ error: 'حدث خطأ في إضافة اللعبة' });
+  }
+});
+
+app.post('/api/admin/delete-game', requireAdmin, async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    if (!gameId) return res.status(400).json({ error: 'معرف اللعبة مطلوب' });
+    await db.collection('games').doc(gameId).delete();
+    gamesCache.del('all_games');
+    res.json({ success: true, message: 'تم حذف اللعبة بنجاح' });
+  } catch (error) {
+    console.error('Error deleting game:', error);
+    res.status(500).json({ error: 'حدث خطأ في حذف اللعبة' });
+  }
+});
+
+// ============= API عجلة الحظ =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
-    
-    // محاولة جلب من الكاش أولاً
     let userData = userCache.get(`user_${uid}`);
     if (!userData) {
       const userDoc = await db.collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        return res.status(404).json({ error: 'مستخدم غير موجود' });
-      }
+      if (!userDoc.exists) return res.status(404).json({ error: 'مستخدم غير موجود' });
       userData = userDoc.data();
       userCache.set(`user_${uid}`, userData);
     }
-    
     const settings = await getSettings();
-    
     const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
     const now = new Date();
     let canSpin = true;
     let remainingSeconds = 0;
-    
     if (lastSpin) {
       const timeDiff = (now - lastSpin) / 1000;
       if (timeDiff < SPIN_COOLDOWN_SECONDS) {
@@ -404,15 +485,7 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
         remainingSeconds = Math.ceil(SPIN_COOLDOWN_SECONDS - timeDiff);
       }
     }
-    
-    res.json({
-      success: true,
-      canSpin: canSpin,
-      remainingSeconds: remainingSeconds,
-      spinCost: settings.wheelSpinCost || 50,
-      referralBalance: userData.referralBalance || 0,
-      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
-    });
+    res.json({ success: true, canSpin: canSpin, remainingSeconds: remainingSeconds, spinCost: settings.wheelSpinCost || 50, referralBalance: userData.referralBalance || 0, hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50) });
   } catch (error) {
     console.error('Wheel status error:', error);
     res.status(500).json({ error: 'حدث خطأ' });
@@ -422,29 +495,17 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
 app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
   const { uid } = req.user;
   const lock = new DistributedLock(`spin:${uid}`, 20);
-  
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'لديك طلب تدوير قيد التنفيذ، انتظر قليلاً' });
-  }
-  
+  if (!await lock.acquire()) return res.status(429).json({ error: 'لديك طلب تدوير قيد التنفيذ، انتظر قليلاً' });
   try {
     const settings = await getSettings();
     const spinCost = settings.wheelSpinCost || 50;
-    
     const result = await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(uid);
       const userDoc = await t.get(userRef);
-      
-      if (!userDoc.exists) {
-        throw new Error('مستخدم غير موجود');
-      }
-      
+      if (!userDoc.exists) throw new Error('مستخدم غير موجود');
       const userData = userDoc.data();
-      
-      // التحقق من آخر تدوير
       const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
       const now = new Date();
-      
       if (lastSpin) {
         const timeDiff = (now - lastSpin) / 1000;
         if (timeDiff < SPIN_COOLDOWN_SECONDS) {
@@ -452,24 +513,11 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
           throw new Error(`يجب الانتظار ${Math.floor(remainingSeconds / 60)} دقيقة و ${remainingSeconds % 60} ثانية`);
         }
       }
-      
-      // التحقق من الرصيد
-      if ((userData.referralBalance || 0) < spinCost) {
-        throw new Error(`رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير`);
-      }
-      
-      // اختيار الجائزة
+      if ((userData.referralBalance || 0) < spinCost) throw new Error(`رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير`);
       const selectedSector = getRandomSector();
       let prizeAmount = 0;
       let prizeMessage = '';
-      
-      // تحديث البيانات
-      const updates = {
-        referralBalance: admin.firestore.FieldValue.increment(-spinCost),
-        lastSpinTime: new Date(),
-        totalSpins: admin.firestore.FieldValue.increment(1)
-      };
-      
+      const updates = { referralBalance: admin.firestore.FieldValue.increment(-spinCost), lastSpinTime: new Date(), totalSpins: admin.firestore.FieldValue.increment(1) };
       if (selectedSector.type === 'balance') {
         prizeAmount = selectedSector.value;
         prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP! تم إضافتها إلى رصيدك الأساسي`;
@@ -478,37 +526,11 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       } else {
         prizeMessage = `😅 حظ أوفر! خسرت ${spinCost} SYP من رصيد الإحالات.`;
       }
-      
       t.update(userRef, updates);
-      
-      // تسجيل التدويرة
-      const spinRef = db.collection('wheel_spins').doc();
-      t.set(spinRef, {
-        userId: uid,
-        sector: selectedSector.id,
-        sectorName: selectedSector.name,
-        prizeAmount: prizeAmount,
-        prizeType: selectedSector.type,
-        spinCost: spinCost,
-        timestamp: new Date(),
-        userEmail: userData.email,
-        userName: userData.name
-      });
-      
-      // إبطال الكاش
+      await db.collection('wheel_spins').add({ userId: uid, sector: selectedSector.id, sectorName: selectedSector.name, prizeAmount: prizeAmount, prizeType: selectedSector.type, spinCost: spinCost, timestamp: new Date(), userEmail: userData.email, userName: userData.name });
       userCache.del(`user_${uid}`);
-      
-      return {
-        success: true,
-        sector: selectedSector.id,
-        sectorName: selectedSector.name,
-        prizeAmount: prizeAmount,
-        prizeType: selectedSector.type,
-        message: prizeMessage,
-        spinCost: spinCost
-      };
+      return { success: true, sector: selectedSector.id, sectorName: selectedSector.name, prizeAmount: prizeAmount, prizeType: selectedSector.type, message: prizeMessage, spinCost: spinCost };
     });
-    
     res.json(result);
   } catch (error) {
     console.error('Spin wheel error:', error);
@@ -518,39 +540,20 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
   }
 });
 
-// ============= عمولة الإحالة (غير متزامنة) =============
+// ============= عمولة الإحالة =============
 async function addReferralCommission(userId, depositAmount) {
-  // تشغيل بشكل غير متزامن بدون await
   setImmediate(async () => {
     try {
       const userDoc = await db.collection('users').doc(userId).get();
       const userData = userDoc.data();
-      
       if (userData && userData.referredBy) {
         const settings = await getSettings();
         const commissionPercent = settings.referralCommission || 5;
         const commissionAmount = (depositAmount * commissionPercent) / 100;
-        
         if (commissionAmount > 0) {
-          const referrerRef = db.collection('users').doc(userData.referredBy);
-          
-          await referrerRef.update({
-            referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
-            referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
-          });
-          
-          await db.collection('referral_commissions').add({
-            userId: userData.referredBy,
-            fromUserId: userId,
-            amount: commissionAmount,
-            depositAmount: depositAmount,
-            percent: commissionPercent,
-            createdAt: new Date()
-          });
-          
-          // إبطال الكاش للمُحيل
+          await db.collection('users').doc(userData.referredBy).update({ referralBalance: admin.firestore.FieldValue.increment(commissionAmount), referralEarnings: admin.firestore.FieldValue.increment(commissionAmount) });
+          await db.collection('referral_commissions').add({ userId: userData.referredBy, fromUserId: userId, amount: commissionAmount, depositAmount: depositAmount, percent: commissionPercent, createdAt: new Date() });
           userCache.del(`user_${userData.referredBy}`);
-          
           console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
         }
       }
@@ -560,122 +563,52 @@ async function addReferralCommission(userId, depositAmount) {
   });
 }
 
-// ============= API الإيداع (مع Transaction) =============
+// ============= API الإيداع =============
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
   const { uid } = req.user;
   const { method, amount, transactionId } = req.body;
-  
-  if (!method || !amount || !transactionId) {
-    return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
-  }
-  
+  if (!method || !amount || !transactionId) return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
   const amountNum = Number(amount);
-  if (isNaN(amountNum) || amountNum <= 0) {
-    return res.status(400).json({ error: 'المبلغ غير صالح' });
-  }
-  
-  // قفل باستخدام transactionId لمنع التكرار
+  if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'المبلغ غير صالح' });
   const lock = new DistributedLock(`deposit:${transactionId}`, 60);
-  if (!await lock.acquire()) {
-    return res.status(409).json({ error: 'تم معالجة رقم العملية هذا مسبقاً' });
-  }
-  
+  if (!await lock.acquire()) return res.status(409).json({ error: 'تم معالجة رقم العملية هذا مسبقاً' });
   try {
     const settings = await getSettings();
     let verification = null;
     let finalAmountSYP = amountNum;
     let originalCurrency = 'SYP';
     let originalAmount = amountNum;
-    
-    // التحقق من العملية حسب الطريقة
     if (method === 'sham_cash') {
-      if (!settings.shamCashEnabled || !settings.shamCashApiKey || !settings.shamCashPrivateAddress) {
-        return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
-      }
+      if (!settings.shamCashEnabled || !settings.shamCashApiKey || !settings.shamCashPrivateAddress) return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
       const client = new ShamCashClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
       verification = await client.verifyTransaction(transactionId, amountNum, 'SYP');
-      
-      if (verification.success) {
-        originalAmount = verification.amount;
-        originalCurrency = verification.currency;
-        finalAmountSYP = originalAmount;
-      }
+      if (verification.success) { originalAmount = verification.amount; originalCurrency = verification.currency; finalAmountSYP = originalAmount; }
     } else if (method === 'sham_cash_usd') {
-      if (!settings.shamCashUsdEnabled || !settings.shamCashUsdApiKey || !settings.shamCashUsdPrivateAddress) {
-        return res.status(400).json({ error: 'طريقة الدفع شام كاش دولار غير مفعلة' });
-      }
+      if (!settings.shamCashUsdEnabled || !settings.shamCashUsdApiKey || !settings.shamCashUsdPrivateAddress) return res.status(400).json({ error: 'طريقة الدفع شام كاش دولار غير مفعلة' });
       const client = new ShamCashUsdClient(settings.shamCashUsdApiKey, settings.shamCashUsdPrivateAddress);
       verification = await client.verifyTransaction(transactionId, amountNum);
-      
-      if (verification.success) {
-        originalAmount = verification.amount;
-        originalCurrency = verification.currency;
-        finalAmountSYP = originalAmount * (settings.usdToSypRate || 13000);
-      }
+      if (verification.success) { originalAmount = verification.amount; originalCurrency = verification.currency; finalAmountSYP = originalAmount * (settings.usdToSypRate || 13000); }
     } else if (method === 'syriatel_cash') {
-      if (!settings.syriatelEnabled || !settings.syriatelApiKey || !settings.syriatelPrivateAddress) {
-        return res.status(400).json({ error: 'طريقة الدفع سيرياتيل كاش غير مفعلة' });
-      }
+      if (!settings.syriatelEnabled || !settings.syriatelApiKey || !settings.syriatelPrivateAddress) return res.status(400).json({ error: 'طريقة الدفع سيرياتيل كاش غير مفعلة' });
       const client = new SyriatelCashClient(settings.syriatelApiKey, [settings.syriatelPrivateAddress]);
       verification = await client.verifyTransaction(transactionId, amountNum);
-      
-      if (verification.success) {
-        originalAmount = verification.amount;
-        originalCurrency = verification.currency || 'SYP';
-        finalAmountSYP = originalAmount;
-      }
+      if (verification.success) { originalAmount = verification.amount; originalCurrency = verification.currency || 'SYP'; finalAmountSYP = originalAmount; }
     } else {
       return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
     }
-    
-    if (!verification || !verification.success) {
-      return res.status(400).json({ error: verification?.message || 'فشل التحقق' });
-    }
-    
-    if (finalAmountSYP < settings.minDeposit) {
-      return res.status(400).json({ error: `الحد الأدنى ${settings.minDeposit.toLocaleString()} SYP` });
-    }
-    
-    // تنفيذ الإيداع باستخدام Transaction
+    if (!verification || !verification.success) return res.status(400).json({ error: verification?.message || 'فشل التحقق' });
+    if (finalAmountSYP < settings.minDeposit) return res.status(400).json({ error: `الحد الأدنى ${settings.minDeposit.toLocaleString()} SYP` });
     await db.runTransaction(async (t) => {
-      // التحقق من عدم تكرار رقم العملية
       const existingQuery = await t.get(db.collection('deposits').where('transactionId', '==', transactionId).limit(1));
-      if (!existingQuery.empty) {
-        throw new Error('تم استخدام رقم العملية مسبقاً');
-      }
-      
+      if (!existingQuery.empty) throw new Error('تم استخدام رقم العملية مسبقاً');
       const userRef = db.collection('users').doc(uid);
       const userDoc = await t.get(userRef);
-      
-      if (!userDoc.exists) {
-        throw new Error('مستخدم غير موجود');
-      }
-      
-      t.update(userRef, {
-        balance: admin.firestore.FieldValue.increment(finalAmountSYP),
-        totalDeposited: admin.firestore.FieldValue.increment(finalAmountSYP)
-      });
-      
-      const depositRef = db.collection('deposits').doc();
-      t.set(depositRef, {
-        userId: uid,
-        method: method,
-        amount: finalAmountSYP,
-        originalAmount: originalAmount,
-        originalCurrency: originalCurrency,
-        transactionId: transactionId,
-        status: 'completed',
-        verifiedAt: new Date(),
-        exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
-      });
+      if (!userDoc.exists) throw new Error('مستخدم غير موجود');
+      t.update(userRef, { balance: admin.firestore.FieldValue.increment(finalAmountSYP), totalDeposited: admin.firestore.FieldValue.increment(finalAmountSYP) });
+      await db.collection('deposits').add({ userId: uid, method: method, amount: finalAmountSYP, originalAmount: originalAmount, originalCurrency: originalCurrency, transactionId: transactionId, status: 'completed', verifiedAt: new Date(), exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null });
     });
-    
-    // إبطال الكاش
     userCache.del(`user_${uid}`);
-    
-    // إضافة العمولة في الخلفية
     await addReferralCommission(uid, finalAmountSYP);
-    
     res.json({ success: true, message: `تم إيداع ${finalAmountSYP.toLocaleString()} SYP` });
   } catch (error) {
     console.error('Deposit error:', error);
@@ -685,71 +618,29 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API السحب (مع Transaction) =============
+// ============= API السحب =============
 app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   const { uid } = req.user;
   const { amount, address, method } = req.body;
-  
-  if (!amount || !address) {
-    return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
-  }
-  
+  if (!amount || !address) return res.status(400).json({ error: 'المبلغ والعنوان مطلوبان' });
   const amountNum = Number(amount);
-  if (isNaN(amountNum) || amountNum <= 0) {
-    return res.status(400).json({ error: 'المبلغ غير صالح' });
-  }
-  
+  if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'المبلغ غير صالح' });
   const lock = new DistributedLock(`withdraw:${uid}`, 30);
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'لديك طلب سحب قيد التنفيذ، انتظر قليلاً' });
-  }
-  
+  if (!await lock.acquire()) return res.status(429).json({ error: 'لديك طلب سحب قيد التنفيذ، انتظر قليلاً' });
   try {
     const settings = await getSettings();
-    
-    if (amountNum < settings.minWithdraw) {
-      return res.status(400).json({ error: `الحد الأدنى ${settings.minWithdraw.toLocaleString()} SYP` });
-    }
-    
+    if (amountNum < settings.minWithdraw) return res.status(400).json({ error: `الحد الأدنى ${settings.minWithdraw.toLocaleString()} SYP` });
     await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(uid);
       const userDoc = await t.get(userRef);
-      
-      if (!userDoc.exists) {
-        throw new Error('مستخدم غير موجود');
-      }
-      
+      if (!userDoc.exists) throw new Error('مستخدم غير موجود');
       const userData = userDoc.data();
-      
-      if (userData.isBanned) {
-        throw new Error('حسابك محظور');
-      }
-      
-      if ((userData.balance || 0) < amountNum) {
-        throw new Error(`الرصيد غير كافٍ. رصيدك: ${(userData.balance || 0).toLocaleString()} SYP`);
-      }
-      
-      t.update(userRef, {
-        balance: admin.firestore.FieldValue.increment(-amountNum),
-        totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
-      });
-      
-      const requestRef = db.collection('withdraw_requests').doc();
-      t.set(requestRef, {
-        userId: uid,
-        userEmail: userData.email,
-        userName: userData.name,
-        amount: amountNum,
-        address: address,
-        method: method || 'sham_cash',
-        status: 'pending',
-        createdAt: new Date()
-      });
+      if (userData.isBanned) throw new Error('حسابك محظور');
+      if ((userData.balance || 0) < amountNum) throw new Error(`الرصيد غير كافٍ. رصيدك: ${(userData.balance || 0).toLocaleString()} SYP`);
+      t.update(userRef, { balance: admin.firestore.FieldValue.increment(-amountNum), totalWithdrawn: admin.firestore.FieldValue.increment(amountNum) });
+      await db.collection('withdraw_requests').add({ userId: uid, userEmail: userData.email, userName: userData.name, amount: amountNum, address: address, method: method || 'sham_cash', status: 'pending', createdAt: new Date() });
     });
-    
-    // إبطال الكاش
     userCache.del(`user_${uid}`);
-    
     res.json({ success: true, message: `تم إنشاء طلب سحب بمبلغ ${amountNum.toLocaleString()} SYP` });
   } catch (error) {
     console.error('Withdraw error:', error);
@@ -759,21 +650,17 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   }
 });
 
-// ============= باقي APIs (محسنة مع الكاش) =============
+// ============= باقي APIs =============
 app.get('/api/user/profile', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
-    
     let userData = userCache.get(`user_${uid}`);
     if (!userData) {
       const userDoc = await db.collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        return res.status(404).json({ error: 'مستخدم غير موجود' });
-      }
+      if (!userDoc.exists) return res.status(404).json({ error: 'مستخدم غير موجود' });
       userData = userDoc.data();
       userCache.set(`user_${uid}`, userData);
     }
-    
     res.json({ success: true, user: userData, isAdmin: req.user.email === ADMIN_EMAIL });
   } catch (error) {
     console.error('Profile error:', error);
@@ -785,217 +672,83 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSettings();
     const methods = [];
-    
-    if (settings.shamCashEnabled && settings.shamCashPublicAddress) {
-      methods.push({
-        id: 'sham_cash',
-        name: 'شام كاش',
-        address: settings.shamCashPublicAddress,
-        currency: 'SYP',
-        icon: '🏦'
-      });
-    }
-    
-    if (settings.shamCashUsdEnabled && settings.shamCashUsdPublicAddress) {
-      methods.push({
-        id: 'sham_cash_usd',
-        name: 'شام كاش (دولار)',
-        address: settings.shamCashUsdPublicAddress,
-        currency: 'USD',
-        exchangeRate: settings.usdToSypRate || 13000,
-        icon: '💵'
-      });
-    }
-    
-    if (settings.syriatelEnabled && settings.syriatelPublicAddress) {
-      methods.push({
-        id: 'syriatel_cash',
-        name: 'سيرياتيل كاش',
-        address: settings.syriatelPublicAddress,
-        currency: 'SYP',
-        icon: '📱'
-      });
-    }
-    
-    res.json({
-      success: true,
-      settings: {
-        minDeposit: settings.minDeposit,
-        minWithdraw: settings.minWithdraw,
-        methods: methods,
-        gameImageUrl: settings.gameImageUrl || '',
-        usdToSypRate: settings.usdToSypRate || 13000,
-        referralCommission: settings.referralCommission || 5,
-        siteTheme: settings.siteTheme || 'red',
-        wheelSpinCost: settings.wheelSpinCost || 50
-      }
-    });
+    if (settings.shamCashEnabled && settings.shamCashPublicAddress) methods.push({ id: 'sham_cash', name: 'شام كاش', address: settings.shamCashPublicAddress, currency: 'SYP', icon: '🏦' });
+    if (settings.shamCashUsdEnabled && settings.shamCashUsdPublicAddress) methods.push({ id: 'sham_cash_usd', name: 'شام كاش (دولار)', address: settings.shamCashUsdPublicAddress, currency: 'USD', exchangeRate: settings.usdToSypRate || 13000, icon: '💵' });
+    if (settings.syriatelEnabled && settings.syriatelPublicAddress) methods.push({ id: 'syriatel_cash', name: 'سيرياتيل كاش', address: settings.syriatelPublicAddress, currency: 'SYP', icon: '📱' });
+    res.json({ success: true, settings: { minDeposit: settings.minDeposit, minWithdraw: settings.minWithdraw, methods: methods, gameImageUrl: settings.gameImageUrl || '', usdToSypRate: settings.usdToSypRate || 13000, referralCommission: settings.referralCommission || 5, siteTheme: settings.siteTheme || 'red', wheelSpinCost: settings.wheelSpinCost || 50 } });
   } catch (error) {
     console.error('Deposit settings error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإعدادات' });
   }
 });
 
-// ============= باقي APIs (مختصرة للاختصار - نفس الأصل مع تحسينات) =============
 app.get('/api/user/stats', requireAuth, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
+    if (!userDoc.exists) return res.status(404).json({ error: 'مستخدم غير موجود' });
     const data = userDoc.data();
-    
     let referrerInfo = null;
     if (data.referredBy) {
       const referrerDoc = await db.collection('users').doc(data.referredBy).get();
-      if (referrerDoc.exists) {
-        referrerInfo = {
-          name: referrerDoc.data().name,
-          uniqueId: referrerDoc.data().uniqueId
-        };
-      }
+      if (referrerDoc.exists) referrerInfo = { name: referrerDoc.data().name, uniqueId: referrerDoc.data().uniqueId };
     }
-    
     const settings = await getSettings();
-    
-    res.json({
-      success: true,
-      stats: {
-        referralCount: data.referrals?.length || 0,
-        referralEarnings: data.referralEarnings || 0,
-        referralBalance: data.referralBalance || 0,
-        balance: data.balance || 0,
-        totalDeposited: data.totalDeposited || 0,
-        totalWithdrawn: data.totalWithdrawn || 0,
-        uniqueId: data.uniqueId,
-        joinDate: data.createdAt,
-        referredBy: data.referredBy,
-        referredByName: data.referredByName,
-        referrerInfo: referrerInfo,
-        siteTheme: settings.siteTheme || 'red',
-        totalSpins: data.totalSpins || 0,
-        totalWinnings: data.totalWinnings || 0
-      }
-    });
+    res.json({ success: true, stats: { referralCount: data.referrals?.length || 0, referralEarnings: data.referralEarnings || 0, referralBalance: data.referralBalance || 0, balance: data.balance || 0, totalDeposited: data.totalDeposited || 0, totalWithdrawn: data.totalWithdrawn || 0, uniqueId: data.uniqueId, joinDate: data.createdAt, referredBy: data.referredBy, referredByName: data.referredByName, referrerInfo: referrerInfo, siteTheme: settings.siteTheme || 'red', totalSpins: data.totalSpins || 0, totalWinnings: data.totalWinnings || 0 } });
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
 
-// ============= التسجيل =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
   try {
     const { uid, email, name } = req.user;
     const { referrerId } = req.body;
-    
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
-    
-    if (userDoc.exists) {
-      return res.json({ success: true, user: userDoc.data(), isAdmin: email === ADMIN_EMAIL });
-    }
-    
+    if (userDoc.exists) return res.json({ success: true, user: userDoc.data(), isAdmin: email === ADMIN_EMAIL });
     const uniqueId = await generateUniqueReferralCode();
-    
     let referredBy = null;
     let referrerName = null;
-    
     if (referrerId) {
       const refQuery = await db.collection('users').where('uniqueId', '==', referrerId).limit(1).get();
       if (!refQuery.empty) {
         referredBy = refQuery.docs[0].id;
         referrerName = refQuery.docs[0].data().name;
-        await refQuery.docs[0].ref.update({
-          referralBalance: admin.firestore.FieldValue.increment(5),
-          referralEarnings: admin.firestore.FieldValue.increment(5),
-          referrals: admin.firestore.FieldValue.arrayUnion(uid)
-        });
+        await refQuery.docs[0].ref.update({ referralBalance: admin.firestore.FieldValue.increment(5), referralEarnings: admin.firestore.FieldValue.increment(5), referrals: admin.firestore.FieldValue.arrayUnion(uid) });
         userCache.del(`user_${referredBy}`);
       }
     }
-    
-    const newUser = {
-      uniqueId: uniqueId,
-      email,
-      name: name || email.split('@')[0],
-      balance: 0,
-      referralBalance: 0,
-      totalDeposited: 0,
-      totalWithdrawn: 0,
-      referralEarnings: 0,
-      referredBy: referredBy,
-      referredByName: referrerName,
-      referrals: [],
-      createdAt: new Date(),
-      isBanned: false,
-      lastLogin: new Date(),
-      lastSpinTime: null,
-      totalSpins: 0,
-      totalWinnings: 0
-    };
-    
+    const newUser = { uniqueId, email, name: name || email.split('@')[0], balance: 0, referralBalance: 0, totalDeposited: 0, totalWithdrawn: 0, referralEarnings: 0, referredBy, referredByName: referrerName, referrals: [], createdAt: new Date(), isBanned: false, lastLogin: new Date(), lastSpinTime: null, totalSpins: 0, totalWinnings: 0 };
     await userRef.set(newUser);
     res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
-    
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ error: 'خطأ في التسجيل' });
   }
 });
 
-// ============= إضافة كود إحالة =============
 app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
     const { referrerCode } = req.body;
-    
-    if (!referrerCode) {
-      return res.status(400).json({ error: 'كود الإحالة مطلوب' });
-    }
-    
+    if (!referrerCode) return res.status(400).json({ error: 'كود الإحالة مطلوب' });
     const lock = new DistributedLock(`referrer:${uid}`, 30);
-    if (!await lock.acquire()) {
-      return res.status(429).json({ error: 'لديك طلب قيد التنفيذ، انتظر' });
-    }
-    
+    if (!await lock.acquire()) return res.status(429).json({ error: 'لديك طلب قيد التنفيذ، انتظر' });
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
-    
-    if (userData.referredBy) {
-      return res.status(400).json({ error: 'لديك محيل بالفعل' });
-    }
-    
+    if (userData.referredBy) return res.status(400).json({ error: 'لديك محيل بالفعل' });
     const referrerQuery = await db.collection('users').where('uniqueId', '==', referrerCode).limit(1).get();
-    if (referrerQuery.empty) {
-      return res.status(404).json({ error: 'كود الإحالة غير صحيح' });
-    }
-    
+    if (referrerQuery.empty) return res.status(404).json({ error: 'كود الإحالة غير صحيح' });
     const referrerDoc = referrerQuery.docs[0];
     const referrerId = referrerDoc.id;
-    
-    if (referrerId === uid) {
-      return res.status(400).json({ error: 'لا يمكنك إحالة نفسك' });
-    }
-    
-    await userRef.update({
-      referredBy: referrerId,
-      referredByName: referrerDoc.data().name
-    });
-    
-    await referrerDoc.ref.update({
-      referralBalance: admin.firestore.FieldValue.increment(5),
-      referralEarnings: admin.firestore.FieldValue.increment(5),
-      referrals: admin.firestore.FieldValue.arrayUnion(uid)
-    });
-    
-    // إبطال الكاش
+    if (referrerId === uid) return res.status(400).json({ error: 'لا يمكنك إحالة نفسك' });
+    await userRef.update({ referredBy: referrerId, referredByName: referrerDoc.data().name });
+    await referrerDoc.ref.update({ referralBalance: admin.firestore.FieldValue.increment(5), referralEarnings: admin.firestore.FieldValue.increment(5), referrals: admin.firestore.FieldValue.arrayUnion(uid) });
     userCache.del(`user_${uid}`);
     userCache.del(`user_${referrerId}`);
-    
     res.json({ success: true, message: `تم إضافة المحيل: ${referrerDoc.data().name}` });
-    
   } catch (error) {
     console.error('Add referrer error:', error);
     res.status(500).json({ error: 'حدث خطأ' });
@@ -1008,10 +761,10 @@ const server = app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
+  console.log(`🎮 Games system ready with up to 10 games`);
   console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
 });
 
-// Graceful Shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, closing server gracefully...');
   server.close(() => {
