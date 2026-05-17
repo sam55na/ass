@@ -203,14 +203,14 @@ async function getSettings(forceRefresh = false) {
 
 // ============= إعدادات العجلة المحملة من قاعدة البيانات =============
 let WHEEL_SECTORS = [
-  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 35, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
-  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 12, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 10, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 5, name: '50 SYP', type: 'balance', value: 50, probability: 8, color: '#00CC44', gradientFrom: '#00CC44', gradientTo: '#009933' },
-  { id: 6, name: 'حظ أوفر', type: 'luck', value: 0, probability: 12, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
-  { id: 7, name: '15 SYP', type: 'balance', value: 15, probability: 5, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 8, name: '25 SYP', type: 'balance', value: 25, probability: 3, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' }
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 1, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
+  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 5, name: '50 SYP', type: 'balance', value: 50, probability: 20, color: '#00CC44', gradientFrom: '#00CC44', gradientTo: '#009933' },
+  { id: 6, name: 'حظ أوفر', type: 'luck', value: 0, probability: 1, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
+  { id: 7, name: '15 SYP', type: 'balance', value: 15, probability: 8, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 8, name: '25 SYP', type: 'balance', value: 25, probability: 10, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' }
 ];
 
 // تحميل إعدادات العجلة من قاعدة البيانات
