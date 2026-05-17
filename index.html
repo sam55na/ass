@@ -32,10 +32,10 @@
             --gold-dark: #B8860B;
             --blue-shiny: #1E90FF;
             --blue-shiny-dark: #0066CC;
-            --radius: 12px;
-            --radius-lg: 20px;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-            --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+            --radius: 6px;
+            --radius-lg: 10px;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+            --shadow-lg: 0 4px 15px rgba(0,0,0,0.4);
             --transition: all 0.2s ease;
         }
         
@@ -55,24 +55,23 @@
             background: var(--background);
             color: var(--text);
             min-height: 100vh;
-            padding: 12px;
+            padding: 8px;
             transition: var(--transition);
         }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes goldenGlow { 0%, 100% { opacity: 0.5; filter: blur(10px); } 50% { opacity: 0.8; filter: blur(15px); } }
         @keyframes centerPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); } 50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 1); } }
         @keyframes btnGlow { 0% { box-shadow: 0 0 2px var(--primary); } 50% { box-shadow: 0 0 12px var(--primary), 0 0 5px var(--primary-light); } 100% { box-shadow: 0 0 2px var(--primary); } }
         @keyframes fanOpen { 0% { transform: scale(0) rotate(-180deg); opacity: 0; } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
-        @keyframes fanClose { 0% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(0) rotate(180deg); opacity: 0; } }
         
         .animate-fade { animation: fadeIn 0.5s ease; }
         .animate-pulse { animation: pulse 2s infinite; }
@@ -83,54 +82,56 @@
             position: fixed; inset: 0;
             background: var(--background);
             display: flex; justify-content: center; align-items: center;
-            z-index: 10000; flex-direction: column; gap: 20px;
+            z-index: 10000; flex-direction: column; gap: 12px;
         }
-        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,51,51,0.2);
-            border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .spinner { width: 28px; height: 28px; border: 2px solid rgba(255,51,51,0.2);
+            border-top: 2px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         
         .btn-loading { pointer-events: none; opacity: 0.7; position: relative; }
         .btn-loading .btn-text { visibility: hidden; }
         .btn-loading::after {
-            content: ""; position: absolute; width: 18px; height: 18px;
+            content: ""; position: absolute; width: 12px; height: 12px;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
             border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white;
             border-radius: 50%; animation: spin 0.6s linear infinite;
         }
 
-        .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 16px; }
-        .admin-container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+        .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 10px; }
+        .admin-container { max-width: 1400px; margin: 0 auto; padding: 10px; }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; gap: 12px; flex-wrap: wrap; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; gap: 8px; flex-wrap: wrap; }
         .avatar-btn {
-            width: 48px; height: 48px; background: linear-gradient(145deg, var(--surface-light), var(--surface));
+            width: 34px; height: 34px;
+            background: linear-gradient(145deg, var(--surface-light), var(--surface));
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: var(--transition); border: 1px solid var(--primary);
             box-shadow: var(--shadow);
+            font-size: 16px;
         }
-        .avatar-btn:hover { transform: scale(1.05); border-color: var(--primary-light); box-shadow: 0 0 12px var(--primary); }
+        .avatar-btn:hover { transform: scale(1.03); border-color: var(--primary-light); box-shadow: 0 0 8px var(--primary); }
         
-        .balance-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .balance-container { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
         .balance-card {
-            background: rgba(20,20,20,0.8); backdrop-filter: blur(12px);
-            padding: 8px 16px; border-radius: 40px; text-align: center;
+            background: rgba(20,20,20,0.8); backdrop-filter: blur(8px);
+            padding: 4px 10px; border-radius: 30px; text-align: center;
             border: 1px solid var(--primary);
-            min-width: 120px;
+            min-width: 85px;
         }
-        .balance-card-small { padding: 6px 12px; }
-        .balance-label { font-size: 10px; color: var(--primary-light); }
-        .balance-value { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .balance-value-large { font-size: 26px; }
+        .balance-card-small { padding: 3px 8px; }
+        .balance-label { font-size: 8px; color: var(--primary-light); }
+        .balance-value { font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .balance-value-large { font-size: 18px; }
 
-        .action-grid { display: flex; gap: 12px; margin: 8px 0; }
+        .action-grid { display: flex; gap: 8px; margin: 5px 0; }
         .btn {
-            flex: 1; padding: 12px 8px; border: none; border-radius: 50px;
-            font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            flex: 1; padding: 7px 5px; border: none; border-radius: 40px;
+            font-size: 11px; font-weight: 600; cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 5px;
         }
-        .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 4px 15px var(--primary-glow); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px var(--primary-glow), 0 0 8px var(--primary); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 2px 8px var(--primary-glow); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-glow), 0 0 6px var(--primary); }
         .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
-        .btn-secondary:hover { background: var(--primary-bg); transform: translateY(-1px); box-shadow: 0 0 8px var(--primary); }
+        .btn-secondary:hover { background: var(--primary-bg); transform: translateY(-1px); box-shadow: 0 0 6px var(--primary); }
         .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
@@ -138,10 +139,10 @@
         /* زر المروحة الجانبي */
         .fan-btn {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
             background: linear-gradient(145deg, var(--primary), var(--primary-dark));
             border-radius: 50%;
             display: flex;
@@ -158,7 +159,7 @@
             box-shadow: 0 6px 25px rgba(0,0,0,0.5), 0 0 20px var(--primary);
         }
         .fan-btn span {
-            font-size: 28px;
+            font-size: 24px;
             transition: transform 0.3s ease;
         }
         .fan-btn.open span {
@@ -168,11 +169,11 @@
         /* القائمة الجانبية المروحة */
         .fan-menu {
             position: fixed;
-            bottom: 105px;
-            right: 30px;
+            bottom: 85px;
+            right: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             z-index: 999;
             pointer-events: none;
         }
@@ -180,8 +181,8 @@
             pointer-events: auto;
         }
         .fan-item {
-            width: 50px;
-            height: 50px;
+            width: 42px;
+            height: 42px;
             background: var(--surface-light);
             border-radius: 50%;
             display: flex;
@@ -193,7 +194,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             opacity: 0;
             transform: scale(0) rotate(-180deg);
-            font-size: 24px;
+            font-size: 20px;
         }
         .fan-menu.open .fan-item {
             animation: fanOpen 0.3s ease forwards;
@@ -214,6 +215,7 @@
             display: none;
         }
 
+        /* العجلة - حجم طبيعي كبير */
         .wheel-container {
             display: flex;
             flex-direction: column;
@@ -295,8 +297,8 @@
         
         .spin-button {
             margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 20px;
+            padding: 12px 35px;
+            font-size: 18px;
             font-weight: bold;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             color: #1a1a2e;
@@ -323,142 +325,145 @@
         .wheel-info {
             text-align: center;
             margin-top: 20px;
-            padding: 15px;
+            padding: 12px;
             background: var(--surface-light);
             border-radius: var(--radius);
         }
         
         .wheel-cost {
-            font-size: 18px;
+            font-size: 14px;
             color: var(--warning);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .timer-text {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-secondary);
         }
 
-        .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
+        .play-zone { text-align: center; margin: 12px 0; display: flex; flex-direction: column; align-items: center; }
         .game-sphere {
-            width: 130px; height: 130px; margin: 0 auto 20px;
+            width: 75px; height: 75px; margin: 0 auto 12px;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: var(--transition);
-            box-shadow: 0 0 30px var(--primary-glow);
+            box-shadow: 0 0 15px var(--primary-glow);
             background-size: cover; background-position: center;
             position: relative;
         }
         .game-sphere::before {
-            content: ''; position: absolute; inset: -5px;
+            content: ''; position: absolute; inset: -3px;
             border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
             opacity: 0.5; z-index: -1;
         }
-        .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 40px var(--primary-glow-strong); }
+        .game-sphere:hover { transform: scale(1.03); box-shadow: 0 0 20px var(--primary-glow-strong), 0 0 6px var(--primary); }
         .game-sphere:active { transform: scale(0.98); }
         .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 58px; }
-        #playNowBtn { margin-top: 8px; width: 70%; }
+        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 32px; }
+        #playNowBtn { margin-top: 5px; width: 65%; }
 
         .info-panel {
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg); padding: 20px;
+            background: rgba(18,18,18,0.95); backdrop-filter: blur(10px);
+            border-radius: var(--radius-lg); padding: 12px;
             border: 1px solid var(--primary);
         }
-        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
         .ref-code-block {
-            background: var(--surface); padding: 12px; border-radius: 40px;
-            text-align: center; font-family: monospace; font-size: 18px;
-            margin: 16px 0 8px; border: 1px solid var(--primary);
+            background: var(--surface); padding: 8px; border-radius: 30px;
+            text-align: center; font-family: monospace; font-size: 13px;
+            margin: 10px 0 5px; border: 1px solid var(--primary);
             cursor: pointer; transition: var(--transition);
         }
-        .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); box-shadow: 0 0 10px var(--primary); }
+        .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.01); box-shadow: 0 0 8px var(--primary); }
 
         .modal {
             display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.96); backdrop-filter: blur(12px);
-            z-index: 1100; justify-content: center; align-items: center; padding: 16px;
+            background: rgba(0,0,0,0.96); backdrop-filter: blur(10px);
+            z-index: 1100; justify-content: center; align-items: center; padding: 12px;
             animation: fadeIn 0.3s ease;
         }
         .modal-content {
             background: var(--surface); border-radius: var(--radius-lg);
-            max-width: 520px; width: 100%; padding: 24px 20px;
+            max-width: 520px; width: 100%; padding: 16px 14px;
             border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;
             animation: slideIn 0.3s ease;
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--primary); padding-bottom: 12px;
-            margin-bottom: 20px; font-size: 20px; font-weight: 600; color: var(--primary-light);
+            border-bottom: 1px solid var(--primary); padding-bottom: 8px;
+            margin-bottom: 14px; font-size: 15px; font-weight: 600; color: var(--primary-light);
         }
-        .close-modal { font-size: 28px; cursor: pointer; transition: var(--transition); }
-        .close-modal:hover { transform: scale(1.1); color: var(--error); }
+        .close-modal { font-size: 22px; cursor: pointer; transition: var(--transition); }
+        .close-modal:hover { transform: scale(1.05); color: var(--error); }
 
-        .methods-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .methods-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
         .method-card {
-            background: var(--surface-light); border: 2px solid var(--border);
-            border-radius: var(--radius); padding: 16px; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; gap: 12px;
+            background: var(--surface-light); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 10px; cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; gap: 8px;
         }
-        .method-card:hover { border-color: var(--primary); transform: translateX(-5px); box-shadow: 0 0 8px var(--primary); }
-        .method-card.selected { border-color: var(--primary); background: var(--primary-bg); box-shadow: 0 0 10px var(--primary); }
-        .method-icon { font-size: 28px; }
-        .method-name { font-size: 16px; font-weight: bold; }
-        .method-currency { font-size: 12px; color: var(--primary-light); margin-top: 4px; }
+        .method-card:hover { border-color: var(--primary); transform: translateX(-3px); box-shadow: 0 0 5px var(--primary); }
+        .method-card.selected { border-color: var(--primary); background: var(--primary-bg); box-shadow: 0 0 6px var(--primary); }
+        .method-icon { font-size: 20px; }
+        .method-name { font-size: 12px; font-weight: bold; }
+        .method-currency { font-size: 9px; color: var(--primary-light); margin-top: 2px; }
         .address-box {
-            background: var(--surface); padding: 12px; border-radius: var(--radius);
-            margin: 12px 0; display: flex; justify-content: space-between;
-            align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--surface); padding: 8px; border-radius: var(--radius);
+            margin: 10px 0; display: flex; justify-content: space-between;
+            align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .address-box span { font-family: monospace; font-size: 14px; word-break: break-all; flex: 1; }
-        .copy-btn { background: var(--primary); border: none; color: white; padding: 6px 14px; border-radius: 25px; cursor: pointer; transition: var(--transition); }
-        .copy-btn:hover { transform: scale(1.05); box-shadow: 0 0 8px var(--primary); }
+        .address-box span { font-family: monospace; font-size: 10px; word-break: break-all; flex: 1; }
+        .copy-btn { background: var(--primary); border: none; color: white; padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: var(--transition); font-size: 10px; }
+        .copy-btn:hover { transform: scale(1.02); box-shadow: 0 0 6px var(--primary); }
 
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; color: var(--primary-light); font-size: 13px; font-weight: 500; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; margin-bottom: 4px; color: var(--primary-light); font-size: 10px; font-weight: 500; }
         input, select, textarea {
             background: var(--surface-light); border: 1px solid var(--border);
-            color: var(--text); padding: 12px 14px; border-radius: var(--radius);
-            width: 100%; font-size: 14px; transition: var(--transition);
+            color: var(--text); padding: 8px 10px; border-radius: var(--radius);
+            width: 100%; font-size: 11px; transition: var(--transition);
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 6px var(--primary-glow); }
 
         .request-card {
-            background: var(--surface-light); margin-bottom: 12px; padding: 12px;
-            border-radius: var(--radius); border-right: 4px solid var(--primary);
+            background: var(--surface-light); margin-bottom: 8px; padding: 8px;
+            border-radius: var(--radius); border-right: 2px solid var(--primary);
             transition: var(--transition);
+            font-size: 11px;
         }
-        .request-card:hover { transform: translateX(-5px); background: var(--surface-lighter); box-shadow: 0 0 6px var(--primary); }
+        .request-card:hover { transform: translateX(-3px); background: var(--surface-lighter); box-shadow: 0 0 4px var(--primary); }
         .request-card.pending { border-right-color: var(--warning); }
         .request-card.approved { border-right-color: var(--success); }
         .request-card.rejected { border-right-color: var(--error); }
 
         .toast {
-            position: fixed; bottom: 90px; left: 16px; right: 16px;
-            background: var(--primary-dark); backdrop-filter: blur(8px);
-            padding: 14px; border-radius: 50px; text-align: center;
+            position: fixed; bottom: 70px; left: 12px; right: 12px;
+            background: var(--primary-dark); backdrop-filter: blur(6px);
+            padding: 8px; border-radius: 30px; text-align: center;
             z-index: 1200; animation: slideIn 0.3s ease;
             font-weight: 500;
+            font-size: 12px;
         }
 
         .admin-header {
-            background: var(--surface); padding: 16px 20px; border-radius: var(--radius-lg);
-            margin-bottom: 20px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--primary);
+            background: var(--surface); padding: 10px 14px; border-radius: var(--radius-lg);
+            margin-bottom: 14px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 2px solid var(--primary);
         }
+        .admin-header h2 { font-size: 16px; }
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px; margin-bottom: 25px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px; margin-bottom: 18px;
         }
         .stat-card {
-            background: var(--surface); padding: 20px; border-radius: var(--radius);
+            background: var(--surface); padding: 12px; border-radius: var(--radius);
             text-align: center; border: 1px solid var(--border); transition: var(--transition);
         }
-        .stat-card:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        .stat-number { font-size: 32px; font-weight: bold; color: var(--primary); }
-        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
-        .admin-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: var(--transition); }
-        .admin-btn:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 0 8px var(--primary); }
-        .admin-btn-small { padding: 6px 12px; font-size: 12px; margin: 2px; }
+        .stat-card:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 0 8px var(--primary); }
+        .stat-number { font-size: 22px; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 10px; color: var(--text-secondary); margin-top: 5px; }
+        .admin-btn { background: var(--primary); color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: var(--transition); font-size: 11px; }
+        .admin-btn:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 0 5px var(--primary); }
+        .admin-btn-small { padding: 4px 8px; font-size: 10px; margin: 2px; }
         .admin-table {
             background: var(--surface);
             border-radius: var(--radius-lg);
@@ -466,13 +471,13 @@
             padding: 0;
         }
         .admin-table-header {
-            padding: 16px 20px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--border);
             background: var(--surface-light);
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         }
         .admin-table-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             color: var(--primary-light);
         }
@@ -481,10 +486,10 @@
             border-collapse: collapse;
         }
         th, td {
-            padding: 14px 12px;
+            padding: 8px 6px;
             text-align: right;
             border-bottom: 1px solid var(--border);
-            font-size: 14px;
+            font-size: 11px;
         }
         th {
             background: var(--primary-bg);
@@ -499,45 +504,46 @@
         .tabs-bar {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 25px;
+            gap: 6px;
+            margin-bottom: 18px;
             flex-wrap: wrap;
             background: var(--surface);
-            padding: 10px;
+            padding: 6px;
             border-radius: var(--radius-lg);
         }
         .tab {
             cursor: pointer;
-            padding: 10px 24px;
+            padding: 6px 16px;
             background: var(--surface-light);
             border-radius: var(--radius);
             transition: var(--transition);
             font-weight: 500;
+            font-size: 11px;
         }
         .tab:hover {
             background: var(--primary-bg);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             color: var(--primary-light);
-            box-shadow: 0 0 6px var(--primary);
+            box-shadow: 0 0 4px var(--primary);
         }
         .tab.active {
             background: var(--primary);
             color: white;
-            box-shadow: 0 0 8px var(--primary);
+            box-shadow: 0 0 6px var(--primary);
         }
         .section-title {
             color: var(--primary-light);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
             border-bottom: 1px solid var(--border);
-            font-size: 18px;
+            font-size: 13px;
         }
         .hidden { display: none; }
         .badge {
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 15px;
+            font-size: 9px;
             font-weight: 600;
         }
         .badge-success { background: var(--success); color: white; }
@@ -545,64 +551,64 @@
         .badge-danger { background: var(--error); color: white; }
         .badge-info { background: var(--info); color: white; }
 
-        .commission-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        .theme-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
-        .theme-color { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
-        .theme-color:hover { transform: scale(1.1); box-shadow: 0 0 8px white; }
-        .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 12px white; }
-        .stat-icon { font-size: 28px; margin-bottom: 10px; }
+        .commission-badge { background: var(--success); color: white; padding: 1px 5px; border-radius: 15px; font-size: 9px; }
+        .theme-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; justify-content: center; }
+        .theme-color { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .theme-color:hover { transform: scale(1.08); box-shadow: 0 0 5px white; }
+        .theme-color.active { border-color: white; transform: scale(1.08); box-shadow: 0 0 8px white; }
+        .stat-icon { font-size: 20px; margin-bottom: 6px; }
         
         .filter-bar {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 14px;
             flex-wrap: wrap;
             align-items: center;
         }
         .filter-bar select {
             width: auto;
-            min-width: 150px;
+            min-width: 120px;
             background: var(--surface-light);
         }
         .search-input {
             flex: 1;
-            min-width: 200px;
+            min-width: 160px;
         }
         
         @media (max-width: 768px) {
-            .btn { padding: 10px 6px; font-size: 13px; }
-            .balance-value { font-size: 18px; }
-            .balance-value-large { font-size: 22px; }
-            .balance-card { padding: 6px 12px; min-width: 100px; }
-            .stat-number { font-size: 22px; }
-            th, td { padding: 10px 8px; font-size: 11px; }
-            .game-sphere { width: 100px; height: 100px; font-size: 48px; }
-            .theme-color { width: 30px; height: 30px; }
+            .btn { padding: 6px 4px; font-size: 10px; }
+            .balance-value { font-size: 13px; }
+            .balance-value-large { font-size: 16px; }
+            .balance-card { padding: 3px 8px; min-width: 70px; }
+            .stat-number { font-size: 18px; }
+            th, td { padding: 6px 4px; font-size: 9px; }
+            .game-sphere { width: 60px; height: 60px; font-size: 28px; }
+            .theme-color { width: 22px; height: 22px; }
             .wheel-wrapper { width: 250px; height: 250px; }
-            .spin-button { padding: 12px 30px; font-size: 18px; }
-            .tab { padding: 8px 16px; font-size: 12px; }
-            .stats-grid { gap: 10px; }
-            .stat-card { padding: 12px; }
-            .stat-number { font-size: 20px; }
-            .stat-icon { font-size: 22px; }
+            .spin-button { padding: 10px 25px; font-size: 16px; }
+            .tab { padding: 5px 12px; font-size: 10px; }
+            .stats-grid { gap: 6px; }
+            .stat-card { padding: 8px; }
+            .stat-number { font-size: 16px; }
+            .stat-icon { font-size: 16px; }
             .fan-btn {
-                bottom: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
+                bottom: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
             }
             .fan-btn span {
-                font-size: 24px;
+                font-size: 22px;
             }
             .fan-menu {
-                bottom: 85px;
-                right: 20px;
-                gap: 12px;
+                bottom: 75px;
+                right: 15px;
+                gap: 10px;
             }
             .fan-item {
-                width: 42px;
-                height: 42px;
-                font-size: 20px;
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
             }
         }
     </style>
@@ -610,8 +616,8 @@
 <body>
     <div id="loader" class="loading-overlay">
         <div class="spinner"></div>
-        <div style="font-size: 28px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
-        <button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:220px;display:none">🔐 تسجيل دخول Google</button>
+        <div style="font-size: 20px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
+        <button id="loginBtn" class="btn btn-primary" style="margin-top:12px;width:180px;display:none">🔐 تسجيل دخول Google</button>
     </div>
 
     <div id="userApp" class="app-container hidden">
@@ -660,7 +666,7 @@
                 <div class="info-row"><span>🏅 إجمالي أرباح العجلة</span><span id="profileTotalWinnings">0 SYP</span></div>
                 <div id="referrerInfoProfile" class="info-row hidden"><span>🎁 تمت الدعوة بواسطة</span><span id="referrerNameProfile">-</span></div>
                 <div class="ref-code-block" id="refCodeBlock">📋 اضغط لنسخ الكود</div>
-                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:16px">🚪 تسجيل خروج</button>
+                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:10px">🚪 تسجيل خروج</button>
             </div>
         </div>
 
@@ -701,28 +707,28 @@
     <div id="earnModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><span>🎁 اكسب مجانا</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 20px;">
-                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; text-align: center;">
-                    <h4 style="color: var(--primary-light); margin-bottom: 12px;">🏆 كود الإحالة الخاص بك</h4>
-                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 8px 0; font-size: 22px; font-weight: bold;"></div>
-                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 8px;">📋 نسخ الكود</button>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;">
+            <div style="padding: 12px;">
+                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; margin-bottom: 12px; text-align: center;">
+                    <h4 style="color: var(--primary-light); margin-bottom: 8px; font-size: 13px;">🏆 كود الإحالة الخاص بك</h4>
+                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 5px 0; font-size: 16px; font-weight: bold;"></div>
+                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 5px;">📋 نسخ الكود</button>
+                    <p style="font-size: 10px; color: var(--text-secondary); margin-top: 8px;">
                         🎁 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
-                        💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع (تضاف إلى رصيد الإحالات)
+                        💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع
                     </p>
                 </div>
                 
-                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
-                    <h4 style="color: var(--warning); margin-bottom: 12px;">👥 هل لديك كود إحالة؟</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
-                    <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 18px; margin-bottom: 12px;">
+                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; margin-bottom: 12px;">
+                    <h4 style="color: var(--warning); margin-bottom: 8px; font-size: 12px;">👥 هل لديك كود إحالة؟</h4>
+                    <p style="font-size: 10px; color: var(--text-secondary); margin-bottom: 8px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
+                    <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 14px; margin-bottom: 8px;">
                     <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%">🎁 تفعيل الكود</button>
                 </div>
                 
-                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; display: none;">
-                    <h4 style="color: var(--success); margin-bottom: 12px;">✅ تم التفعيل بنجاح</h4>
-                    <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
-                    <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
+                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; display: none;">
+                    <h4 style="color: var(--success); margin-bottom: 8px; font-size: 12px;">✅ تم التفعيل بنجاح</h4>
+                    <div class="info-row" style="font-size: 11px;"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
+                    <div class="info-row" style="font-size: 11px;"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
                 </div>
             </div>
         </div>
@@ -731,15 +737,15 @@
     <div id="historyModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><span>📋 سجل المعاملات</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 10px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
-                    <button class="tab active" data-history-tab="deposits" style="flex:1;">💰 الإيداعات</button>
-                    <button class="tab" data-history-tab="withdraws" style="flex:1;">💸 السحوبات</button>
-                    <button class="tab" data-history-tab="wheel" style="flex:1;">🎡 العجلة</button>
+            <div style="padding: 6px;">
+                <div style="display: flex; gap: 6px; margin-bottom: 12px; border-bottom: 1px solid var(--border);">
+                    <button class="tab active" data-history-tab="deposits" style="flex:1; padding: 4px 8px; font-size: 10px;">💰 الإيداعات</button>
+                    <button class="tab" data-history-tab="withdraws" style="flex:1; padding: 4px 8px; font-size: 10px;">💸 السحوبات</button>
+                    <button class="tab" data-history-tab="wheel" style="flex:1; padding: 4px 8px; font-size: 10px;">🎡 العجلة</button>
                 </div>
-                <div id="depositsHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
-                <div id="withdrawsHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
-                <div id="wheelHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
+                <div id="depositsHistoryList" style="max-height: 400px; overflow-y: auto;"></div>
+                <div id="withdrawsHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
+                <div id="wheelHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
             </div>
         </div>
     </div>
@@ -750,7 +756,7 @@
             <div class="form-group"><label>📱 اختر طريقة الدفع</label><div id="methodsList" class="methods-list"></div></div>
             <div id="addressInfo"></div>
             <div class="form-group"><label>💵 المبلغ</label><input type="number" id="depositAmount" placeholder="أدخل المبلغ"><div id="minDepositHint" class="hint"></div><div id="exchangeRateHint" class="hint" style="color: var(--warning);"></div></div>
-            <div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"><div class="hint" style="color:#ff8888">⚠️ يجب إدخال رقم العملية الصحيح للتحقق التلقائي</div></div>
+            <div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"><div class="hint" style="color:#ff8888; font-size: 9px;">⚠️ يجب إدخال رقم العملية الصحيح للتحقق التلقائي</div></div>
             <button class="btn btn-primary" id="submitDepositBtn" style="width:100%"><span class="btn-text">تأكيد الإيداع</span></button>
         </div>
     </div>
@@ -761,7 +767,7 @@
             <div class="form-group"><label>💵 المبلغ (SYP)</label><input type="number" id="withdrawAmount" placeholder="أدخل المبلغ"><div id="minWithdrawHint" class="hint"></div></div>
             <div class="form-group"><label>📍 عنوان المحفظة / رقم الجوال</label><input type="text" id="withdrawAddress" placeholder="أدخل عنوان السحب"></div>
             <div class="form-group"><label>📱 طريقة السحب</label><select id="withdrawMethod"><option value="sham_cash">شام كاش</option><option value="syriatel_cash">سيرياتيل كاش</option></select></div>
-            <div class="hint" style="margin-bottom:10px;color:#ffaa00">⚠️ سيتم خصم المبلغ فوراً وإرسال الطلب للمراجعة</div>
+            <div class="hint" style="margin-bottom:6px;color:#ffaa00; font-size: 9px;">⚠️ سيتم خصم المبلغ فوراً وإرسال الطلب للمراجعة</div>
             <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%"><span class="btn-text">تأكيد السحب</span></button>
         </div>
     </div>
@@ -769,7 +775,7 @@
     <div id="resetModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><span>⚠️ تهيئة قاعدة البيانات</span><span class="close-modal" id="closeResetModal">&times;</span></div>
-            <div style="text-align:center; margin-bottom:20px"><p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء نهائي!</p><p>سيتم حذف جميع البيانات</p></div>
+            <div style="text-align:center; margin-bottom:12px"><p style="color:var(--error); margin-bottom:10px; font-size: 12px;">⚠️ تحذير: هذا الإجراء نهائي!</p><p style="font-size: 11px;">سيتم حذف جميع البيانات</p></div>
             <div class="form-group"><label>🔑 كلمة المرور</label><input type="password" id="resetPassword" placeholder="أدخل كلمة المرور"></div>
             <button class="btn btn-danger" id="confirmResetBtn" style="width:100%"><span class="btn-text">تأكيد التهيئة</span></button>
         </div>
@@ -779,8 +785,8 @@
         <div class="admin-container">
             <div class="admin-header">
                 <h2>🔧 لوحة التحكم</h2>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <span style="background:var(--primary);padding:4px 12px;border-radius:20px">sam55nam@gmail.com</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <span style="background:var(--primary);padding:2px 8px;border-radius:15px; font-size: 10px;">sam55nam@gmail.com</span>
                     <button class="admin-btn" id="switchToUserView">🌐 الموقع</button>
                     <button class="admin-btn" id="adminLogoutBtn">🚪 تسجيل خروج</button>
                 </div>
@@ -811,7 +817,7 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">💸 طلبات السحب</div>
                 </div>
-                <div class="filter-bar" style="padding: 15px;">
+                <div class="filter-bar" style="padding: 10px;">
                     <select id="filterWithdrawStatus">
                         <option value="all">جميع الطلبات</option>
                         <option value="pending">⏳ قيد المراجعة</option>
@@ -820,8 +826,8 @@
                     </select>
                     <button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button>
                 </div>
-                <div id="withdrawsTable" style="padding: 0 15px 15px 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                <div id="withdrawsTable" style="padding: 0 10px 10px 10px;">
+                    <p style="text-align:center;padding:20px">⏳ جاري التحميل...</p>
                 </div>
             </div>
             
@@ -829,8 +835,8 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">💰 الإيداعات (مؤكدة تلقائياً)</div>
                 </div>
-                <div id="depositsTable" style="padding: 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                <div id="depositsTable" style="padding: 10px;">
+                    <p style="text-align:center;padding:20px">⏳ جاري التحميل...</p>
                 </div>
             </div>
             
@@ -838,11 +844,11 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">👥 إدارة المستخدمين</div>
                 </div>
-                <div style="padding: 15px;">
-                    <input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%; margin-bottom:15px;">
+                <div style="padding: 10px;">
+                    <input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%; margin-bottom:10px;">
                 </div>
-                <div id="usersTable" style="padding: 0 15px 15px 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                <div id="usersTable" style="padding: 0 10px 10px 10px;">
+                    <p style="text-align:center;padding:20px">⏳ جاري التحميل...</p>
                 </div>
             </div>
             
@@ -850,7 +856,7 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">⚙️ إعدادات النظام</div>
                 </div>
-                <div style="padding: 20px;">
+                <div style="padding: 14px;">
                     <h3 class="section-title">الحدود العامة</h3>
                     <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
                     <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
@@ -876,7 +882,7 @@
                     <div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingSyriatelPrivateAddress"></div>
                     <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingSyriatelPublicAddress"></div>
                     
-                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:20px">💾 حفظ جميع الإعدادات</button>
+                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:14px">💾 حفظ جميع الإعدادات</button>
                 </div>
             </div>
 
@@ -884,11 +890,11 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">🎡 إعدادات عجلة الحظ</div>
                 </div>
-                <div style="padding: 20px;">
+                <div style="padding: 14px;">
                     <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
                     <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
                     
-                    <h3 class="section-title" style="margin-top: 30px;">🎁 جوائز العجلة</h3>
+                    <h3 class="section-title" style="margin-top: 20px;">🎁 جوائز العجلة</h3>
                     <div class="admin-table" style="background: var(--surface-light);">
                         <table style="width: 100%;">
                             <thead><tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr></thead>
@@ -911,7 +917,7 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title">🎨 اختيار لون الموقع</div>
                 </div>
-                <div style="padding: 20px; text-align: center;">
+                <div style="padding: 14px; text-align: center;">
                     <div class="theme-selector">
                         <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
                         <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
@@ -924,7 +930,7 @@
                         <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
                         <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
                     </div>
-                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
+                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:14px">💾 حفظ اللون</button>
                 </div>
             </div>
 
@@ -932,9 +938,9 @@
                 <div class="admin-table-header">
                     <div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div>
                 </div>
-                <div style="padding: 20px; text-align: center;">
-                    <p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</p>
-                    <p style="margin-bottom:20px">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات</p>
+                <div style="padding: 14px; text-align: center;">
+                    <p style="color:var(--error); margin-bottom:10px; font-size: 12px;">⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</p>
+                    <p style="margin-bottom:12px; font-size: 11px;">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات</p>
                     <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
                 </div>
             </div>
@@ -975,7 +981,7 @@
         let currentRotation = 0;
         let animationFrame = null;
         
-        // إضافة كود فتح/إغلاق القائمة المروحة
+        // كود فتح/إغلاق القائمة المروحة
         document.getElementById('fanBtn')?.addEventListener('click', () => {
             const fanMenu = document.getElementById('fanMenu');
             const fanBtn = document.getElementById('fanBtn');
@@ -1357,7 +1363,7 @@
                 const data = await res.json(); 
                 const container = document.getElementById('depositsHistoryList'); 
                 if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات سابقة</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد إيداعات سابقة</p>'; 
                     return; 
                 } 
                 container.innerHTML = data.deposits.map(d => { 
@@ -1381,7 +1387,7 @@
                 const data = await res.json(); 
                 const container = document.getElementById('withdrawsHistoryList'); 
                 if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد سحوبات سابقة</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد سحوبات سابقة</p>'; 
                     return; 
                 } 
                 container.innerHTML = data.requests.map(r => { 
@@ -1407,7 +1413,7 @@
                 const data = await res.json();
                 const container = document.getElementById('wheelHistoryList');
                 if (!data.spins?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:20px">🎡 لا توجد تدويرات سابقة</p>';
+                    container.innerHTML = '<p style="text-align:center;padding:15px">🎡 لا توجد تدويرات سابقة</p>';
                     return;
                 }
                 container.innerHTML = data.spins.map(spin => {
@@ -1497,7 +1503,7 @@
                             
                             let exchangeText = '';
                             if (method.currency === 'USD') {
-                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
+                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 5px; font-size: 9px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
                             }
                             
                             document.getElementById('addressInfo').innerHTML = `
@@ -1677,7 +1683,7 @@
                 const data = await res.json(); 
                 const container = document.getElementById('withdrawsTable'); 
                 if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
                 container.innerHTML = `<table>
@@ -1706,7 +1712,7 @@
                 const data = await res.json(); 
                 const container = document.getElementById('depositsTable'); 
                 if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
                 container.innerHTML = `<table>
@@ -1719,7 +1725,7 @@
                                 <td><strong>${d.userName || d.userEmail || d.userId}</strong></td>
                                 <td><span class="badge badge-success">${d.amount.toLocaleString()} SYP</span>${d.originalAmount ? `<br><small>(${d.originalAmount} ${d.originalCurrency})</small>` : ''}</td>
                                 <td>${d.method === 'sham_cash' ? '🏦 شام كاش' : d.method === 'sham_cash_usd' ? '💵 شام كاش دولار' : '📱 سيرياتيل كاش'}</td>
-                                <td><code style="direction:ltr; font-size:11px;">${d.transactionId}</code></td>
+                                <td><code style="direction:ltr; font-size:9px;">${d.transactionId}</code></td>
                                 <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
                             </tr>
                         `).join('')}
@@ -1736,7 +1742,7 @@
                     allUsers = data.users; 
                     const container = document.getElementById('usersTable'); 
                     if (!allUsers.length) { 
-                        container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
+                        container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
                     container.innerHTML = `<table>
@@ -1757,70 +1763,71 @@
                                     <td>
                                         <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
                                         <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
-                                      </td>
+                                      </div>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
-                    </table>`; 
-                } 
-            } 
+                    </table>`;
+                }
+            }
         }
 
-        async function loadAdminSettings() { 
-            const res = await apiCall('/api/admin/settings'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    document.getElementById('settingMinDeposit').value = data.settings.minDeposit; 
-                    document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; 
-                    document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; 
-                    document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; 
-                    document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled; 
-                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || ''; 
-                    document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || ''; 
-                    document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || ''; 
-                    document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false; 
-                    document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000; 
-                    document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || ''; 
-                    document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || ''; 
-                    document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || ''; 
-                    document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled; 
-                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || ''; 
-                    document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || ''; 
-                    document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || ''; 
+        async function loadAdminSettings() {
+            const res = await apiCall('/api/admin/settings');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
+                    document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
+                    document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || '';
+                    document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5;
+                    document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
+                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
+                    document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || '';
+                    document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || '';
+                    document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false;
+                    document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000;
+                    document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || '';
+                    document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || '';
+                    document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || '';
+                    document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled;
+                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
+                    document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || '';
+                    document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || '';
                     document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50;
-                } 
-            } 
+                }
+            }
         }
 
-        async function saveAdminSettings() { 
-            const settings = { 
-                minDeposit: Number(document.getElementById('settingMinDeposit').value), 
-                minWithdraw: Number(document.getElementById('settingMinWithdraw').value), 
-                gameImageUrl: document.getElementById('settingGameImageUrl').value, 
-                referralCommission: Number(document.getElementById('settingReferralCommission').value), 
-                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, 
-                shamCashApiKey: document.getElementById('settingShamCashApiKey').value, 
-                shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, 
-                shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, 
-                shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, 
-                usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), 
-                shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, 
-                shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, 
-                shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, 
-                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, 
-                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, 
-                syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, 
-                syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value 
-            }; 
-            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); 
-            if (res?.ok) { 
-                showMessage('تم حفظ الإعدادات بنجاح'); 
-                await loadAdminSettings(); 
-                await loadDepositSettings(); 
-            } else { 
-                showMessage('فشل حفظ الإعدادات', true); 
-            } 
+        async function saveAdminSettings() {
+            const settings = {
+                minDeposit: Number(document.getElementById('settingMinDeposit').value),
+                minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
+                gameImageUrl: document.getElementById('settingGameImageUrl').value,
+                referralCommission: Number(document.getElementById('settingReferralCommission').value),
+                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
+                shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
+                shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value,
+                shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value,
+                shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked,
+                usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value),
+                shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value,
+                shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value,
+                shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value,
+                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked,
+                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value,
+                syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value,
+                syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value
+            };
+            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) });
+            if (res?.ok) {
+                showMessage('تم حفظ الإعدادات بنجاح');
+                await loadAdminSettings();
+                await loadDepositSettings();
+            } else {
+                showMessage('فشل حفظ الإعدادات', true);
+            }
         }
 
         async function saveWheelCost() {
@@ -1839,120 +1846,120 @@
             }
         }
 
-        async function saveTheme() { 
-            const currentTheme = document.body.className.replace('theme-', ''); 
-            const success = await saveThemeToServer(currentTheme); 
-            if (success) { 
-                await loadAdminSettings(); 
-            } 
+        async function saveTheme() {
+            const currentTheme = document.body.className.replace('theme-', '');
+            const success = await saveThemeToServer(currentTheme);
+            if (success) {
+                await loadAdminSettings();
+            }
         }
 
-        async function resetDatabase() { 
-            const pwd = document.getElementById('resetPassword').value; 
-            if (!pwd) { 
-                showMessage('الرجاء إدخال كلمة المرور', true); 
-                return; 
-            } 
-            const btn = document.getElementById('confirmResetBtn'); 
-            setButtonLoading(btn, true); 
-            const res = await apiCall('/api/admin/reset-database', { method: 'POST', body: JSON.stringify({ password: pwd }) }); 
-            setButtonLoading(btn, false); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                showMessage(`✅ ${data.message}`); 
-                document.getElementById('resetModal').style.display = 'none'; 
-                document.getElementById('resetPassword').value = ''; 
-                setTimeout(() => location.reload(), 2000); 
-            } else if (res) { 
-                const err = await res.json(); 
-                showMessage(err.error || 'فشل التهيئة', true); 
-            } 
+        async function resetDatabase() {
+            const pwd = document.getElementById('resetPassword').value;
+            if (!pwd) {
+                showMessage('الرجاء إدخال كلمة المرور', true);
+                return;
+            }
+            const btn = document.getElementById('confirmResetBtn');
+            setButtonLoading(btn, true);
+            const res = await apiCall('/api/admin/reset-database', { method: 'POST', body: JSON.stringify({ password: pwd }) });
+            setButtonLoading(btn, false);
+            if (res?.ok) {
+                const data = await res.json();
+                showMessage(`✅ ${data.message}`);
+                document.getElementById('resetModal').style.display = 'none';
+                document.getElementById('resetPassword').value = '';
+                setTimeout(() => location.reload(), 2000);
+            } else if (res) {
+                const err = await res.json();
+                showMessage(err.error || 'فشل التهيئة', true);
+            }
         }
 
-        window.approveWithdraw = async (id) => { 
-            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); 
-            if (res?.ok) { 
-                showMessage('تم قبول الطلب'); 
-                loadAdminWithdraws(); 
-                loadAdminDashboard(); 
-                loadAdminUsers(); 
-            } 
-        };
-        
-        window.rejectWithdraw = async (id) => { 
-            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); 
-            if (res?.ok) { 
-                showMessage('تم رفض الطلب'); 
-                loadAdminWithdraws(); 
-                loadAdminDashboard(); 
-                loadAdminUsers(); 
-            } 
-        };
-        
-        window.toggleBan = async (id) => { 
-            const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) }); 
-            if (res?.ok) { 
-                showMessage('تم تحديث حالة المستخدم'); 
-                loadAdminUsers(); 
-            } 
-        };
-        
-        window.editBalance = async (id, bal) => { 
-            const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)\nمثال: 1000 لإضافة 1000، أو -500 لخصم 500`, "0"); 
-            if (val && val !== '0') { 
-                const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val) }) }); 
-                if (res?.ok) { 
-                    showMessage('تم تحديث الرصيد'); 
-                    loadAdminUsers(); 
-                    loadAdminDashboard(); 
-                } 
-            } 
+        window.approveWithdraw = async (id) => {
+            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) });
+            if (res?.ok) {
+                showMessage('تم قبول الطلب');
+                loadAdminWithdraws();
+                loadAdminDashboard();
+                loadAdminUsers();
+            }
         };
 
-        function showAdminInterface() { 
-            document.getElementById('userApp').classList.add('hidden'); 
-            document.getElementById('adminApp').classList.remove('hidden'); 
-            loadAdminDashboard(); 
-            loadAdminWithdraws(); 
-            loadAdminDeposits(); 
-            loadAdminUsers(); 
-            loadAdminSettings(); 
-        }
-        
-        function showUserInterface() { 
-            document.getElementById('adminApp').classList.add('hidden'); 
-            document.getElementById('userApp').classList.remove('hidden'); 
+        window.rejectWithdraw = async (id) => {
+            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) });
+            if (res?.ok) {
+                showMessage('تم رفض الطلب');
+                loadAdminWithdraws();
+                loadAdminDashboard();
+                loadAdminUsers();
+            }
+        };
+
+        window.toggleBan = async (id) => {
+            const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) });
+            if (res?.ok) {
+                showMessage('تم تحديث حالة المستخدم');
+                loadAdminUsers();
+            }
+        };
+
+        window.editBalance = async (id, bal) => {
+            const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)\nمثال: 1000 لإضافة 1000، أو -500 لخصم 500`, "0");
+            if (val && val !== '0') {
+                const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val) }) });
+                if (res?.ok) {
+                    showMessage('تم تحديث الرصيد');
+                    loadAdminUsers();
+                    loadAdminDashboard();
+                }
+            }
+        };
+
+        function showAdminInterface() {
+            document.getElementById('userApp').classList.add('hidden');
+            document.getElementById('adminApp').classList.remove('hidden');
+            loadAdminDashboard();
+            loadAdminWithdraws();
+            loadAdminDeposits();
+            loadAdminUsers();
+            loadAdminSettings();
         }
 
-        async function handleGoogleSignIn() { 
-            const btn = document.getElementById('loginBtn'); 
-            setButtonLoading(btn, true); 
-            try { 
-                await auth.signOut().catch(() => {}); 
-                const result = await signInWithPopup(auth, provider); 
-                currentUser = result.user; 
-                const params = new URLSearchParams(window.location.search); 
-                await registerUser(params.get('ref')); 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadDeposits(); 
-                await loadWithdrawals(); 
-                await loadDepositSettings(); 
-                await loadEarnPageInfo(); 
-                await loadThemeFromServer(); 
-                document.getElementById('loader').style.display = 'none'; 
-                if (isAdmin) showAdminInterface(); 
-                else showUserInterface(); 
-            } catch (err) { 
-                console.error(err); 
-                let msg = 'فشل تسجيل الدخول'; 
-                if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة'; 
-                else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت'; 
-                else if (err.code === 'auth/internal-error') msg = 'خطأ داخلي، حاول مرة أخرى'; 
-                showMessage(msg, true); 
-            } finally { 
-                setButtonLoading(btn, false); 
-            } 
+        function showUserInterface() {
+            document.getElementById('adminApp').classList.add('hidden');
+            document.getElementById('userApp').classList.remove('hidden');
+        }
+
+        async function handleGoogleSignIn() {
+            const btn = document.getElementById('loginBtn');
+            setButtonLoading(btn, true);
+            try {
+                await auth.signOut().catch(() => {});
+                const result = await signInWithPopup(auth, provider);
+                currentUser = result.user;
+                const params = new URLSearchParams(window.location.search);
+                await registerUser(params.get('ref'));
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
+                await loadDepositSettings();
+                await loadEarnPageInfo();
+                await loadThemeFromServer();
+                document.getElementById('loader').style.display = 'none';
+                if (isAdmin) showAdminInterface();
+                else showUserInterface();
+            } catch (err) {
+                console.error(err);
+                let msg = 'فشل تسجيل الدخول';
+                if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة';
+                else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت';
+                else if (err.code === 'auth/internal-error') msg = 'خطأ داخلي، حاول مرة أخرى';
+                showMessage(msg, true);
+            } finally {
+                setButtonLoading(btn, false);
+            }
         }
 
         function initWheel() {
@@ -1967,63 +1974,63 @@
             }
         }
 
-        onAuthStateChanged(auth, async (user) => { 
-            const loader = document.getElementById('loader'); 
-            const loginBtn = document.getElementById('loginBtn'); 
-            if (user) { 
-                currentUser = user; 
-                await registerUser(); 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadDeposits(); 
-                await loadWithdrawals(); 
-                await loadDepositSettings(); 
-                await loadEarnPageInfo(); 
-                await loadThemeFromServer(); 
-                loader.style.display = 'none'; 
-                if (isAdmin) showAdminInterface(); 
-                else showUserInterface(); 
+        onAuthStateChanged(auth, async (user) => {
+            const loader = document.getElementById('loader');
+            const loginBtn = document.getElementById('loginBtn');
+            if (user) {
+                currentUser = user;
+                await registerUser();
+                await loadProfile();
+                await loadStats();
+                await loadDeposits();
+                await loadWithdrawals();
+                await loadDepositSettings();
+                await loadEarnPageInfo();
+                await loadThemeFromServer();
+                loader.style.display = 'none';
+                if (isAdmin) showAdminInterface();
+                else showUserInterface();
                 initWheel();
-            } else { 
-                loader.innerHTML = '<div class="spinner"></div><div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg, var(--primary), white);background-clip:text;-webkit-background-clip:text;color:transparent;">BOOMB</div>'; 
-                loginBtn.style.display = 'block'; 
-                loader.appendChild(loginBtn); 
-                loader.style.display = 'flex'; 
-                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); 
-            } 
+            } else {
+                loader.innerHTML = '<div class="spinner"></div><div style="font-size:20px;font-weight:bold;background:linear-gradient(135deg, var(--primary), white);background-clip:text;-webkit-background-clip:text;color:transparent;">BOOMB</div>';
+                loginBtn.style.display = 'block';
+                loader.appendChild(loginBtn);
+                loader.style.display = 'flex';
+                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn);
+            }
         });
 
-        document.getElementById('openProfileBtn')?.addEventListener('click', () => { 
-            document.getElementById('homeScreen').classList.add('hidden'); 
-            document.getElementById('profileScreen').classList.remove('hidden'); 
-            if (isAdmin) { 
-                const container = document.getElementById('adminSwitchContainer'); 
-                if (container && !container.querySelector('.admin-btn')) { 
-                    const btn = document.createElement('button'); 
-                    btn.className = 'admin-btn'; 
-                    btn.innerText = '🔧 لوحة الأدمن'; 
-                    btn.onclick = showAdminInterface; 
-                    container.innerHTML = ''; 
-                    container.appendChild(btn); 
-                } 
-            } 
+        document.getElementById('openProfileBtn')?.addEventListener('click', () => {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('profileScreen').classList.remove('hidden');
+            if (isAdmin) {
+                const container = document.getElementById('adminSwitchContainer');
+                if (container && !container.querySelector('.admin-btn')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'admin-btn';
+                    btn.innerText = '🔧 لوحة الأدمن';
+                    btn.onclick = showAdminInterface;
+                    container.innerHTML = '';
+                    container.appendChild(btn);
+                }
+            }
         });
-        
-        document.getElementById('backHomeBtn')?.addEventListener('click', () => { 
-            document.getElementById('profileScreen').classList.add('hidden'); 
-            document.getElementById('homeScreen').classList.remove('hidden'); 
+
+        document.getElementById('backHomeBtn')?.addEventListener('click', () => {
+            document.getElementById('profileScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
         });
-        
-        document.getElementById('depositAction')?.addEventListener('click', async () => { 
-            await loadDepositSettings(); 
-            document.getElementById('depositModal').style.display = 'flex'; 
+
+        document.getElementById('depositAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
+            document.getElementById('depositModal').style.display = 'flex';
         });
-        
-        document.getElementById('withdrawAction')?.addEventListener('click', async () => { 
-            await loadDepositSettings(); 
-            document.getElementById('withdrawModal').style.display = 'flex'; 
+
+        document.getElementById('withdrawAction')?.addEventListener('click', async () => {
+            await loadDepositSettings();
+            document.getElementById('withdrawModal').style.display = 'flex';
         });
-        
+
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
         document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
@@ -2040,7 +2047,7 @@
         document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
-        
+
         // ربط عناصر القائمة المروحة
         document.querySelectorAll('.fan-item').forEach(item => {
             item.addEventListener('click', async () => {
@@ -2048,10 +2055,10 @@
                 // إغلاق القائمة
                 document.getElementById('fanMenu').classList.remove('open');
                 document.getElementById('fanBtn').classList.remove('open');
-                
-                if (target === 'stats') { 
-                    document.getElementById('statsModal').style.display = 'flex'; 
-                } else if (target === 'wheel') { 
+
+                if (target === 'stats') {
+                    document.getElementById('statsModal').style.display = 'flex';
+                } else if (target === 'wheel') {
                     await checkWheelStatus();
                     if (wheelCanvas && ctx) {
                         const size = Math.min(500, window.innerWidth - 100);
@@ -2059,35 +2066,35 @@
                         wheelCanvas.height = size;
                         drawWheel();
                     }
-                    document.getElementById('wheelModal').style.display = 'flex'; 
-                } else if (target === 'earn') { 
-                    await loadEarnPageInfo(); 
-                    document.getElementById('earnModal').style.display = 'flex'; 
+                    document.getElementById('wheelModal').style.display = 'flex';
+                } else if (target === 'earn') {
+                    await loadEarnPageInfo();
+                    document.getElementById('earnModal').style.display = 'flex';
                 }
             });
         });
-        
-        document.querySelectorAll('.theme-color').forEach(el => { 
-            el.addEventListener('click', async () => { 
-                const theme = el.dataset.theme; 
-                const success = await saveThemeToServer(theme); 
-                if (success) { 
-                    setTheme(theme); 
-                } 
-            }); 
+
+        document.querySelectorAll('.theme-color').forEach(el => {
+            el.addEventListener('click', async () => {
+                const theme = el.dataset.theme;
+                const success = await saveThemeToServer(theme);
+                if (success) {
+                    setTheme(theme);
+                }
+            });
         });
-        
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { 
-            const term = e.target.value.toLowerCase(); 
-            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
-            const container = document.getElementById('usersTable'); 
-            if (!filtered.length) { 
-                container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
-                return; 
-            } 
-            container.innerHTML = `<td>
+
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term));
+            const container = document.getElementById('usersTable');
+            if (!filtered.length) {
+                container.innerHTML = '<p style="text-align:center;padding:20px">🔍 لا يوجد نتائج</p>';
+                return;
+            }
+            container.innerHTML = `<table>
                 <thead>
-                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
+                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr>
                 </thead>
                 <tbody>
                     ${filtered.map(u => `
@@ -2110,16 +2117,16 @@
             </table>`;
         });
 
-        document.querySelectorAll('.close-modal').forEach(btn => { 
-            btn.addEventListener('click', function() { 
-                this.closest('.modal').style.display = 'none'; 
-            }); 
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.modal').style.display = 'none';
+            });
         });
-        
-        document.querySelectorAll('.modal').forEach(modal => { 
-            modal.addEventListener('click', function(e) { 
-                if (e.target === this) this.style.display = 'none'; 
-            }); 
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
+            });
         });
 
         document.querySelectorAll('.tab').forEach(tab => {
@@ -2168,11 +2175,11 @@
                 const codeElement = document.getElementById('profileRefCode');
                 if (codeElement) {
                     const code = codeElement.innerText;
-                    if (code && code !== '---') { 
-                        navigator.clipboard.writeText(code); 
-                        showMessage('تم نسخ كود الإحالة: ' + code); 
-                    } else { 
-                        showMessage('لا يوجد كود إحالة لعرضه', true); 
+                    if (code && code !== '---') {
+                        navigator.clipboard.writeText(code);
+                        showMessage('تم نسخ كود الإحالة: ' + code);
+                    } else {
+                        showMessage('لا يوجد كود إحالة لعرضه', true);
                     }
                 }
             });
