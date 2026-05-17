@@ -180,15 +180,36 @@ async function getSettings(forceRefresh = false) {
     
     if (doc.exists) {
       settings = doc.data();
+      // التأكد من وجود الحقول الجديدة (للتوافق مع الإعدادات القديمة)
+      if (settings.shamCashExchangeRate === undefined) settings.shamCashExchangeRate = 1;
+      if (settings.syriatelExchangeRate === undefined) settings.syriatelExchangeRate = 1;
     } else {
       settings = {
-        minDeposit: 1000, minWithdraw: 5000, shamCashEnabled: true, syriatelEnabled: true,
-        shamCashUsdEnabled: false, usdToSypRate: 13000, referralCommission: 5, wheelSpinCost: 50,
-        shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
-        shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
-        syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
-        gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false,
-        referralBonusForReferrer: 5, referralBonusForNewUser: 5
+        minDeposit: 1000,
+        minWithdraw: 5000,
+        shamCashEnabled: true,
+        syriatelEnabled: true,
+        shamCashUsdEnabled: false,
+        usdToSypRate: 13000,
+        referralCommission: 5,
+        wheelSpinCost: 50,
+        shamCashApiKey: '',
+        shamCashPrivateAddress: '',
+        shamCashPublicAddress: '0930000000',
+        shamCashUsdApiKey: '',
+        shamCashUsdPrivateAddress: '',
+        shamCashUsdPublicAddress: '',
+        syriatelApiKey: '',
+        syriatelPrivateAddress: '',
+        syriatelPublicAddress: '0930000000',
+        gameImageUrl: '',
+        siteTheme: 'red',
+        siteName: 'BOOMB',
+        maintenanceMode: false,
+        referralBonusForReferrer: 5,
+        referralBonusForNewUser: 5,
+        shamCashExchangeRate: 1,
+        syriatelExchangeRate: 1
       };
       await db.collection('settings').doc('config').set(settings);
     }
@@ -835,6 +856,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     let finalAmountSYP = amountNum;
     let originalCurrency = 'SYP';
     let originalAmount = amountNum;
+    let exchangeRate = 1;
     
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled || !settings.shamCashApiKey || !settings.shamCashPrivateAddress) {
@@ -846,7 +868,8 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       if (verification.success) {
         originalAmount = verification.amount;
         originalCurrency = verification.currency;
-        finalAmountSYP = originalAmount;
+        exchangeRate = settings.shamCashExchangeRate || 1;
+        finalAmountSYP = originalAmount * exchangeRate;
       }
     } else if (method === 'sham_cash_usd') {
       if (!settings.shamCashUsdEnabled || !settings.shamCashUsdApiKey || !settings.shamCashUsdPrivateAddress) {
@@ -858,7 +881,8 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       if (verification.success) {
         originalAmount = verification.amount;
         originalCurrency = verification.currency;
-        finalAmountSYP = originalAmount * (settings.usdToSypRate || 13000);
+        exchangeRate = settings.usdToSypRate || 13000;
+        finalAmountSYP = originalAmount * exchangeRate;
       }
     } else if (method === 'syriatel_cash') {
       if (!settings.syriatelEnabled || !settings.syriatelApiKey || !settings.syriatelPrivateAddress) {
@@ -870,7 +894,8 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       if (verification.success) {
         originalAmount = verification.amount;
         originalCurrency = verification.currency || 'SYP';
-        finalAmountSYP = originalAmount;
+        exchangeRate = settings.syriatelExchangeRate || 1;
+        finalAmountSYP = originalAmount * exchangeRate;
       }
     } else {
       return res.status(400).json({ error: 'طريقة دفع غير مدعومة' });
@@ -909,10 +934,10 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
         amount: finalAmountSYP,
         originalAmount: originalAmount,
         originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
         transactionId: transactionId,
         status: 'completed',
-        verifiedAt: new Date(),
-        exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null
+        verifiedAt: new Date()
       });
     });
     
@@ -1034,6 +1059,7 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         name: 'شام كاش',
         address: settings.shamCashPublicAddress,
         currency: 'SYP',
+        exchangeRate: settings.shamCashExchangeRate || 1,
         icon: '🏦'
       });
     }
@@ -1055,6 +1081,7 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         name: 'سيرياتيل كاش',
         address: settings.syriatelPublicAddress,
         currency: 'SYP',
+        exchangeRate: settings.syriatelExchangeRate || 1,
         icon: '📱'
       });
     }
@@ -1071,7 +1098,9 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         siteTheme: settings.siteTheme || 'red',
         wheelSpinCost: settings.wheelSpinCost || 50,
         referralBonusForReferrer: settings.referralBonusForReferrer || 5,
-        referralBonusForNewUser: settings.referralBonusForNewUser || 5
+        referralBonusForNewUser: settings.referralBonusForNewUser || 5,
+        shamCashExchangeRate: settings.shamCashExchangeRate || 1,
+        syriatelExchangeRate: settings.syriatelExchangeRate || 1
       }
     });
   } catch (error) {
@@ -1640,6 +1669,7 @@ async function startServer() {
     console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
     console.log(`🎁 Referral system: Both referrer and new user get bonuses`);
     console.log(`📊 Advanced statistics API available at /api/admin/advanced-stats`);
+    console.log(`💱 Exchange rates: USD=${settingsCache.get('settings')?.usdToSypRate || 13000}, ShamCash=${settingsCache.get('settings')?.shamCashExchangeRate || 1}, Syriatel=${settingsCache.get('settings')?.syriatelExchangeRate || 1}`);
   });
   
   process.on('SIGTERM', () => {
