@@ -30,7 +30,7 @@ admin.initializeApp({
 const db = admin.firestore();
 const app = express();
 
-// ============= إعدادات الأمان المتقدمة =============
+// ============= إعدادات الأمان =============
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false
@@ -53,7 +53,7 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 const settingsCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 const userCache = new NodeCache({ stdTTL: 30, checkperiod: 60, maxKeys: 1000 });
 
-// ============= منع التكرار المتقدم =============
+// ============= منع التكرار =============
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 300,
@@ -84,7 +84,18 @@ const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 const SPIN_COOLDOWN_SECONDS = 300; // 5 دقائق
 
-// ============= قفل موزع باستخدام Firestore =============
+// ============= إعدادات العجلة - النسب الصحيحة =============
+const DEFAULT_WHEEL_SECTORS = [
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
+  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 5, name: '50 SYP', type: 'balance', value: 50, probability: 15, color: '#00CC44', gradientFrom: '#00CC44', gradientTo: '#009933' }
+];
+
+let WHEEL_SECTORS = [...DEFAULT_WHEEL_SECTORS];
+
+// ============= قفل موزع =============
 class DistributedLock {
   constructor(resourceId, ttlSeconds = 15) {
     this.resourceId = `lock_${resourceId}`;
@@ -121,7 +132,7 @@ class DistributedLock {
   }
 }
 
-// ============= دالة إنشاء كود فريد محسنة =============
+// ============= دالة إنشاء كود فريد =============
 async function generateUniqueReferralCode() {
   for (let attempts = 0; attempts < 15; attempts++) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -167,7 +178,7 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-// ============= إعدادات النظام مع التخزين المؤقت =============
+// ============= إعدادات النظام =============
 async function getSettings(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = settingsCache.get('settings');
@@ -201,42 +212,38 @@ async function getSettings(forceRefresh = false) {
   }
 }
 
-// ============= إعدادات العجلة المحملة من قاعدة البيانات =============
-let WHEEL_SECTORS = [
-  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 1, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
-  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 20, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 5, name: '50 SYP', type: 'balance', value: 50, probability: 20, color: '#00CC44', gradientFrom: '#00CC44', gradientTo: '#009933' },
-  { id: 6, name: 'حظ أوفر', type: 'luck', value: 0, probability: 1, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
-  { id: 7, name: '15 SYP', type: 'balance', value: 15, probability: 8, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
-  { id: 8, name: '25 SYP', type: 'balance', value: 25, probability: 10, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' }
-];
-
-// تحميل إعدادات العجلة من قاعدة البيانات
+// ============= تحميل إعدادات العجلة من قاعدة البيانات =============
 async function loadWheelSettings() {
   try {
     const doc = await db.collection('wheel_settings').doc('config').get();
     if (doc.exists) {
       const savedSectors = doc.data().sectors;
-      if (savedSectors && savedSectors.length === 8) {
-        const total = savedSectors.reduce((sum, s) => sum + (s.probability || 0), 0);
-        if (Math.abs(total - 100) < 0.1) {
+      if (savedSectors && Array.isArray(savedSectors) && savedSectors.length > 0) {
+        const totalProb = savedSectors.reduce((sum, s) => sum + (s.probability || 0), 0);
+        if (Math.abs(totalProb - 100) < 0.1) {
           WHEEL_SECTORS = savedSectors;
           console.log('✅ تم تحميل إعدادات العجلة من قاعدة البيانات');
         } else {
-          console.warn('⚠️ مجموع النسب ليس 100%، استخدم الإعدادات الافتراضية');
+          console.warn(`⚠️ مجموع النسب ${totalProb}%، استخدام الإعدادات الافتراضية`);
+          WHEEL_SECTORS = [...DEFAULT_WHEEL_SECTORS];
         }
       }
+    } else {
+      await db.collection('wheel_settings').doc('config').set({
+        sectors: DEFAULT_WHEEL_SECTORS,
+        updatedAt: new Date(),
+        updatedBy: 'system'
+      });
+      console.log('✅ تم حفظ إعدادات العجلة الافتراضية');
     }
   } catch (error) {
     console.error('Error loading wheel settings:', error);
+    WHEEL_SECTORS = [...DEFAULT_WHEEL_SECTORS];
   }
 }
 
-// دالة اختيار قطاع عشوائي محسنة وآمنة
+// ============= دالة اختيار قطاع عشوائي بناءً على النسب =============
 function getRandomSector() {
-  // حساب المجموع الفعلي للنسب
   const totalProbability = WHEEL_SECTORS.reduce((sum, s) => sum + (s.probability || 0), 0);
   
   if (totalProbability === 0) {
@@ -248,26 +255,18 @@ function getRandomSector() {
   let cumulative = 0;
   
   for (const sector of WHEEL_SECTORS) {
-    if ((sector.probability || 0) > 0) {
-      cumulative += sector.probability;
-      if (random < cumulative) {
-        console.log(`🎡 Selected: ${sector.name} (probability: ${sector.probability}%, random: ${random.toFixed(2)})`);
-        return sector;
-      }
+    cumulative += sector.probability;
+    if (random < cumulative) {
+      console.log(`🎡 Selected: ${sector.name} (prob: ${sector.probability}%, random: ${(random/totalProbability*100).toFixed(1)}%)`);
+      return sector;
     }
   }
   
-  // في حالة الخطأ، سجل المشكلة وارجع قطاع عشوائي
   console.error(`ERROR: No sector selected! random=${random}, cumulative=${cumulative}`);
-  const sectorsWithReward = WHEEL_SECTORS.filter(s => s.type === 'balance' && s.value > 0);
-  if (sectorsWithReward.length > 0) {
-    return sectorsWithReward[Math.floor(Math.random() * sectorsWithReward.length)];
-  }
-  
   return WHEEL_SECTORS[0];
 }
 
-// ============= كلاس شام كاش (محسن) =============
+// ============= كلاسات شام كاش =============
 class ShamCashClient {
   constructor(apiKey, accountAddress) {
     this.apiKey = apiKey;
@@ -416,7 +415,7 @@ class SyriatelCashClient {
   }
 }
 
-// ============= مكافآت الإحالة (كلاهما يحصل على مكافأة) =============
+// ============= مكافآت الإحالة =============
 async function handleReferralRewards(userId, referrerId) {
   setImmediate(async () => {
     try {
@@ -424,7 +423,6 @@ async function handleReferralRewards(userId, referrerId) {
       const referrerBonus = settings.referralBonusForReferrer || 5;
       const newUserBonus = settings.referralBonusForNewUser || 5;
       
-      // مكافأة المُحيل (الشخص الذي دعا)
       const referrerRef = db.collection('users').doc(referrerId);
       await referrerRef.update({
         referralBalance: admin.firestore.FieldValue.increment(referrerBonus),
@@ -432,14 +430,12 @@ async function handleReferralRewards(userId, referrerId) {
         referrals: admin.firestore.FieldValue.arrayUnion(userId)
       });
       
-      // مكافأة المُحال (المستخدم الجديد)
       const userRef = db.collection('users').doc(userId);
       await userRef.update({
         balance: admin.firestore.FieldValue.increment(newUserBonus),
         referralBonusReceived: admin.firestore.FieldValue.increment(newUserBonus)
       });
       
-      // تسجيل المكافأة
       await db.collection('referral_rewards').add({
         userId: userId,
         referrerId: referrerId,
@@ -649,7 +645,7 @@ app.post('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
   try {
     const { sectors } = req.body;
     
-    if (!sectors || !Array.isArray(sectors) || sectors.length !== 8) {
+    if (!sectors || !Array.isArray(sectors) || sectors.length === 0) {
       return res.status(400).json({ error: 'بيانات غير صالحة' });
     }
     
@@ -675,137 +671,6 @@ app.post('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
     res.json({ success: true, message: 'تم حفظ إعدادات العجلة بنجاح' });
   } catch (error) {
     console.error('Error saving wheel settings:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// ============= API الإحصائيات المتقدمة =============
-app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
-  try {
-    const usersSnapshot = await db.collection('users').get();
-    const depositsSnapshot = await db.collection('deposits').get();
-    const withdrawalsSnapshot = await db.collection('withdraw_requests').get();
-    const spinsSnapshot = await db.collection('wheel_spins').get();
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    let stats = {
-      users: { total: 0, today: 0, thisWeek: 0, thisMonth: 0, withReferrals: 0, totalReferrals: 0 },
-      deposits: { total: 0, totalAmount: 0, today: 0, todayAmount: 0, thisWeek: 0, thisWeekAmount: 0, thisMonth: 0, thisMonthAmount: 0, byMethod: {} },
-      withdrawals: { total: 0, totalAmount: 0, pending: 0, pendingAmount: 0, approved: 0, approvedAmount: 0, rejected: 0, rejectedAmount: 0, today: 0, todayAmount: 0 },
-      wheel: { totalSpins: 0, totalWinnings: 0, totalSpinsCost: 0, todaySpins: 0, todayWinnings: 0, bySector: {}, winRate: 0 },
-      referral: { totalCommissions: 0, totalCommissionAmount: 0, totalBonuses: 0, totalBonusAmount: 0 }
-    };
-    
-    let winningSpins = 0;
-    
-    for (const doc of usersSnapshot.docs) {
-      const user = doc.data();
-      stats.users.total++;
-      if (user.createdAt && user.createdAt.toDate) {
-        const createdAt = user.createdAt.toDate();
-        if (createdAt >= today) stats.users.today++;
-        if (createdAt >= thisWeek) stats.users.thisWeek++;
-        if (createdAt >= thisMonth) stats.users.thisMonth++;
-      }
-      if (user.referrals && user.referrals.length > 0) {
-        stats.users.withReferrals++;
-        stats.users.totalReferrals += user.referrals.length;
-      }
-    }
-    
-    for (const doc of depositsSnapshot.docs) {
-      const deposit = doc.data();
-      stats.deposits.total++;
-      stats.deposits.totalAmount += deposit.amount || 0;
-      
-      const method = deposit.method || 'unknown';
-      if (!stats.deposits.byMethod[method]) {
-        stats.deposits.byMethod[method] = { count: 0, amount: 0 };
-      }
-      stats.deposits.byMethod[method].count++;
-      stats.deposits.byMethod[method].amount += deposit.amount || 0;
-      
-      if (deposit.verifiedAt && deposit.verifiedAt.toDate) {
-        const date = deposit.verifiedAt.toDate();
-        if (date >= today) { stats.deposits.today++; stats.deposits.todayAmount += deposit.amount || 0; }
-        if (date >= thisWeek) { stats.deposits.thisWeek++; stats.deposits.thisWeekAmount += deposit.amount || 0; }
-        if (date >= thisMonth) { stats.deposits.thisMonth++; stats.deposits.thisMonthAmount += deposit.amount || 0; }
-      }
-    }
-    
-    for (const doc of withdrawalsSnapshot.docs) {
-      const withdrawal = doc.data();
-      stats.withdrawals.total++;
-      stats.withdrawals.totalAmount += withdrawal.amount || 0;
-      
-      if (withdrawal.status === 'pending') {
-        stats.withdrawals.pending++;
-        stats.withdrawals.pendingAmount += withdrawal.amount || 0;
-      } else if (withdrawal.status === 'approved') {
-        stats.withdrawals.approved++;
-        stats.withdrawals.approvedAmount += withdrawal.amount || 0;
-      } else if (withdrawal.status === 'rejected') {
-        stats.withdrawals.rejected++;
-        stats.withdrawals.rejectedAmount += withdrawal.amount || 0;
-      }
-      
-      if (withdrawal.createdAt && withdrawal.createdAt.toDate) {
-        const date = withdrawal.createdAt.toDate();
-        if (date >= today) { stats.withdrawals.today++; stats.withdrawals.todayAmount += withdrawal.amount || 0; }
-      }
-    }
-    
-    for (const doc of spinsSnapshot.docs) {
-      const spin = doc.data();
-      stats.wheel.totalSpins++;
-      stats.wheel.totalSpinsCost += spin.spinCost || 0;
-      
-      if (spin.prizeAmount && spin.prizeAmount > 0) {
-        winningSpins++;
-        stats.wheel.totalWinnings += spin.prizeAmount || 0;
-      }
-      
-      const sectorName = spin.sectorName || 'unknown';
-      if (!stats.wheel.bySector[sectorName]) {
-        stats.wheel.bySector[sectorName] = { count: 0, total: 0 };
-      }
-      stats.wheel.bySector[sectorName].count++;
-      stats.wheel.bySector[sectorName].total += spin.prizeAmount || 0;
-      
-      if (spin.timestamp && spin.timestamp.toDate) {
-        const date = spin.timestamp.toDate();
-        if (date >= today) {
-          stats.wheel.todaySpins++;
-          if (spin.prizeAmount && spin.prizeAmount > 0) {
-            stats.wheel.todayWinnings += spin.prizeAmount;
-          }
-        }
-      }
-    }
-    
-    stats.wheel.winRate = stats.wheel.totalSpins > 0 ? (winningSpins / stats.wheel.totalSpins * 100).toFixed(1) : 0;
-    
-    const commissionsSnapshot = await db.collection('referral_commissions').get();
-    for (const doc of commissionsSnapshot.docs) {
-      const commission = doc.data();
-      stats.referral.totalCommissions++;
-      stats.referral.totalCommissionAmount += commission.amount || 0;
-    }
-    
-    const rewardsSnapshot = await db.collection('referral_rewards').get();
-    for (const doc of rewardsSnapshot.docs) {
-      const reward = doc.data();
-      stats.referral.totalBonuses++;
-      stats.referral.totalBonusAmount += (reward.referrerBonus || 0) + (reward.newUserBonus || 0);
-    }
-    
-    res.json({ success: true, stats });
-  } catch (error) {
-    console.error('Advanced stats error:', error);
     res.status(500).json({ error: 'حدث خطأ' });
   }
 });
@@ -1070,6 +935,7 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         referralCommission: settings.referralCommission || 5,
         siteTheme: settings.siteTheme || 'red',
         wheelSpinCost: settings.wheelSpinCost || 50,
+        wheelSectors: WHEEL_SECTORS,
         referralBonusForReferrer: settings.referralBonusForReferrer || 5,
         referralBonusForNewUser: settings.referralBonusForNewUser || 5
       }
@@ -1575,6 +1441,14 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
     settingsCache.flush();
     userCache.flush();
     
+    // إعادة إنشاء إعدادات العجلة الافتراضية
+    await db.collection('wheel_settings').doc('config').set({
+      sectors: DEFAULT_WHEEL_SECTORS,
+      updatedAt: new Date(),
+      updatedBy: 'system'
+    });
+    WHEEL_SECTORS = [...DEFAULT_WHEEL_SECTORS];
+    
     res.json({ success: true, message: 'تم تهيئة قاعدة البيانات بنجاح' });
   } catch (error) {
     console.error('Reset database error:', error);
@@ -1628,6 +1502,137 @@ app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   }
 });
 
+// ============= الإحصائيات المتقدمة =============
+app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const depositsSnapshot = await db.collection('deposits').get();
+    const withdrawalsSnapshot = await db.collection('withdraw_requests').get();
+    const spinsSnapshot = await db.collection('wheel_spins').get();
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let stats = {
+      users: { total: 0, today: 0, thisWeek: 0, thisMonth: 0, withReferrals: 0, totalReferrals: 0 },
+      deposits: { total: 0, totalAmount: 0, today: 0, todayAmount: 0, thisWeek: 0, thisWeekAmount: 0, thisMonth: 0, thisMonthAmount: 0, byMethod: {} },
+      withdrawals: { total: 0, totalAmount: 0, pending: 0, pendingAmount: 0, approved: 0, approvedAmount: 0, rejected: 0, rejectedAmount: 0, today: 0, todayAmount: 0 },
+      wheel: { totalSpins: 0, totalWinnings: 0, totalSpinsCost: 0, todaySpins: 0, todayWinnings: 0, bySector: {}, winRate: 0 },
+      referral: { totalCommissions: 0, totalCommissionAmount: 0, totalBonuses: 0, totalBonusAmount: 0 }
+    };
+    
+    let winningSpins = 0;
+    
+    for (const doc of usersSnapshot.docs) {
+      const user = doc.data();
+      stats.users.total++;
+      if (user.createdAt && user.createdAt.toDate) {
+        const createdAt = user.createdAt.toDate();
+        if (createdAt >= today) stats.users.today++;
+        if (createdAt >= thisWeek) stats.users.thisWeek++;
+        if (createdAt >= thisMonth) stats.users.thisMonth++;
+      }
+      if (user.referrals && user.referrals.length > 0) {
+        stats.users.withReferrals++;
+        stats.users.totalReferrals += user.referrals.length;
+      }
+    }
+    
+    for (const doc of depositsSnapshot.docs) {
+      const deposit = doc.data();
+      stats.deposits.total++;
+      stats.deposits.totalAmount += deposit.amount || 0;
+      
+      const method = deposit.method || 'unknown';
+      if (!stats.deposits.byMethod[method]) {
+        stats.deposits.byMethod[method] = { count: 0, amount: 0 };
+      }
+      stats.deposits.byMethod[method].count++;
+      stats.deposits.byMethod[method].amount += deposit.amount || 0;
+      
+      if (deposit.verifiedAt && deposit.verifiedAt.toDate) {
+        const date = deposit.verifiedAt.toDate();
+        if (date >= today) { stats.deposits.today++; stats.deposits.todayAmount += deposit.amount || 0; }
+        if (date >= thisWeek) { stats.deposits.thisWeek++; stats.deposits.thisWeekAmount += deposit.amount || 0; }
+        if (date >= thisMonth) { stats.deposits.thisMonth++; stats.deposits.thisMonthAmount += deposit.amount || 0; }
+      }
+    }
+    
+    for (const doc of withdrawalsSnapshot.docs) {
+      const withdrawal = doc.data();
+      stats.withdrawals.total++;
+      stats.withdrawals.totalAmount += withdrawal.amount || 0;
+      
+      if (withdrawal.status === 'pending') {
+        stats.withdrawals.pending++;
+        stats.withdrawals.pendingAmount += withdrawal.amount || 0;
+      } else if (withdrawal.status === 'approved') {
+        stats.withdrawals.approved++;
+        stats.withdrawals.approvedAmount += withdrawal.amount || 0;
+      } else if (withdrawal.status === 'rejected') {
+        stats.withdrawals.rejected++;
+        stats.withdrawals.rejectedAmount += withdrawal.amount || 0;
+      }
+      
+      if (withdrawal.createdAt && withdrawal.createdAt.toDate) {
+        const date = withdrawal.createdAt.toDate();
+        if (date >= today) { stats.withdrawals.today++; stats.withdrawals.todayAmount += withdrawal.amount || 0; }
+      }
+    }
+    
+    for (const doc of spinsSnapshot.docs) {
+      const spin = doc.data();
+      stats.wheel.totalSpins++;
+      stats.wheel.totalSpinsCost += spin.spinCost || 0;
+      
+      if (spin.prizeAmount && spin.prizeAmount > 0) {
+        winningSpins++;
+        stats.wheel.totalWinnings += spin.prizeAmount || 0;
+      }
+      
+      const sectorName = spin.sectorName || 'unknown';
+      if (!stats.wheel.bySector[sectorName]) {
+        stats.wheel.bySector[sectorName] = { count: 0, total: 0 };
+      }
+      stats.wheel.bySector[sectorName].count++;
+      stats.wheel.bySector[sectorName].total += spin.prizeAmount || 0;
+      
+      if (spin.timestamp && spin.timestamp.toDate) {
+        const date = spin.timestamp.toDate();
+        if (date >= today) {
+          stats.wheel.todaySpins++;
+          if (spin.prizeAmount && spin.prizeAmount > 0) {
+            stats.wheel.todayWinnings += spin.prizeAmount;
+          }
+        }
+      }
+    }
+    
+    stats.wheel.winRate = stats.wheel.totalSpins > 0 ? (winningSpins / stats.wheel.totalSpins * 100).toFixed(1) : 0;
+    
+    const commissionsSnapshot = await db.collection('referral_commissions').get();
+    for (const doc of commissionsSnapshot.docs) {
+      const commission = doc.data();
+      stats.referral.totalCommissions++;
+      stats.referral.totalCommissionAmount += commission.amount || 0;
+    }
+    
+    const rewardsSnapshot = await db.collection('referral_rewards').get();
+    for (const doc of rewardsSnapshot.docs) {
+      const reward = doc.data();
+      stats.referral.totalBonuses++;
+      stats.referral.totalBonusAmount += (reward.referrerBonus || 0) + (reward.newUserBonus || 0);
+    }
+    
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('Advanced stats error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
 // ============= تشغيل الخادم =============
 async function startServer() {
   await loadWheelSettings();
@@ -1636,10 +1641,11 @@ async function startServer() {
   const server = app.listen(PORT, () => {
     console.log(`✅ BOOMB Server running on port ${PORT}`);
     console.log(`📍 Admin: ${ADMIN_EMAIL}`);
-    console.log(`🎰 Wheel system ready with 8 sectors (Total probability: ${WHEEL_SECTORS.reduce((s, sect) => s + sect.probability, 0)}%)`);
+    console.log(`🎰 Wheel system ready with ${WHEEL_SECTORS.length} sectors`);
+    console.log(`📊 Probabilities:`);
+    WHEEL_SECTORS.forEach(s => console.log(`   - ${s.name}: ${s.probability}%`));
     console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
     console.log(`🎁 Referral system: Both referrer and new user get bonuses`);
-    console.log(`📊 Advanced statistics API available at /api/admin/advanced-stats`);
   });
   
   process.on('SIGTERM', () => {
