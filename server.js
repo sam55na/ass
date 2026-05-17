@@ -188,8 +188,7 @@ async function getSettings(forceRefresh = false) {
         shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
         syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
         gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false,
-        referralBonusForReferrer: 5,
-        referralBonusForNewUser: 5
+        referralBonusForReferrer: 5, referralBonusForNewUser: 5
       };
       await db.collection('settings').doc('config').set(settings);
     }
@@ -202,7 +201,7 @@ async function getSettings(forceRefresh = false) {
   }
 }
 
-// ============= إعدادات العجلة =============
+// ============= إعدادات العجلة المحملة من قاعدة البيانات =============
 let WHEEL_SECTORS = [
   { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 35, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
   { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
@@ -221,7 +220,6 @@ async function loadWheelSettings() {
     if (doc.exists) {
       const savedSectors = doc.data().sectors;
       if (savedSectors && savedSectors.length === 8) {
-        // التحقق من أن مجموع النسب 100%
         const total = savedSectors.reduce((sum, s) => sum + (s.probability || 0), 0);
         if (Math.abs(total - 100) < 0.1) {
           WHEEL_SECTORS = savedSectors;
@@ -236,7 +234,7 @@ async function loadWheelSettings() {
   }
 }
 
-// دالة اختيار قطاع عشوائي بناءً على النسب (محسنة)
+// دالة اختيار قطاع عشوائي محسنة وآمنة
 function getRandomSector() {
   // حساب المجموع الفعلي للنسب
   const totalProbability = WHEEL_SECTORS.reduce((sum, s) => sum + (s.probability || 0), 0);
@@ -418,7 +416,88 @@ class SyriatelCashClient {
   }
 }
 
-// ============= API عجلة الحظ (مع Transaction وقفل) =============
+// ============= مكافآت الإحالة (كلاهما يحصل على مكافأة) =============
+async function handleReferralRewards(userId, referrerId) {
+  setImmediate(async () => {
+    try {
+      const settings = await getSettings();
+      const referrerBonus = settings.referralBonusForReferrer || 5;
+      const newUserBonus = settings.referralBonusForNewUser || 5;
+      
+      // مكافأة المُحيل (الشخص الذي دعا)
+      const referrerRef = db.collection('users').doc(referrerId);
+      await referrerRef.update({
+        referralBalance: admin.firestore.FieldValue.increment(referrerBonus),
+        referralEarnings: admin.firestore.FieldValue.increment(referrerBonus),
+        referrals: admin.firestore.FieldValue.arrayUnion(userId)
+      });
+      
+      // مكافأة المُحال (المستخدم الجديد)
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(newUserBonus),
+        referralBonusReceived: admin.firestore.FieldValue.increment(newUserBonus)
+      });
+      
+      // تسجيل المكافأة
+      await db.collection('referral_rewards').add({
+        userId: userId,
+        referrerId: referrerId,
+        referrerBonus: referrerBonus,
+        newUserBonus: newUserBonus,
+        createdAt: new Date()
+      });
+      
+      userCache.del(`user_${referrerId}`);
+      userCache.del(`user_${userId}`);
+      
+      console.log(`✅ مكافأة الإحالة: ${referrerBonus} SYP للمحيل, ${newUserBonus} SYP للمستخدم الجديد`);
+    } catch (error) {
+      console.error('Referral reward error:', error);
+    }
+  });
+}
+
+async function addReferralCommission(userId, depositAmount) {
+  setImmediate(async () => {
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const userData = userDoc.data();
+      
+      if (userData && userData.referredBy) {
+        const settings = await getSettings();
+        const commissionPercent = settings.referralCommission || 5;
+        const commissionAmount = (depositAmount * commissionPercent) / 100;
+        
+        if (commissionAmount > 0) {
+          const referrerRef = db.collection('users').doc(userData.referredBy);
+          
+          await referrerRef.update({
+            referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
+            referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
+          });
+          
+          await db.collection('referral_commissions').add({
+            userId: userData.referredBy,
+            fromUserId: userId,
+            amount: commissionAmount,
+            depositAmount: depositAmount,
+            percent: commissionPercent,
+            createdAt: new Date()
+          });
+          
+          userCache.del(`user_${userData.referredBy}`);
+          
+          console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
+        }
+      }
+    } catch (error) {
+      console.error('Commission error:', error);
+    }
+  });
+}
+
+// ============= API عجلة الحظ =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -592,7 +671,6 @@ app.post('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
     });
     
     WHEEL_SECTORS = sectors;
-    settingsCache.del('wheel_settings');
     
     res.json({ success: true, message: 'تم حفظ إعدادات العجلة بنجاح' });
   } catch (error) {
@@ -600,87 +678,6 @@ app.post('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'حدث خطأ' });
   }
 });
-
-// ============= عمولة الإحالة (محسنة - يحصل المحيل والمُحال على مكافأة) =============
-async function handleReferralRewards(userId, referrerId) {
-  setImmediate(async () => {
-    try {
-      const settings = await getSettings();
-      const referrerBonus = settings.referralBonusForReferrer || 5;
-      const newUserBonus = settings.referralBonusForNewUser || 5;
-      
-      // مكافأة المُحيل (الشخص الذي دعا)
-      const referrerRef = db.collection('users').doc(referrerId);
-      await referrerRef.update({
-        referralBalance: admin.firestore.FieldValue.increment(referrerBonus),
-        referralEarnings: admin.firestore.FieldValue.increment(referrerBonus),
-        referrals: admin.firestore.FieldValue.arrayUnion(userId)
-      });
-      
-      // مكافأة المُحال (المستخدم الجديد)
-      const userRef = db.collection('users').doc(userId);
-      await userRef.update({
-        balance: admin.firestore.FieldValue.increment(newUserBonus),
-        referralBonusReceived: admin.firestore.FieldValue.increment(newUserBonus)
-      });
-      
-      // تسجيل المكافأة
-      await db.collection('referral_rewards').add({
-        userId: userId,
-        referrerId: referrerId,
-        referrerBonus: referrerBonus,
-        newUserBonus: newUserBonus,
-        createdAt: new Date()
-      });
-      
-      userCache.del(`user_${referrerId}`);
-      userCache.del(`user_${userId}`);
-      
-      console.log(`✅ مكافأة الإحالة: ${referrerBonus} SYP للمحيل, ${newUserBonus} SYP للمستخدم الجديد`);
-    } catch (error) {
-      console.error('Referral reward error:', error);
-    }
-  });
-}
-
-async function addReferralCommission(userId, depositAmount) {
-  setImmediate(async () => {
-    try {
-      const userDoc = await db.collection('users').doc(userId).get();
-      const userData = userDoc.data();
-      
-      if (userData && userData.referredBy) {
-        const settings = await getSettings();
-        const commissionPercent = settings.referralCommission || 5;
-        const commissionAmount = (depositAmount * commissionPercent) / 100;
-        
-        if (commissionAmount > 0) {
-          const referrerRef = db.collection('users').doc(userData.referredBy);
-          
-          await referrerRef.update({
-            referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
-            referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
-          });
-          
-          await db.collection('referral_commissions').add({
-            userId: userData.referredBy,
-            fromUserId: userId,
-            amount: commissionAmount,
-            depositAmount: depositAmount,
-            percent: commissionPercent,
-            createdAt: new Date()
-          });
-          
-          userCache.del(`user_${userData.referredBy}`);
-          
-          console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
-        }
-      }
-    } catch (error) {
-      console.error('Commission error:', error);
-    }
-  });
-}
 
 // ============= API الإحصائيات المتقدمة =============
 app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
@@ -696,60 +693,13 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
     let stats = {
-      users: {
-        total: 0,
-        today: 0,
-        thisWeek: 0,
-        thisMonth: 0,
-        withReferrals: 0,
-        totalReferrals: 0
-      },
-      deposits: {
-        total: 0,
-        totalAmount: 0,
-        today: 0,
-        todayAmount: 0,
-        thisWeek: 0,
-        thisWeekAmount: 0,
-        thisMonth: 0,
-        thisMonthAmount: 0,
-        byMethod: {}
-      },
-      withdrawals: {
-        total: 0,
-        totalAmount: 0,
-        pending: 0,
-        pendingAmount: 0,
-        approved: 0,
-        approvedAmount: 0,
-        rejected: 0,
-        rejectedAmount: 0,
-        today: 0,
-        todayAmount: 0
-      },
-      wheel: {
-        totalSpins: 0,
-        totalWinnings: 0,
-        totalSpinsCost: 0,
-        todaySpins: 0,
-        todayWinnings: 0,
-        bySector: {},
-        winRate: 0
-      },
-      referral: {
-        totalCommissions: 0,
-        totalCommissionAmount: 0,
-        totalBonuses: 0,
-        totalBonusAmount: 0
-      },
-      charts: {
-        dailyUsers: [],
-        dailyDeposits: [],
-        dailySpins: []
-      }
+      users: { total: 0, today: 0, thisWeek: 0, thisMonth: 0, withReferrals: 0, totalReferrals: 0 },
+      deposits: { total: 0, totalAmount: 0, today: 0, todayAmount: 0, thisWeek: 0, thisWeekAmount: 0, thisMonth: 0, thisMonthAmount: 0, byMethod: {} },
+      withdrawals: { total: 0, totalAmount: 0, pending: 0, pendingAmount: 0, approved: 0, approvedAmount: 0, rejected: 0, rejectedAmount: 0, today: 0, todayAmount: 0 },
+      wheel: { totalSpins: 0, totalWinnings: 0, totalSpinsCost: 0, todaySpins: 0, todayWinnings: 0, bySector: {}, winRate: 0 },
+      referral: { totalCommissions: 0, totalCommissionAmount: 0, totalBonuses: 0, totalBonusAmount: 0 }
     };
     
-    // إحصائيات المستخدمين
     let winningSpins = 0;
     
     for (const doc of usersSnapshot.docs) {
@@ -767,7 +717,6 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
       }
     }
     
-    // إحصائيات الإيداعات
     for (const doc of depositsSnapshot.docs) {
       const deposit = doc.data();
       stats.deposits.total++;
@@ -782,22 +731,12 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
       
       if (deposit.verifiedAt && deposit.verifiedAt.toDate) {
         const date = deposit.verifiedAt.toDate();
-        if (date >= today) {
-          stats.deposits.today++;
-          stats.deposits.todayAmount += deposit.amount || 0;
-        }
-        if (date >= thisWeek) {
-          stats.deposits.thisWeek++;
-          stats.deposits.thisWeekAmount += deposit.amount || 0;
-        }
-        if (date >= thisMonth) {
-          stats.deposits.thisMonth++;
-          stats.deposits.thisMonthAmount += deposit.amount || 0;
-        }
+        if (date >= today) { stats.deposits.today++; stats.deposits.todayAmount += deposit.amount || 0; }
+        if (date >= thisWeek) { stats.deposits.thisWeek++; stats.deposits.thisWeekAmount += deposit.amount || 0; }
+        if (date >= thisMonth) { stats.deposits.thisMonth++; stats.deposits.thisMonthAmount += deposit.amount || 0; }
       }
     }
     
-    // إحصائيات السحوبات
     for (const doc of withdrawalsSnapshot.docs) {
       const withdrawal = doc.data();
       stats.withdrawals.total++;
@@ -816,14 +755,10 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
       
       if (withdrawal.createdAt && withdrawal.createdAt.toDate) {
         const date = withdrawal.createdAt.toDate();
-        if (date >= today) {
-          stats.withdrawals.today++;
-          stats.withdrawals.todayAmount += withdrawal.amount || 0;
-        }
+        if (date >= today) { stats.withdrawals.today++; stats.withdrawals.todayAmount += withdrawal.amount || 0; }
       }
     }
     
-    // إحصائيات العجلة
     for (const doc of spinsSnapshot.docs) {
       const spin = doc.data();
       stats.wheel.totalSpins++;
@@ -854,7 +789,6 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
     
     stats.wheel.winRate = stats.wheel.totalSpins > 0 ? (winningSpins / stats.wheel.totalSpins * 100).toFixed(1) : 0;
     
-    // إحصائيات الإحالات
     const commissionsSnapshot = await db.collection('referral_commissions').get();
     for (const doc of commissionsSnapshot.docs) {
       const commission = doc.data();
@@ -876,7 +810,7 @@ app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API الإيداع (مع Transaction) =============
+// ============= API الإيداع =============
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
   const { uid } = req.user;
   const { method, amount, transactionId } = req.body;
@@ -994,7 +928,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
   }
 });
 
-// ============= API السحب (مع Transaction) =============
+// ============= API السحب =============
 app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   const { uid } = req.user;
   const { amount, address, method } = req.body;
@@ -1193,6 +1127,57 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/api/user/deposits', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('deposits').where('userId', '==', uid).orderBy('verifiedAt', 'desc').get();
+    const deposits = [];
+    
+    for (const doc of snapshot.docs) {
+      deposits.push(doc.data());
+    }
+    
+    res.json({ success: true, deposits });
+  } catch (error) {
+    console.error('Get deposits error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('withdraw_requests').where('userId', '==', uid).orderBy('createdAt', 'desc').get();
+    const requests = [];
+    
+    for (const doc of snapshot.docs) {
+      requests.push(doc.data());
+    }
+    
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Get withdraw requests error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('wheel_spins').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(50).get();
+    const spins = [];
+    
+    for (const doc of snapshot.docs) {
+      spins.push(doc.data());
+    }
+    
+    res.json({ success: true, spins });
+  } catch (error) {
+    console.error('Get wheel history error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
 // ============= التسجيل =============
 app.post('/api/user/register', requireAuth, async (req, res) => {
   try {
@@ -1216,7 +1201,6 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       if (!refQuery.empty) {
         referredBy = refQuery.docs[0].id;
         referrerName = refQuery.docs[0].data().name;
-        // مكافأة الإحالة (يتم معالجتها بشكل غير متزامن)
         await handleReferralRewards(uid, referredBy);
       }
     }
@@ -1291,7 +1275,6 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
       referredByName: referrerDoc.data().name
     });
     
-    // مكافأة الإحالة
     await handleReferralRewards(uid, referrerId);
     
     userCache.del(`user_${uid}`);
@@ -1491,7 +1474,6 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
         processedBy: req.user.email
       });
     } else if (action === 'reject') {
-      // إعادة المبلغ للمستخدم
       const userRef = db.collection('users').doc(request.userId);
       await userRef.update({
         balance: admin.firestore.FieldValue.increment(request.amount),
@@ -1579,8 +1561,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    // حذف المجموعات
-    const collections = ['users', 'deposits', 'withdraw_requests', 'wheel_spins', 'referral_commissions', 'referral_rewards', 'locks'];
+    const collections = ['users', 'deposits', 'withdraw_requests', 'wheel_spins', 'referral_commissions', 'referral_rewards', 'locks', 'wheel_settings'];
     
     for (const collectionName of collections) {
       const snapshot = await db.collection(collectionName).get();
@@ -1591,7 +1572,6 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       await batch.commit();
     }
     
-    // إعادة تعيين الكاش
     settingsCache.flush();
     userCache.flush();
     
@@ -1648,58 +1628,6 @@ app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
   }
 });
 
-// ============= API سجل المستخدم =============
-app.get('/api/user/deposits', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const snapshot = await db.collection('deposits').where('userId', '==', uid).orderBy('verifiedAt', 'desc').get();
-    const deposits = [];
-    
-    for (const doc of snapshot.docs) {
-      deposits.push(doc.data());
-    }
-    
-    res.json({ success: true, deposits });
-  } catch (error) {
-    console.error('Get deposits error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const snapshot = await db.collection('withdraw_requests').where('userId', '==', uid).orderBy('createdAt', 'desc').get();
-    const requests = [];
-    
-    for (const doc of snapshot.docs) {
-      requests.push(doc.data());
-    }
-    
-    res.json({ success: true, requests });
-  } catch (error) {
-    console.error('Get withdraw requests error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const snapshot = await db.collection('wheel_spins').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(50).get();
-    const spins = [];
-    
-    for (const doc of snapshot.docs) {
-      spins.push(doc.data());
-    }
-    
-    res.json({ success: true, spins });
-  } catch (error) {
-    console.error('Get wheel history error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
 // ============= تشغيل الخادم =============
 async function startServer() {
   await loadWheelSettings();
@@ -1714,7 +1642,6 @@ async function startServer() {
     console.log(`📊 Advanced statistics API available at /api/admin/advanced-stats`);
   });
   
-  // Graceful Shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM received, closing server gracefully...');
     server.close(() => {
