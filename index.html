@@ -852,30 +852,6 @@
                 <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number" id="statTotalWinnings">0</div><div class="stat-label">أرباح العجلة</div></div>
             </div>
 
-            <!-- الرسوم البيانية للإحصائيات المتقدمة -->
-            <div class="stats-charts" id="statsCharts" style="display: none;">
-                <div class="chart-card">
-                    <h4>📊 النشاط اليومي (آخر 7 أيام)</h4>
-                    <canvas id="dailyUsersChart" width="300" height="150"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>💰 الإيداعات اليومية</h4>
-                    <canvas id="dailyDepositsChart" width="300" height="150"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>🎡 تدويرات العجلة</h4>
-                    <canvas id="dailySpinsChart" width="300" height="150"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>🎁 توزيع جوائز العجلة</h4>
-                    <canvas id="sectorDistributionChart" width="300" height="150"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>💳 طرق الدفع المستخدمة</h4>
-                    <canvas id="paymentMethodsChart" width="300" height="150"></canvas>
-                </div>
-            </div>
-
             <div class="tabs-bar">
                 <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
                 <div class="tab" data-tab="deposits">💰 الإيداعات</div>
@@ -1083,6 +1059,18 @@
         let currentRotation = 0;
         let animationFrame = null;
         
+        // قطاعات العجلة المحلية (للعرض فقط، الخادم يحدد النتيجة)
+        const SECTORS = [
+            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "50 SYP", value: 50, gradientFrom: "#00CC44", gradientTo: "#009933" },
+            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+            { name: "15 SYP", value: 15, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "25 SYP", value: 25, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
+        ];
+
         // كود فتح/إغلاق القائمة المروحة
         document.getElementById('fanBtn')?.addEventListener('click', () => {
             const fanMenu = document.getElementById('fanMenu');
@@ -1101,18 +1089,6 @@
                 }
             }
         });
-        
-        // قطاعات العجلة المحلية (للعرض فقط، الخادم يحدد النتيجة)
-        const SECTORS = [
-            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
-            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "50 SYP", value: 50, gradientFrom: "#00CC44", gradientTo: "#009933" },
-            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
-            { name: "15 SYP", value: 15, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "25 SYP", value: 25, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
-        ];
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -1905,7 +1881,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<td>
+                container.innerHTML = `<tr>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th> </tr>
                     </thead>
@@ -1964,7 +1940,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table>
+                    container.innerHTML = `</td>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                         </thead>
@@ -2278,7 +2254,6 @@
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
 
-        // ربط عناصر القائمة المروحة
         document.querySelectorAll('.fan-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const target = item.dataset.tab;
@@ -2343,7 +2318,7 @@
                         </tr>
                     `).join('')}
                 </tbody>
-            <table>`;
+            </table>`;
         });
 
         document.querySelectorAll('.close-modal').forEach(btn => {
