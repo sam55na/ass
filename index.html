@@ -130,6 +130,118 @@
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
 
+        /* Games Grid Styles */
+        .games-section {
+            margin: 20px 0;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+        .section-header h3 {
+            color: var(--primary-light);
+            font-size: 18px;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .game-card {
+            background: var(--surface-light);
+            border-radius: var(--radius-lg);
+            padding: 16px 12px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .game-card:hover .game-play-btn {
+            background: var(--primary);
+            color: white;
+        }
+        .game-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            overflow: hidden;
+        }
+        .game-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .game-icon.default-icon {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            font-size: 40px;
+        }
+        .game-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .game-play-btn {
+            background: var(--surface);
+            border: 1px solid var(--primary);
+            color: var(--primary-light);
+            padding: 8px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-align: center;
+        }
+        .game-play-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.02);
+        }
+        .no-games {
+            text-align: center;
+            padding: 40px;
+            background: var(--surface-light);
+            border-radius: var(--radius-lg);
+            color: var(--text-secondary);
+        }
+        @media (max-width: 500px) {
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 12px;
+            }
+            .game-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 30px;
+            }
+            .game-name {
+                font-size: 12px;
+            }
+        }
+
         .wheel-container {
             display: flex;
             flex-direction: column;
@@ -254,26 +366,6 @@
             font-size: 14px;
             color: var(--text-secondary);
         }
-
-        .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
-        .game-sphere {
-            width: 130px; height: 130px; margin: 0 auto 20px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition);
-            box-shadow: 0 0 30px var(--primary-glow);
-            background-size: cover; background-position: center;
-            position: relative;
-        }
-        .game-sphere::before {
-            content: ''; position: absolute; inset: -5px;
-            border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
-            opacity: 0.5; z-index: -1;
-        }
-        .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 40px var(--primary-glow); }
-        .game-sphere:active { transform: scale(0.98); }
-        .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 58px; }
-        #playNowBtn { margin-top: 8px; width: 70%; }
 
         .bottom-nav {
             display: flex; justify-content: space-around;
@@ -504,7 +596,6 @@
             .balance-card { padding: 6px 12px; min-width: 100px; }
             .stat-number { font-size: 22px; }
             th, td { padding: 10px 8px; font-size: 11px; }
-            .game-sphere { width: 100px; height: 100px; font-size: 48px; }
             .theme-color { width: 30px; height: 30px; }
             .wheel-wrapper { width: 250px; height: 250px; }
             .spin-button { padding: 12px 30px; font-size: 18px; }
@@ -542,12 +633,15 @@
                 <button class="btn btn-primary" id="depositAction">💰 إيداع</button>
                 <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
             </div>
-            <div class="play-zone">
-                <div class="game-sphere default-icon" id="gameIconContainer">
-                    <img id="gameImage" class="game-image hidden" alt="Game Icon">
-                    <span id="defaultGameIcon">🎮</span>
+            
+            <!-- Games Section -->
+            <div class="games-section" id="gamesSection">
+                <div class="section-header">
+                    <h3>🎮 الألعاب المتاحة</h3>
                 </div>
-                <button class="btn btn-primary animate-pulse" id="playNowBtn">🎲 العب الآن</button>
+                <div id="gamesGrid" class="games-grid">
+                    <div class="no-games">⏳ جاري تحميل الألعاب...</div>
+                </div>
             </div>
         </div>
 
@@ -680,6 +774,17 @@
         </div>
     </div>
 
+    <!-- Game Modal for playing games in iframe -->
+    <div id="gamePlayModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 95%; width: 1200px; height: 85vh; display: flex; flex-direction: column; padding: 0;">
+            <div class="modal-header" style="padding: 12px 20px;">
+                <span id="gameModalName">🎮 لعبة</span>
+                <span class="close-modal close-game-modal" style="font-size: 28px;">&times;</span>
+            </div>
+            <iframe id="gameIframe" src="" style="width: 100%; flex: 1; border: none; border-radius: 0 0 var(--radius-lg) var(--radius-lg);" allowfullscreen sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+        </div>
+    </div>
+
     <div id="adminApp" class="hidden">
         <div class="admin-container">
             <div class="admin-header">
@@ -706,6 +811,7 @@
                 <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
                 <div class="tab" data-tab="deposits">💰 الإيداعات</div>
                 <div class="tab" data-tab="users">👥 المستخدمين</div>
+                <div class="tab" data-tab="games">🎮 إدارة الألعاب</div>
                 <div class="tab" data-tab="settings">⚙️ إعدادات الدفع</div>
                 <div class="tab" data-tab="wheel-settings">🎡 إعدادات العجلة</div>
                 <div class="tab" data-tab="themes">🎨 الألوان</div>
@@ -748,6 +854,18 @@
                 </div>
                 <div id="usersTable" style="padding: 0 15px 15px 15px;">
                     <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                </div>
+            </div>
+
+            <div id="adminGamesPanel" class="admin-table hidden">
+                <div class="admin-table-header">
+                    <div class="admin-table-title">🎮 إدارة الألعاب</div>
+                </div>
+                <div style="padding: 20px;">
+                    <button class="admin-btn" id="addGameBtn" style="margin-bottom: 20px; width: 100%;">➕ إضافة لعبة جديدة</button>
+                    <div id="gamesListContainer">
+                        <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                    </div>
                 </div>
             </div>
             
@@ -846,6 +964,41 @@
         </div>
     </div>
 
+    <!-- Game Edit Modal -->
+    <div id="gameModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <span id="gameModalTitle">➕ إضافة لعبة جديدة</span>
+                <span class="close-modal close-game-modal">&times;</span>
+            </div>
+            <div style="padding: 10px;">
+                <div class="form-group">
+                    <label>🎮 اسم اللعبة *</label>
+                    <input type="text" id="gameName" placeholder="مثال: لعبة 2048">
+                </div>
+                <div class="form-group">
+                    <label>🔗 رابط اللعبة (iframe أو صفحة خارجية) *</label>
+                    <input type="text" id="gameUrl" placeholder="https://example.com/game.html أو ./games/2048.html">
+                    <div class="hint" style="font-size: 11px; color: var(--text-secondary);">يمكنك وضع رابط مباشر للعبة أو مسار ملف داخل المستودع</div>
+                </div>
+                <div class="form-group">
+                    <label>🖼️ رابط صورة الأيقونة</label>
+                    <input type="text" id="gameIconUrl" placeholder="https://example.com/icon.png">
+                    <div class="hint" style="font-size: 11px; color: var(--text-secondary);">اتركه فارغاً لاستخدام أيقونة افتراضية</div>
+                </div>
+                <div class="form-group">
+                    <label>🔘 الحالة</label>
+                    <select id="gameEnabled">
+                        <option value="true">✅ مفعل (يظهر للمستخدمين)</option>
+                        <option value="false">❌ معطل (مخفي)</option>
+                    </select>
+                </div>
+                <input type="hidden" id="editingGameId" value="">
+                <button class="admin-btn" id="saveGameBtn" style="width: 100%; margin-top: 20px;">💾 حفظ اللعبة</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -873,6 +1026,7 @@
         let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
         let currentWheelSpinCost = 50;
         let pendingRequests = new Map();
+        let allGames = [];
         
         let wheelCanvas = null;
         let ctx = null;
@@ -890,6 +1044,13 @@
             { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
             { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
         ];
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -955,6 +1116,220 @@
                 return null; 
             } finally {
                 if (requestKey) pendingRequests.delete(requestKey);
+            }
+        }
+
+        // ============= Games Management Functions =============
+        async function loadUserGames() {
+            try {
+                const res = await fetch(`${API_URL}/api/games`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.games) {
+                        displayGamesGrid(data.games);
+                    } else {
+                        document.getElementById('gamesGrid').innerHTML = '<div class="no-games">🎮 لا توجد ألعاب متاحة حالياً</div>';
+                    }
+                } else {
+                    document.getElementById('gamesGrid').innerHTML = '<div class="no-games">❌ خطأ في تحميل الألعاب</div>';
+                }
+            } catch (error) {
+                console.error('Error loading games:', error);
+                document.getElementById('gamesGrid').innerHTML = '<div class="no-games">❌ خطأ في تحميل الألعاب</div>';
+            }
+        }
+
+        function displayGamesGrid(games) {
+            const container = document.getElementById('gamesGrid');
+            if (!games || games.length === 0) {
+                container.innerHTML = '<div class="no-games">🎮 لا توجد ألعاب متاحة حالياً</div>';
+                return;
+            }
+            
+            container.innerHTML = games.map(game => `
+                <div class="game-card" data-game-id="${game.id}" data-game-url="${escapeHtml(game.gameUrl)}" data-game-name="${escapeHtml(game.name)}">
+                    <div class="game-icon ${!game.iconUrl ? 'default-icon' : ''}">
+                        ${game.iconUrl ? 
+                            `<img src="${escapeHtml(game.iconUrl)}" alt="${escapeHtml(game.name)}" onerror="this.parentElement.classList.add('default-icon'); this.parentElement.innerHTML='🎮'">` : 
+                            '🎮'
+                        }
+                    </div>
+                    <div class="game-name">${escapeHtml(game.name)}</div>
+                    <div class="game-play-btn" onclick="window.playGame('${game.id}', '${escapeHtml(game.gameUrl)}', '${escapeHtml(game.name)}')">▶ العب الآن</div>
+                </div>
+            `).join('');
+        }
+
+        window.playGame = (gameId, gameUrl, gameName) => {
+            const modal = document.getElementById('gamePlayModal');
+            const iframe = document.getElementById('gameIframe');
+            const titleSpan = document.getElementById('gameModalName');
+            
+            titleSpan.innerHTML = `🎮 ${escapeHtml(gameName)}`;
+            iframe.src = gameUrl;
+            modal.style.display = 'flex';
+        };
+
+        // ============= Admin Games Management =============
+        async function loadAdminGames() {
+            const container = document.getElementById('gamesListContainer');
+            if (!container) return;
+            
+            try {
+                const res = await apiCall('/api/admin/games');
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        allGames = data.games;
+                        
+                        if (allGames.length === 0) {
+                            container.innerHTML = '<div style="text-align:center;padding:40px;background:var(--surface-light);border-radius:var(--radius);">📭 لا توجد ألعاب مضافة بعد<br><small>اضغط على "إضافة لعبة جديدة" للبدء</small></div>';
+                            return;
+                        }
+                        
+                        container.innerHTML = `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                                ${allGames.map(game => `
+                                    <div class="request-card" data-game-id="${game.id}" style="display: flex; flex-direction: column; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            ${game.iconUrl ? 
+                                                `<img src="${escapeHtml(game.iconUrl)}" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23ffffff\'%3E%3Cpath d=\'M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 14H3V8h18v12zM9 10v6l5-3-5-3z\'/%3E%3C/svg%3E'">` :
+                                                `<div style="width: 50px; height: 50px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px;">🎮</div>`
+                                            }
+                                            <div style="flex: 1;">
+                                                <strong style="font-size: 16px;">${escapeHtml(game.name)}</strong>
+                                                <div style="font-size: 11px; color: var(--text-secondary);">${game.enabled ? '<span class="badge badge-success">✅ مفعل</span>' : '<span class="badge badge-danger">⛔ معطل</span>'}</div>
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 11px; color: var(--text-secondary); word-break: break-all;">
+                                            📁 ${game.gameUrl.substring(0, 50)}${game.gameUrl.length > 50 ? '...' : ''}
+                                        </div>
+                                        <div style="display: flex; gap: 8px; margin-top: 5px;">
+                                            <button class="admin-btn admin-btn-small edit-game-btn" data-id="${game.id}" style="flex: 1; background: var(--info);">✏️ تعديل</button>
+                                            ${game.enabled ? 
+                                                `<button class="admin-btn admin-btn-small disable-game-btn" data-id="${game.id}" style="flex: 1; background: var(--warning);">🔇 تعطيل</button>` :
+                                                `<button class="admin-btn admin-btn-small enable-game-btn" data-id="${game.id}" style="flex: 1; background: var(--success);">🔊 تفعيل</button>`
+                                            }
+                                            <button class="admin-btn admin-btn-small delete-game-btn" data-id="${game.id}" style="flex: 1; background: var(--error);">🗑️ حذف</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        
+                        attachGameEventListeners();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading games:', error);
+                container.innerHTML = '<p style="text-align:center;padding:40px;color:var(--error);">❌ خطأ في تحميل الألعاب</p>';
+            }
+        }
+
+        function attachGameEventListeners() {
+            document.querySelectorAll('.edit-game-btn').forEach(btn => {
+                btn.addEventListener('click', () => editGame(btn.dataset.id));
+            });
+            document.querySelectorAll('.delete-game-btn').forEach(btn => {
+                btn.addEventListener('click', () => deleteGame(btn.dataset.id));
+            });
+            document.querySelectorAll('.enable-game-btn').forEach(btn => {
+                btn.addEventListener('click', () => toggleGame(btn.dataset.id, true));
+            });
+            document.querySelectorAll('.disable-game-btn').forEach(btn => {
+                btn.addEventListener('click', () => toggleGame(btn.dataset.id, false));
+            });
+        }
+
+        function editGame(gameId) {
+            const game = allGames.find(g => g.id === gameId);
+            if (!game) return;
+            
+            document.getElementById('gameModalTitle').innerHTML = '✏️ تعديل اللعبة';
+            document.getElementById('gameName').value = game.name;
+            document.getElementById('gameUrl').value = game.gameUrl;
+            document.getElementById('gameIconUrl').value = game.iconUrl || '';
+            document.getElementById('gameEnabled').value = game.enabled ? 'true' : 'false';
+            document.getElementById('editingGameId').value = game.id;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        async function deleteGame(gameId) {
+            if (!confirm('⚠️ هل أنت متأكد من حذف هذه اللعبة؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+            
+            const res = await apiCall(`/api/admin/games/${gameId}`, { method: 'DELETE' });
+            if (res?.ok) {
+                showMessage('✅ تم حذف اللعبة بنجاح');
+                await loadAdminGames();
+                await loadUserGames();
+            } else {
+                showMessage('❌ فشل حذف اللعبة', true);
+            }
+        }
+
+        async function toggleGame(gameId, enabled) {
+            const action = enabled ? 'تفعيل' : 'تعطيل';
+            if (!confirm(`⚠️ هل أنت متأكد من ${action} هذه اللعبة؟`)) return;
+            
+            const res = await apiCall(`/api/admin/games/${gameId}/toggle`, { 
+                method: 'PATCH',
+                body: JSON.stringify({ enabled })
+            });
+            
+            if (res?.ok) {
+                showMessage(`✅ تم ${action} اللعبة بنجاح`);
+                await loadAdminGames();
+                await loadUserGames();
+            } else {
+                showMessage(`❌ فشل ${action} اللعبة`, true);
+            }
+        }
+
+        async function saveGame() {
+            const name = document.getElementById('gameName').value.trim();
+            const gameUrl = document.getElementById('gameUrl').value.trim();
+            const iconUrl = document.getElementById('gameIconUrl').value.trim();
+            const enabled = document.getElementById('gameEnabled').value === 'true';
+            const editingId = document.getElementById('editingGameId').value;
+            
+            if (!name) {
+                showMessage('❌ الرجاء إدخال اسم اللعبة', true);
+                return;
+            }
+            if (!gameUrl) {
+                showMessage('❌ الرجاء إدخال رابط اللعبة', true);
+                return;
+            }
+            
+            const btn = document.getElementById('saveGameBtn');
+            setButtonLoading(btn, true);
+            
+            let res;
+            if (editingId) {
+                res = await apiCall(`/api/admin/games/${editingId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name, gameUrl, iconUrl, enabled })
+                });
+            } else {
+                res = await apiCall('/api/admin/games', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, gameUrl, iconUrl, enabled })
+                });
+            }
+            
+            setButtonLoading(btn, false);
+            
+            if (res?.ok) {
+                showMessage(editingId ? '✅ تم تحديث اللعبة بنجاح' : '✅ تم إضافة اللعبة بنجاح');
+                document.getElementById('gameModal').style.display = 'none';
+                document.getElementById('gameName').value = '';
+                document.getElementById('gameUrl').value = '';
+                document.getElementById('gameIconUrl').value = '';
+                document.getElementById('editingGameId').value = '';
+                await loadAdminGames();
+                await loadUserGames();
+            } else {
+                showMessage('❌ فشل حفظ اللعبة', true);
             }
         }
 
@@ -1339,20 +1714,6 @@
                     currentReferralCommission = s.referralCommission || 5; 
                     currentWheelSpinCost = s.wheelSpinCost || 50;
                     
-                    const gameImage = document.getElementById('gameImage'); 
-                    const defaultIcon = document.getElementById('defaultGameIcon'); 
-                    const container = document.getElementById('gameIconContainer'); 
-                    if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { 
-                        gameImage.src = s.gameImageUrl; 
-                        gameImage.classList.remove('hidden'); 
-                        defaultIcon.classList.add('hidden'); 
-                        container.classList.remove('default-icon'); 
-                    } else { 
-                        gameImage.classList.add('hidden'); 
-                        defaultIcon.classList.remove('hidden'); 
-                        container.classList.add('default-icon'); 
-                    }
-                    
                     document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; 
                     document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; 
                     document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; 
@@ -1536,7 +1897,7 @@
             } 
         }
 
-        let allUsers = [];
+        let allUsersList = [];
 
         async function loadAdminDashboard() { 
             const res = await apiCall('/api/admin/dashboard'); 
@@ -1618,18 +1979,18 @@
             if (res?.ok) { 
                 const data = await res.json(); 
                 if (data.success) { 
-                    allUsers = data.users; 
+                    allUsersList = data.users; 
                     const container = document.getElementById('usersTable'); 
-                    if (!allUsers.length) { 
+                    if (!allUsersList.length) { 
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table>
+                    container.innerHTML = `</table>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                         </thead>
                         <tbody>
-                            ${allUsers.map(u => `
+                            ${allUsersList.map(u => `
                                 <tr>
                                     <td><small>${u.email || '-'}</small></td>
                                     <td><strong>${u.name || '-'}</strong></td>
@@ -1802,6 +2163,7 @@
             loadAdminDeposits(); 
             loadAdminUsers(); 
             loadAdminSettings(); 
+            loadAdminGames();
         }
         
         function showUserInterface() { 
@@ -1825,6 +2187,7 @@
                 await loadDepositSettings(); 
                 await loadEarnPageInfo(); 
                 await loadThemeFromServer(); 
+                await loadUserGames();
                 document.getElementById('loader').style.display = 'none'; 
                 if (isAdmin) showAdminInterface(); 
                 else showUserInterface(); 
@@ -1865,6 +2228,7 @@
                 await loadDepositSettings(); 
                 await loadEarnPageInfo(); 
                 await loadThemeFromServer(); 
+                await loadUserGames();
                 loader.style.display = 'none'; 
                 if (isAdmin) showAdminInterface(); 
                 else showUserInterface(); 
@@ -1911,7 +2275,21 @@
         
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
-        document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
+        document.getElementById('playNowBtn')?.addEventListener('click', () => {
+            const firstGame = document.querySelector('.game-card');
+            if (firstGame) {
+                const gameId = firstGame.dataset.gameId;
+                const gameUrl = firstGame.dataset.gameUrl;
+                const gameName = firstGame.dataset.gameName;
+                if (gameUrl) {
+                    window.playGame(gameId, gameUrl, gameName);
+                } else {
+                    showMessage('لا توجد لعبة محددة', true);
+                }
+            } else {
+                showMessage('لا توجد ألعاب متاحة', true);
+            }
+        });
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
@@ -1926,6 +2304,19 @@
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
         
+        // Games Admin Buttons
+        document.getElementById('addGameBtn')?.addEventListener('click', () => {
+            document.getElementById('gameModalTitle').innerHTML = '➕ إضافة لعبة جديدة';
+            document.getElementById('gameName').value = '';
+            document.getElementById('gameUrl').value = '';
+            document.getElementById('gameIconUrl').value = '';
+            document.getElementById('gameEnabled').value = 'true';
+            document.getElementById('editingGameId').value = '';
+            document.getElementById('gameModal').style.display = 'flex';
+        });
+        
+        document.getElementById('saveGameBtn')?.addEventListener('click', saveGame);
+        
         document.querySelectorAll('.theme-color').forEach(el => { 
             el.addEventListener('click', async () => { 
                 const theme = el.dataset.theme; 
@@ -1938,7 +2329,7 @@
         
         document.getElementById('searchUsers')?.addEventListener('input', (e) => { 
             const term = e.target.value.toLowerCase(); 
-            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
+            const filtered = allUsersList.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
             const container = document.getElementById('usersTable'); 
             if (!filtered.length) { 
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
@@ -1972,12 +2363,18 @@
         document.querySelectorAll('.close-modal').forEach(btn => { 
             btn.addEventListener('click', function() { 
                 this.closest('.modal').style.display = 'none'; 
+                const iframe = document.getElementById('gameIframe');
+                if (iframe) iframe.src = '';
             }); 
         });
         
         document.querySelectorAll('.modal').forEach(modal => { 
             modal.addEventListener('click', function(e) { 
-                if (e.target === this) this.style.display = 'none'; 
+                if (e.target === this) {
+                    this.style.display = 'none';
+                    const iframe = document.getElementById('gameIframe');
+                    if (iframe) iframe.src = '';
+                }
             }); 
         });
 
@@ -1986,10 +2383,14 @@
                 const target = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminGamesPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
+                if (target === 'games') {
+                    document.getElementById('adminGamesPanel').classList.remove('hidden');
+                    loadAdminGames();
+                }
                 if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
                 if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
                 if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
@@ -2080,6 +2481,7 @@
 
         console.log('✅ BOOMB App initialized successfully with extreme robustness!');
         console.log('🎰 Golden and Blue shiny wheel ready for thousands of concurrent users!');
+        console.log('🎮 Games management system active!');
         console.log('⚡ Idempotency and retry mechanisms active!');
     </script>
 </body>
