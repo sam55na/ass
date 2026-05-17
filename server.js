@@ -187,7 +187,9 @@ async function getSettings(forceRefresh = false) {
         shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
         shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
         syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
-        gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false
+        gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false,
+        referralBonusForReferrer: 5,
+        referralBonusForNewUser: 5
       };
       await db.collection('settings').doc('config').set(settings);
     }
@@ -198,6 +200,73 @@ async function getSettings(forceRefresh = false) {
     console.error('Error getting settings:', error);
     throw error;
   }
+}
+
+// ============= إعدادات العجلة =============
+let WHEEL_SECTORS = [
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 35, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
+  { id: 2, name: '10 SYP', type: 'balance', value: 10, probability: 15, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 3, name: '20 SYP', type: 'balance', value: 20, probability: 12, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 4, name: '30 SYP', type: 'balance', value: 30, probability: 10, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 5, name: '50 SYP', type: 'balance', value: 50, probability: 8, color: '#00CC44', gradientFrom: '#00CC44', gradientTo: '#009933' },
+  { id: 6, name: 'حظ أوفر', type: 'luck', value: 0, probability: 12, color: '#FFD700', gradientFrom: '#FFD700', gradientTo: '#FFA500' },
+  { id: 7, name: '15 SYP', type: 'balance', value: 15, probability: 5, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' },
+  { id: 8, name: '25 SYP', type: 'balance', value: 25, probability: 3, color: '#1E90FF', gradientFrom: '#1E90FF', gradientTo: '#0066CC' }
+];
+
+// تحميل إعدادات العجلة من قاعدة البيانات
+async function loadWheelSettings() {
+  try {
+    const doc = await db.collection('wheel_settings').doc('config').get();
+    if (doc.exists) {
+      const savedSectors = doc.data().sectors;
+      if (savedSectors && savedSectors.length === 8) {
+        // التحقق من أن مجموع النسب 100%
+        const total = savedSectors.reduce((sum, s) => sum + (s.probability || 0), 0);
+        if (Math.abs(total - 100) < 0.1) {
+          WHEEL_SECTORS = savedSectors;
+          console.log('✅ تم تحميل إعدادات العجلة من قاعدة البيانات');
+        } else {
+          console.warn('⚠️ مجموع النسب ليس 100%، استخدم الإعدادات الافتراضية');
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error loading wheel settings:', error);
+  }
+}
+
+// دالة اختيار قطاع عشوائي بناءً على النسب (محسنة)
+function getRandomSector() {
+  // حساب المجموع الفعلي للنسب
+  const totalProbability = WHEEL_SECTORS.reduce((sum, s) => sum + (s.probability || 0), 0);
+  
+  if (totalProbability === 0) {
+    console.error('ERROR: Total probability is zero!');
+    return WHEEL_SECTORS[0];
+  }
+  
+  const random = Math.random() * totalProbability;
+  let cumulative = 0;
+  
+  for (const sector of WHEEL_SECTORS) {
+    if ((sector.probability || 0) > 0) {
+      cumulative += sector.probability;
+      if (random < cumulative) {
+        console.log(`🎡 Selected: ${sector.name} (probability: ${sector.probability}%, random: ${random.toFixed(2)})`);
+        return sector;
+      }
+    }
+  }
+  
+  // في حالة الخطأ، سجل المشكلة وارجع قطاع عشوائي
+  console.error(`ERROR: No sector selected! random=${random}, cumulative=${cumulative}`);
+  const sectorsWithReward = WHEEL_SECTORS.filter(s => s.type === 'balance' && s.value > 0);
+  if (sectorsWithReward.length > 0) {
+    return sectorsWithReward[Math.floor(Math.random() * sectorsWithReward.length)];
+  }
+  
+  return WHEEL_SECTORS[0];
 }
 
 // ============= كلاس شام كاش (محسن) =============
@@ -349,37 +418,11 @@ class SyriatelCashClient {
   }
 }
 
-// ============= عجلة الحظ =============
-const WHEEL_SECTORS = [
-  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 0 },
-  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 0 },
-  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 50 },
-  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 50 },
-  { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 0 },
-  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 0 },
-  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 0 },
-  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 0 }
-];
-
-function getRandomSector() {
-  const random = Math.random() * 100;
-  let cumulative = 0;
-  
-  for (const sector of WHEEL_SECTORS) {
-    cumulative += sector.probability;
-    if (random < cumulative) {
-      return sector;
-    }
-  }
-  return WHEEL_SECTORS[0];
-}
-
 // ============= API عجلة الحظ (مع Transaction وقفل) =============
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
     
-    // محاولة جلب من الكاش أولاً
     let userData = userCache.get(`user_${uid}`);
     if (!userData) {
       const userDoc = await db.collection('users').doc(uid).get();
@@ -411,7 +454,8 @@ app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
       remainingSeconds: remainingSeconds,
       spinCost: settings.wheelSpinCost || 50,
       referralBalance: userData.referralBalance || 0,
-      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
+      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50),
+      wheelSectors: WHEEL_SECTORS
     });
   } catch (error) {
     console.error('Wheel status error:', error);
@@ -441,7 +485,6 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       
       const userData = userDoc.data();
       
-      // التحقق من آخر تدوير
       const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
       const now = new Date();
       
@@ -453,17 +496,14 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
         }
       }
       
-      // التحقق من الرصيد
       if ((userData.referralBalance || 0) < spinCost) {
         throw new Error(`رصيد الإحالات غير كافٍ. تحتاج ${spinCost} SYP للتدوير`);
       }
       
-      // اختيار الجائزة
       const selectedSector = getRandomSector();
       let prizeAmount = 0;
       let prizeMessage = '';
       
-      // تحديث البيانات
       const updates = {
         referralBalance: admin.firestore.FieldValue.increment(-spinCost),
         lastSpinTime: new Date(),
@@ -476,12 +516,11 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
         updates.balance = admin.firestore.FieldValue.increment(prizeAmount);
         updates.totalWinnings = admin.firestore.FieldValue.increment(prizeAmount);
       } else {
-        prizeMessage = `😅 حظ أوفر! خسرت ${spinCost} SYP من رصيد الإحالات.`;
+        prizeMessage = `😅 ${selectedSector.name}! خسرت ${spinCost} SYP من رصيد الإحالات.`;
       }
       
       t.update(userRef, updates);
       
-      // تسجيل التدويرة
       const spinRef = db.collection('wheel_spins').doc();
       t.set(spinRef, {
         userId: uid,
@@ -495,7 +534,6 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
         userName: userData.name
       });
       
-      // إبطال الكاش
       userCache.del(`user_${uid}`);
       
       return {
@@ -518,9 +556,94 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
   }
 });
 
-// ============= عمولة الإحالة (غير متزامنة) =============
+// ============= API إدارة العجلة (للمشرف) =============
+app.get('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
+  try {
+    res.json({ success: true, sectors: WHEEL_SECTORS });
+  } catch (error) {
+    console.error('Error fetching wheel settings:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/wheel-settings', requireAdmin, async (req, res) => {
+  try {
+    const { sectors } = req.body;
+    
+    if (!sectors || !Array.isArray(sectors) || sectors.length !== 8) {
+      return res.status(400).json({ error: 'بيانات غير صالحة' });
+    }
+    
+    const totalProbability = sectors.reduce((sum, s) => sum + (s.probability || 0), 0);
+    if (Math.abs(totalProbability - 100) > 0.1) {
+      return res.status(400).json({ error: `مجموع النسب يجب أن يكون 100% (الحالي: ${totalProbability}%)` });
+    }
+    
+    for (const sector of sectors) {
+      if (sector.probability < 0 || sector.probability > 100) {
+        return res.status(400).json({ error: 'النسب يجب أن تكون بين 0 و 100' });
+      }
+    }
+    
+    await db.collection('wheel_settings').doc('config').set({
+      sectors: sectors,
+      updatedAt: new Date(),
+      updatedBy: req.user.email
+    });
+    
+    WHEEL_SECTORS = sectors;
+    settingsCache.del('wheel_settings');
+    
+    res.json({ success: true, message: 'تم حفظ إعدادات العجلة بنجاح' });
+  } catch (error) {
+    console.error('Error saving wheel settings:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// ============= عمولة الإحالة (محسنة - يحصل المحيل والمُحال على مكافأة) =============
+async function handleReferralRewards(userId, referrerId) {
+  setImmediate(async () => {
+    try {
+      const settings = await getSettings();
+      const referrerBonus = settings.referralBonusForReferrer || 5;
+      const newUserBonus = settings.referralBonusForNewUser || 5;
+      
+      // مكافأة المُحيل (الشخص الذي دعا)
+      const referrerRef = db.collection('users').doc(referrerId);
+      await referrerRef.update({
+        referralBalance: admin.firestore.FieldValue.increment(referrerBonus),
+        referralEarnings: admin.firestore.FieldValue.increment(referrerBonus),
+        referrals: admin.firestore.FieldValue.arrayUnion(userId)
+      });
+      
+      // مكافأة المُحال (المستخدم الجديد)
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(newUserBonus),
+        referralBonusReceived: admin.firestore.FieldValue.increment(newUserBonus)
+      });
+      
+      // تسجيل المكافأة
+      await db.collection('referral_rewards').add({
+        userId: userId,
+        referrerId: referrerId,
+        referrerBonus: referrerBonus,
+        newUserBonus: newUserBonus,
+        createdAt: new Date()
+      });
+      
+      userCache.del(`user_${referrerId}`);
+      userCache.del(`user_${userId}`);
+      
+      console.log(`✅ مكافأة الإحالة: ${referrerBonus} SYP للمحيل, ${newUserBonus} SYP للمستخدم الجديد`);
+    } catch (error) {
+      console.error('Referral reward error:', error);
+    }
+  });
+}
+
 async function addReferralCommission(userId, depositAmount) {
-  // تشغيل بشكل غير متزامن بدون await
   setImmediate(async () => {
     try {
       const userDoc = await db.collection('users').doc(userId).get();
@@ -548,7 +671,6 @@ async function addReferralCommission(userId, depositAmount) {
             createdAt: new Date()
           });
           
-          // إبطال الكاش للمُحيل
           userCache.del(`user_${userData.referredBy}`);
           
           console.log(`✅ تم إضافة ${commissionAmount} SYP إلى رصيد إحالات المستخدم ${userData.referredBy}`);
@@ -559,6 +681,200 @@ async function addReferralCommission(userId, depositAmount) {
     }
   });
 }
+
+// ============= API الإحصائيات المتقدمة =============
+app.get('/api/admin/advanced-stats', requireAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const depositsSnapshot = await db.collection('deposits').get();
+    const withdrawalsSnapshot = await db.collection('withdraw_requests').get();
+    const spinsSnapshot = await db.collection('wheel_spins').get();
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let stats = {
+      users: {
+        total: 0,
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        withReferrals: 0,
+        totalReferrals: 0
+      },
+      deposits: {
+        total: 0,
+        totalAmount: 0,
+        today: 0,
+        todayAmount: 0,
+        thisWeek: 0,
+        thisWeekAmount: 0,
+        thisMonth: 0,
+        thisMonthAmount: 0,
+        byMethod: {}
+      },
+      withdrawals: {
+        total: 0,
+        totalAmount: 0,
+        pending: 0,
+        pendingAmount: 0,
+        approved: 0,
+        approvedAmount: 0,
+        rejected: 0,
+        rejectedAmount: 0,
+        today: 0,
+        todayAmount: 0
+      },
+      wheel: {
+        totalSpins: 0,
+        totalWinnings: 0,
+        totalSpinsCost: 0,
+        todaySpins: 0,
+        todayWinnings: 0,
+        bySector: {},
+        winRate: 0
+      },
+      referral: {
+        totalCommissions: 0,
+        totalCommissionAmount: 0,
+        totalBonuses: 0,
+        totalBonusAmount: 0
+      },
+      charts: {
+        dailyUsers: [],
+        dailyDeposits: [],
+        dailySpins: []
+      }
+    };
+    
+    // إحصائيات المستخدمين
+    let winningSpins = 0;
+    
+    for (const doc of usersSnapshot.docs) {
+      const user = doc.data();
+      stats.users.total++;
+      if (user.createdAt && user.createdAt.toDate) {
+        const createdAt = user.createdAt.toDate();
+        if (createdAt >= today) stats.users.today++;
+        if (createdAt >= thisWeek) stats.users.thisWeek++;
+        if (createdAt >= thisMonth) stats.users.thisMonth++;
+      }
+      if (user.referrals && user.referrals.length > 0) {
+        stats.users.withReferrals++;
+        stats.users.totalReferrals += user.referrals.length;
+      }
+    }
+    
+    // إحصائيات الإيداعات
+    for (const doc of depositsSnapshot.docs) {
+      const deposit = doc.data();
+      stats.deposits.total++;
+      stats.deposits.totalAmount += deposit.amount || 0;
+      
+      const method = deposit.method || 'unknown';
+      if (!stats.deposits.byMethod[method]) {
+        stats.deposits.byMethod[method] = { count: 0, amount: 0 };
+      }
+      stats.deposits.byMethod[method].count++;
+      stats.deposits.byMethod[method].amount += deposit.amount || 0;
+      
+      if (deposit.verifiedAt && deposit.verifiedAt.toDate) {
+        const date = deposit.verifiedAt.toDate();
+        if (date >= today) {
+          stats.deposits.today++;
+          stats.deposits.todayAmount += deposit.amount || 0;
+        }
+        if (date >= thisWeek) {
+          stats.deposits.thisWeek++;
+          stats.deposits.thisWeekAmount += deposit.amount || 0;
+        }
+        if (date >= thisMonth) {
+          stats.deposits.thisMonth++;
+          stats.deposits.thisMonthAmount += deposit.amount || 0;
+        }
+      }
+    }
+    
+    // إحصائيات السحوبات
+    for (const doc of withdrawalsSnapshot.docs) {
+      const withdrawal = doc.data();
+      stats.withdrawals.total++;
+      stats.withdrawals.totalAmount += withdrawal.amount || 0;
+      
+      if (withdrawal.status === 'pending') {
+        stats.withdrawals.pending++;
+        stats.withdrawals.pendingAmount += withdrawal.amount || 0;
+      } else if (withdrawal.status === 'approved') {
+        stats.withdrawals.approved++;
+        stats.withdrawals.approvedAmount += withdrawal.amount || 0;
+      } else if (withdrawal.status === 'rejected') {
+        stats.withdrawals.rejected++;
+        stats.withdrawals.rejectedAmount += withdrawal.amount || 0;
+      }
+      
+      if (withdrawal.createdAt && withdrawal.createdAt.toDate) {
+        const date = withdrawal.createdAt.toDate();
+        if (date >= today) {
+          stats.withdrawals.today++;
+          stats.withdrawals.todayAmount += withdrawal.amount || 0;
+        }
+      }
+    }
+    
+    // إحصائيات العجلة
+    for (const doc of spinsSnapshot.docs) {
+      const spin = doc.data();
+      stats.wheel.totalSpins++;
+      stats.wheel.totalSpinsCost += spin.spinCost || 0;
+      
+      if (spin.prizeAmount && spin.prizeAmount > 0) {
+        winningSpins++;
+        stats.wheel.totalWinnings += spin.prizeAmount || 0;
+      }
+      
+      const sectorName = spin.sectorName || 'unknown';
+      if (!stats.wheel.bySector[sectorName]) {
+        stats.wheel.bySector[sectorName] = { count: 0, total: 0 };
+      }
+      stats.wheel.bySector[sectorName].count++;
+      stats.wheel.bySector[sectorName].total += spin.prizeAmount || 0;
+      
+      if (spin.timestamp && spin.timestamp.toDate) {
+        const date = spin.timestamp.toDate();
+        if (date >= today) {
+          stats.wheel.todaySpins++;
+          if (spin.prizeAmount && spin.prizeAmount > 0) {
+            stats.wheel.todayWinnings += spin.prizeAmount;
+          }
+        }
+      }
+    }
+    
+    stats.wheel.winRate = stats.wheel.totalSpins > 0 ? (winningSpins / stats.wheel.totalSpins * 100).toFixed(1) : 0;
+    
+    // إحصائيات الإحالات
+    const commissionsSnapshot = await db.collection('referral_commissions').get();
+    for (const doc of commissionsSnapshot.docs) {
+      const commission = doc.data();
+      stats.referral.totalCommissions++;
+      stats.referral.totalCommissionAmount += commission.amount || 0;
+    }
+    
+    const rewardsSnapshot = await db.collection('referral_rewards').get();
+    for (const doc of rewardsSnapshot.docs) {
+      const reward = doc.data();
+      stats.referral.totalBonuses++;
+      stats.referral.totalBonusAmount += (reward.referrerBonus || 0) + (reward.newUserBonus || 0);
+    }
+    
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('Advanced stats error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
 
 // ============= API الإيداع (مع Transaction) =============
 app.post('/api/user/deposit', requireAuth, async (req, res) => {
@@ -574,7 +890,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'المبلغ غير صالح' });
   }
   
-  // قفل باستخدام transactionId لمنع التكرار
   const lock = new DistributedLock(`deposit:${transactionId}`, 60);
   if (!await lock.acquire()) {
     return res.status(409).json({ error: 'تم معالجة رقم العملية هذا مسبقاً' });
@@ -587,7 +902,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     let originalCurrency = 'SYP';
     let originalAmount = amountNum;
     
-    // التحقق من العملية حسب الطريقة
     if (method === 'sham_cash') {
       if (!settings.shamCashEnabled || !settings.shamCashApiKey || !settings.shamCashPrivateAddress) {
         return res.status(400).json({ error: 'طريقة الدفع شام كاش غير مفعلة' });
@@ -636,9 +950,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `الحد الأدنى ${settings.minDeposit.toLocaleString()} SYP` });
     }
     
-    // تنفيذ الإيداع باستخدام Transaction
     await db.runTransaction(async (t) => {
-      // التحقق من عدم تكرار رقم العملية
       const existingQuery = await t.get(db.collection('deposits').where('transactionId', '==', transactionId).limit(1));
       if (!existingQuery.empty) {
         throw new Error('تم استخدام رقم العملية مسبقاً');
@@ -670,10 +982,7 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
       });
     });
     
-    // إبطال الكاش
     userCache.del(`user_${uid}`);
-    
-    // إضافة العمولة في الخلفية
     await addReferralCommission(uid, finalAmountSYP);
     
     res.json({ success: true, message: `تم إيداع ${finalAmountSYP.toLocaleString()} SYP` });
@@ -747,7 +1056,6 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
       });
     });
     
-    // إبطال الكاش
     userCache.del(`user_${uid}`);
     
     res.json({ success: true, message: `تم إنشاء طلب سحب بمبلغ ${amountNum.toLocaleString()} SYP` });
@@ -759,7 +1067,7 @@ app.post('/api/user/withdraw', requireAuth, async (req, res) => {
   }
 });
 
-// ============= باقي APIs (محسنة مع الكاش) =============
+// ============= باقي APIs =============
 app.get('/api/user/profile', requireAuth, async (req, res) => {
   try {
     const { uid } = req.user;
@@ -827,7 +1135,9 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
         usdToSypRate: settings.usdToSypRate || 13000,
         referralCommission: settings.referralCommission || 5,
         siteTheme: settings.siteTheme || 'red',
-        wheelSpinCost: settings.wheelSpinCost || 50
+        wheelSpinCost: settings.wheelSpinCost || 50,
+        referralBonusForReferrer: settings.referralBonusForReferrer || 5,
+        referralBonusForNewUser: settings.referralBonusForNewUser || 5
       }
     });
   } catch (error) {
@@ -836,7 +1146,6 @@ app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
   }
 });
 
-// ============= باقي APIs (مختصرة للاختصار - نفس الأصل مع تحسينات) =============
 app.get('/api/user/stats', requireAuth, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
@@ -874,7 +1183,8 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
         referrerInfo: referrerInfo,
         siteTheme: settings.siteTheme || 'red',
         totalSpins: data.totalSpins || 0,
-        totalWinnings: data.totalWinnings || 0
+        totalWinnings: data.totalWinnings || 0,
+        referralBonusReceived: data.referralBonusReceived || 0
       }
     });
   } catch (error) {
@@ -906,12 +1216,8 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       if (!refQuery.empty) {
         referredBy = refQuery.docs[0].id;
         referrerName = refQuery.docs[0].data().name;
-        await refQuery.docs[0].ref.update({
-          referralBalance: admin.firestore.FieldValue.increment(5),
-          referralEarnings: admin.firestore.FieldValue.increment(5),
-          referrals: admin.firestore.FieldValue.arrayUnion(uid)
-        });
-        userCache.del(`user_${referredBy}`);
+        // مكافأة الإحالة (يتم معالجتها بشكل غير متزامن)
+        await handleReferralRewards(uid, referredBy);
       }
     }
     
@@ -924,6 +1230,7 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
       totalDeposited: 0,
       totalWithdrawn: 0,
       referralEarnings: 0,
+      referralBonusReceived: 0,
       referredBy: referredBy,
       referredByName: referrerName,
       referrals: [],
@@ -984,13 +1291,9 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
       referredByName: referrerDoc.data().name
     });
     
-    await referrerDoc.ref.update({
-      referralBalance: admin.firestore.FieldValue.increment(5),
-      referralEarnings: admin.firestore.FieldValue.increment(5),
-      referrals: admin.firestore.FieldValue.arrayUnion(uid)
-    });
+    // مكافأة الإحالة
+    await handleReferralRewards(uid, referrerId);
     
-    // إبطال الكاش
     userCache.del(`user_${uid}`);
     userCache.del(`user_${referrerId}`);
     
@@ -999,23 +1302,426 @@ app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Add referrer error:', error);
     res.status(500).json({ error: 'حدث خطأ' });
+  } finally {
+    await lock.release();
+  }
+});
+
+// ============= API إدارة النظام (للمشرف) =============
+app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    const settings = await getSettings(true);
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    const updates = req.body;
+    const settingsRef = db.collection('settings').doc('config');
+    
+    await settingsRef.update(updates);
+    settingsCache.del('settings');
+    
+    res.json({ success: true, message: 'تم تحديث الإعدادات' });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const depositsSnapshot = await db.collection('deposits').get();
+    const withdrawalsSnapshot = await db.collection('withdraw_requests').get();
+    const spinsSnapshot = await db.collection('wheel_spins').get();
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let totalBalance = 0;
+    let totalDeposited = 0;
+    let totalWithdrawn = 0;
+    let pendingWithdrawals = 0;
+    let newToday = 0;
+    let totalSpins = 0;
+    let totalWinnings = 0;
+    
+    for (const doc of usersSnapshot.docs) {
+      const user = doc.data();
+      totalBalance += user.balance || 0;
+      if (user.createdAt && user.createdAt.toDate && user.createdAt.toDate() >= today) {
+        newToday++;
+      }
+    }
+    
+    for (const doc of depositsSnapshot.docs) {
+      totalDeposited += doc.data().amount || 0;
+    }
+    
+    for (const doc of withdrawalsSnapshot.docs) {
+      const w = doc.data();
+      totalWithdrawn += w.amount || 0;
+      if (w.status === 'pending') {
+        pendingWithdrawals++;
+      }
+    }
+    
+    for (const doc of spinsSnapshot.docs) {
+      const spin = doc.data();
+      totalSpins++;
+      totalWinnings += spin.prizeAmount || 0;
+    }
+    
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: usersSnapshot.size,
+        newToday: newToday,
+        totalBalance: totalBalance,
+        totalDeposited: totalDeposited,
+        totalWithdrawn: totalWithdrawn,
+        pendingWithdrawals: pendingWithdrawals,
+        totalSpins: totalSpins,
+        totalWinnings: totalWinnings
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const users = [];
+    
+    for (const doc of usersSnapshot.docs) {
+      const user = doc.data();
+      users.push({
+        id: doc.id,
+        email: user.email,
+        name: user.name,
+        uniqueId: user.uniqueId,
+        balance: user.balance || 0,
+        referralBalance: user.referralBalance || 0,
+        referralsCount: user.referrals?.length || 0,
+        referredByName: user.referredByName || null,
+        totalSpins: user.totalSpins || 0,
+        isBanned: user.isBanned || false
+      });
+    }
+    
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = db.collection('withdraw_requests');
+    
+    if (status && status !== 'all') {
+      query = query.where('status', '==', status);
+    }
+    
+    const snapshot = await query.orderBy('createdAt', 'desc').get();
+    const requests = [];
+    
+    for (const doc of snapshot.docs) {
+      requests.push({ id: doc.id, ...doc.data() });
+    }
+    
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Get withdraw requests error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('deposits').orderBy('verifiedAt', 'desc').get();
+    const deposits = [];
+    
+    for (const doc of snapshot.docs) {
+      deposits.push({ id: doc.id, ...doc.data() });
+    }
+    
+    res.json({ success: true, deposits });
+  } catch (error) {
+    console.error('Get deposits error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
+  try {
+    const { requestId, action } = req.body;
+    
+    if (!requestId || !action) {
+      return res.status(400).json({ error: 'البيانات غير مكتملة' });
+    }
+    
+    const requestRef = db.collection('withdraw_requests').doc(requestId);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) {
+      return res.status(404).json({ error: 'الطلب غير موجود' });
+    }
+    
+    const request = requestDoc.data();
+    
+    if (request.status !== 'pending') {
+      return res.status(400).json({ error: 'تم معالجة هذا الطلب مسبقاً' });
+    }
+    
+    if (action === 'approve') {
+      await requestRef.update({
+        status: 'approved',
+        processedAt: new Date(),
+        processedBy: req.user.email
+      });
+    } else if (action === 'reject') {
+      // إعادة المبلغ للمستخدم
+      const userRef = db.collection('users').doc(request.userId);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(request.amount),
+        totalWithdrawn: admin.firestore.FieldValue.increment(-request.amount)
+      });
+      
+      await requestRef.update({
+        status: 'rejected',
+        processedAt: new Date(),
+        processedBy: req.user.email
+      });
+      
+      userCache.del(`user_${request.userId}`);
+    } else {
+      return res.status(400).json({ error: 'إجراء غير صالح' });
+    }
+    
+    res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب بنجاح` });
+  } catch (error) {
+    console.error('Process withdraw error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/update-balance', requireAdmin, async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    
+    if (!userId || amount === undefined) {
+      return res.status(400).json({ error: 'البيانات غير مكتملة' });
+    }
+    
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(Number(amount))
+    });
+    
+    userCache.del(`user_${userId}`);
+    
+    res.json({ success: true, message: 'تم تحديث الرصيد' });
+  } catch (error) {
+    console.error('Update balance error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/toggle-ban', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'معرف المستخدم مطلوب' });
+    }
+    
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    const isBanned = userDoc.data().isBanned || false;
+    await userRef.update({ isBanned: !isBanned });
+    
+    userCache.del(`user_${userId}`);
+    
+    res.json({ success: true, message: !isBanned ? 'تم حظر المستخدم' : 'تم إلغاء حظر المستخدم' });
+  } catch (error) {
+    console.error('Toggle ban error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    if (password !== RESET_PASSWORD) {
+      return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
+    }
+    
+    // حذف المجموعات
+    const collections = ['users', 'deposits', 'withdraw_requests', 'wheel_spins', 'referral_commissions', 'referral_rewards', 'locks'];
+    
+    for (const collectionName of collections) {
+      const snapshot = await db.collection(collectionName).get();
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+    
+    // إعادة تعيين الكاش
+    settingsCache.flush();
+    userCache.flush();
+    
+    res.json({ success: true, message: 'تم تهيئة قاعدة البيانات بنجاح' });
+  } catch (error) {
+    console.error('Reset database error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.post('/api/admin/update-theme', requireAdmin, async (req, res) => {
+  try {
+    const { theme } = req.body;
+    
+    if (!theme) {
+      return res.status(400).json({ error: 'اللون مطلوب' });
+    }
+    
+    await db.collection('settings').doc('config').update({ siteTheme: theme });
+    settingsCache.del('settings');
+    
+    res.json({ success: true, message: 'تم تحديث لون الموقع' });
+  } catch (error) {
+    console.error('Update theme error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/site-theme', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    res.json({ success: true, theme: settings.siteTheme || 'red' });
+  } catch (error) {
+    console.error('Get theme error:', error);
+    res.json({ success: true, theme: 'red' });
+  }
+});
+
+app.post('/api/admin/update-wheel-cost', requireAdmin, async (req, res) => {
+  try {
+    const { cost } = req.body;
+    
+    if (!cost || cost < 10 || cost > 10000) {
+      return res.status(400).json({ error: 'السعر غير صالح' });
+    }
+    
+    await db.collection('settings').doc('config').update({ wheelSpinCost: cost });
+    settingsCache.del('settings');
+    
+    res.json({ success: true, message: 'تم تحديث سعر التدويرة' });
+  } catch (error) {
+    console.error('Update wheel cost error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+// ============= API سجل المستخدم =============
+app.get('/api/user/deposits', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('deposits').where('userId', '==', uid).orderBy('verifiedAt', 'desc').get();
+    const deposits = [];
+    
+    for (const doc of snapshot.docs) {
+      deposits.push(doc.data());
+    }
+    
+    res.json({ success: true, deposits });
+  } catch (error) {
+    console.error('Get deposits error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('withdraw_requests').where('userId', '==', uid).orderBy('createdAt', 'desc').get();
+    const requests = [];
+    
+    for (const doc of snapshot.docs) {
+      requests.push(doc.data());
+    }
+    
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Get withdraw requests error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
+  }
+});
+
+app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const snapshot = await db.collection('wheel_spins').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(50).get();
+    const spins = [];
+    
+    for (const doc of snapshot.docs) {
+      spins.push(doc.data());
+    }
+    
+    res.json({ success: true, spins });
+  } catch (error) {
+    console.error('Get wheel history error:', error);
+    res.status(500).json({ error: 'حدث خطأ' });
   }
 });
 
 // ============= تشغيل الخادم =============
-const PORT = process.env.PORT || 3001;
-const server = app.listen(PORT, () => {
-  console.log(`✅ BOOMB Server running on port ${PORT}`);
-  console.log(`📍 Admin: ${ADMIN_EMAIL}`);
-  console.log(`🎰 Wheel system ready with 8 sectors`);
-  console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
-});
-
-// Graceful Shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+async function startServer() {
+  await loadWheelSettings();
+  
+  const PORT = process.env.PORT || 3001;
+  const server = app.listen(PORT, () => {
+    console.log(`✅ BOOMB Server running on port ${PORT}`);
+    console.log(`📍 Admin: ${ADMIN_EMAIL}`);
+    console.log(`🎰 Wheel system ready with 8 sectors (Total probability: ${WHEEL_SECTORS.reduce((s, sect) => s + sect.probability, 0)}%)`);
+    console.log(`⚡ Cache enabled | Transaction support | Distributed locking active`);
+    console.log(`🎁 Referral system: Both referrer and new user get bonuses`);
+    console.log(`📊 Advanced statistics API available at /api/admin/advanced-stats`);
   });
-});
+  
+  // Graceful Shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, closing server gracefully...');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
+}
+
+startServer();
