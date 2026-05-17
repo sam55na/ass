@@ -7,6 +7,8 @@
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
     <title>BOOMB - منصة الألعاب</title>
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -141,11 +143,12 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             background: linear-gradient(145deg, var(--primary), var(--primary-dark));
             border-radius: 50%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
@@ -159,8 +162,13 @@
             box-shadow: 0 6px 25px rgba(0,0,0,0.5), 0 0 20px var(--primary);
         }
         .fan-btn span {
-            font-size: 24px;
+            font-size: 18px;
+            font-weight: bold;
             transition: transform 0.3s ease;
+        }
+        .fan-btn small {
+            font-size: 8px;
+            margin-top: 2px;
         }
         .fan-btn.open span {
             transform: rotate(45deg);
@@ -169,7 +177,7 @@
         /* القائمة الجانبية المروحة */
         .fan-menu {
             position: fixed;
-            bottom: 85px;
+            bottom: 90px;
             right: 20px;
             display: flex;
             flex-direction: column;
@@ -181,20 +189,23 @@
             pointer-events: auto;
         }
         .fan-item {
-            width: 42px;
+            width: 120px;
             height: 42px;
             background: var(--surface-light);
-            border-radius: 50%;
+            border-radius: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid var(--primary);
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             opacity: 0;
             transform: scale(0) rotate(-180deg);
-            font-size: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
         }
         .fan-menu.open .fan-item {
             animation: fanOpen 0.3s ease forwards;
@@ -204,7 +215,7 @@
         .fan-menu.open .fan-item:nth-child(3) { animation-delay: 0.1s; }
         
         .fan-item:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
             background: var(--primary);
             box-shadow: 0 0 15px var(--primary);
             border-color: white;
@@ -575,6 +586,29 @@
             min-width: 160px;
         }
         
+        /* قسم الإحصائيات المتقدمة */
+        .stats-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+        .chart-card h4 {
+            color: var(--primary-light);
+            margin-bottom: 10px;
+            font-size: 13px;
+            text-align: center;
+        }
+        canvas {
+            max-height: 200px;
+        }
+        
         @media (max-width: 768px) {
             .btn { padding: 6px 4px; font-size: 10px; }
             .balance-value { font-size: 13px; }
@@ -594,21 +628,27 @@
             .fan-btn {
                 bottom: 15px;
                 right: 15px;
-                width: 45px;
-                height: 45px;
+                width: 50px;
+                height: 50px;
             }
             .fan-btn span {
-                font-size: 22px;
+                font-size: 16px;
+            }
+            .fan-btn small {
+                font-size: 7px;
             }
             .fan-menu {
-                bottom: 75px;
+                bottom: 80px;
                 right: 15px;
-                gap: 10px;
+                gap: 8px;
             }
             .fan-item {
-                width: 38px;
-                height: 38px;
-                font-size: 18px;
+                width: 100px;
+                height: 36px;
+                font-size: 11px;
+            }
+            .stats-charts {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -670,14 +710,15 @@
             </div>
         </div>
 
-        <!-- قائمة المروحة الجانبية بدلاً من الشريط السفلي -->
+        <!-- قائمة المروحة الجانبية مع أسماء الأزرار -->
         <div class="fan-btn" id="fanBtn">
             <span>☰</span>
+            <small>القائمة</small>
         </div>
         <div class="fan-menu" id="fanMenu">
-            <div class="fan-item" data-tab="stats">📊</div>
-            <div class="fan-item" data-tab="wheel">🎡</div>
-            <div class="fan-item" data-tab="earn">🎁</div>
+            <div class="fan-item" data-tab="stats">📊 إحصائياتي</div>
+            <div class="fan-item" data-tab="wheel">🎡 عجلة حظ</div>
+            <div class="fan-item" data-tab="earn">🎁 الإحالات</div>
         </div>
     </div>
 
@@ -702,33 +743,39 @@
         </div>
     </div>
 
-    <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>📊 الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><span>📊 إحصائياتي</span><span class="close-modal">&times;</span></div>
+            <div id="statsInner"></div>
+        </div>
+    </div>
     
     <div id="earnModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header"><span>🎁 اكسب مجانا</span><span class="close-modal">&times;</span></div>
+            <div class="modal-header"><span>🎁 نظام الإحالات</span><span class="close-modal">&times;</span></div>
             <div style="padding: 12px;">
                 <div style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; margin-bottom: 12px; text-align: center;">
                     <h4 style="color: var(--primary-light); margin-bottom: 8px; font-size: 13px;">🏆 كود الإحالة الخاص بك</h4>
                     <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 5px 0; font-size: 16px; font-weight: bold;"></div>
                     <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 5px;">📋 نسخ الكود</button>
                     <p style="font-size: 10px; color: var(--text-secondary); margin-top: 8px;">
-                        🎁 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
+                        🎁 كل مستخدم يسجل بكودك يحصل على مكافأة ترحيبية<br>
                         💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع
                     </p>
                 </div>
                 
                 <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; margin-bottom: 12px;">
                     <h4 style="color: var(--warning); margin-bottom: 8px; font-size: 12px;">👥 هل لديك كود إحالة؟</h4>
-                    <p style="font-size: 10px; color: var(--text-secondary); margin-bottom: 8px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
+                    <p style="font-size: 10px; color: var(--text-secondary); margin-bottom: 8px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك (ستحصل أنت وهو على مكافأة)</p>
                     <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 14px; margin-bottom: 8px;">
-                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%">🎁 تفعيل الكود</button>
+                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%">🎁 تفعيل الكود والحصول على المكافأة</button>
                 </div>
                 
                 <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 10px; display: none;">
                     <h4 style="color: var(--success); margin-bottom: 8px; font-size: 12px;">✅ تم التفعيل بنجاح</h4>
                     <div class="info-row" style="font-size: 11px;"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
                     <div class="info-row" style="font-size: 11px;"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
+                    <div class="info-row" style="font-size: 11px; color: var(--success);"><span>🎁 مكافأتك:</span><span>تم إضافة 5 SYP إلى رصيدك الأساسي</span></div>
                 </div>
             </div>
         </div>
@@ -789,9 +836,11 @@
                     <span style="background:var(--primary);padding:2px 8px;border-radius:15px; font-size: 10px;">sam55nam@gmail.com</span>
                     <button class="admin-btn" id="switchToUserView">🌐 الموقع</button>
                     <button class="admin-btn" id="adminLogoutBtn">🚪 تسجيل خروج</button>
+                    <button class="admin-btn" id="refreshStatsBtn">🔄 تحديث الإحصائيات</button>
                 </div>
             </div>
 
+            <!-- الإحصائيات الأساسية -->
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div class="stat-label">المستخدمين</div></div>
                 <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number" id="statNewToday">0</div><div class="stat-label">جدد اليوم</div></div>
@@ -803,6 +852,30 @@
                 <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number" id="statTotalWinnings">0</div><div class="stat-label">أرباح العجلة</div></div>
             </div>
 
+            <!-- الرسوم البيانية للإحصائيات المتقدمة -->
+            <div class="stats-charts" id="statsCharts" style="display: none;">
+                <div class="chart-card">
+                    <h4>📊 النشاط اليومي (آخر 7 أيام)</h4>
+                    <canvas id="dailyUsersChart" width="300" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>💰 الإيداعات اليومية</h4>
+                    <canvas id="dailyDepositsChart" width="300" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>🎡 تدويرات العجلة</h4>
+                    <canvas id="dailySpinsChart" width="300" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>🎁 توزيع جوائز العجلة</h4>
+                    <canvas id="sectorDistributionChart" width="300" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>💳 طرق الدفع المستخدمة</h4>
+                    <canvas id="paymentMethodsChart" width="300" height="150"></canvas>
+                </div>
+            </div>
+
             <div class="tabs-bar">
                 <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
                 <div class="tab" data-tab="deposits">💰 الإيداعات</div>
@@ -810,6 +883,7 @@
                 <div class="tab" data-tab="settings">⚙️ إعدادات الدفع</div>
                 <div class="tab" data-tab="wheel-settings">🎡 إعدادات العجلة</div>
                 <div class="tab" data-tab="themes">🎨 الألوان</div>
+                <div class="tab" data-tab="advanced-stats">📊 إحصائيات متقدمة</div>
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
@@ -863,6 +937,10 @@
                     <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
                     <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
                     
+                    <h3 class="section-title">🎁 مكافآت الإحالة</h3>
+                    <div class="form-group"><label>🎁 مكافأة المُحيل (SYP)</label><input type="number" id="settingReferralBonusReferrer"></div>
+                    <div class="form-group"><label>🎁 مكافأة المُحال (SYP)</label><input type="number" id="settingReferralBonusNewUser"></div>
+                    
                     <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
                     <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
                     <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div>
@@ -894,22 +972,18 @@
                     <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
                     <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
                     
-                    <h3 class="section-title" style="margin-top: 20px;">🎁 جوائز العجلة</h3>
+                    <h3 class="section-title" style="margin-top: 20px;">🎁 جوائز العجلة (قابلة للتعديل)</h3>
                     <div class="admin-table" style="background: var(--surface-light);">
                         <table style="width: 100%;">
-                            <thead><tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr></thead>
-                            <tbody>
-                                <tr><td style="text-align:center;">1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
-                                <tr><td style="text-align:center;">2</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">3</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">4</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
-                                <tr><td style="text-align:center;">6</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">7</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">8</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                            <thead>
+                                <tr><th>القسم</th><th>الجائزة</th><th>النسبة %</th><th>اللون</th><th>تعديل</th></tr>
+                            </thead>
+                            <tbody id="wheelSectorsTable">
+                                <!-- سيتم تعبئتها من API -->
                             </tbody>
                         </table>
                     </div>
+                    <button class="admin-btn" id="saveWheelSectorsBtn" style="width:100%; margin-top:14px">💾 حفظ نسب الجوائز</button>
                 </div>
             </div>
 
@@ -931,6 +1005,33 @@
                         <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
                     </div>
                     <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:14px">💾 حفظ اللون</button>
+                </div>
+            </div>
+
+            <div id="adminAdvancedStatsPanel" class="admin-table hidden">
+                <div class="admin-table-header">
+                    <div class="admin-table-title">📊 إحصائيات متقدمة</div>
+                </div>
+                <div style="padding: 14px;" id="advancedStatsContent">
+                    <div class="stats-charts">
+                        <div class="chart-card">
+                            <h4>📈 إجمالي الإيداعات</h4>
+                            <div id="statsTotalDepositsAmount" style="font-size: 24px; color: var(--success); text-align: center;">0 SYP</div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>📉 إجمالي السحوبات</h4>
+                            <div id="statsTotalWithdrawalsAmount" style="font-size: 24px; color: var(--warning); text-align: center;">0 SYP</div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>🎡 نسبة الفوز في العجلة</h4>
+                            <div id="statsWinRate" style="font-size: 24px; color: var(--primary); text-align: center;">0%</div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>👥 متوسط الإحالات لكل مستخدم</h4>
+                            <div id="statsAvgReferrals" style="font-size: 24px; color: var(--info); text-align: center;">0</div>
+                        </div>
+                    </div>
+                    <div id="advancedStatsDetails"></div>
                 </div>
             </div>
 
@@ -974,6 +1075,7 @@
         let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
         let currentWheelSpinCost = 50;
         let pendingRequests = new Map();
+        let wheelSectorsFromServer = null;
         
         let wheelCanvas = null;
         let ctx = null;
@@ -989,7 +1091,6 @@
             fanBtn.classList.toggle('open');
         });
         
-        // إغلاق القائمة عند النقر خارجها
         document.addEventListener('click', (e) => {
             const fanMenu = document.getElementById('fanMenu');
             const fanBtn = document.getElementById('fanBtn');
@@ -1001,15 +1102,16 @@
             }
         });
         
+        // قطاعات العجلة المحلية (للعرض فقط، الخادم يحدد النتيجة)
         const SECTORS = [
             { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
             { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
             { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
             { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "50 SYP", value: 50, gradientFrom: "#00CC44", gradientTo: "#009933" },
             { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
-            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
+            { name: "15 SYP", value: 15, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "25 SYP", value: 25, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
         ];
 
         function showMessage(msg, isErr = false) {
@@ -1079,6 +1181,114 @@
             }
         }
 
+        async function loadWheelSettingsFromServer() {
+            try {
+                const res = await apiCall('/api/admin/wheel-settings');
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success && data.sectors) {
+                        wheelSectorsFromServer = data.sectors;
+                        updateWheelSectorsTable();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading wheel settings:', error);
+            }
+        }
+
+        function updateWheelSectorsTable() {
+            const tbody = document.getElementById('wheelSectorsTable');
+            if (!tbody || !wheelSectorsFromServer) return;
+            
+            tbody.innerHTML = wheelSectorsFromServer.map(sector => `
+                <tr>
+                    <td style="text-align:center;">${sector.id}</td>
+                    <td><input type="text" class="sector-name" data-id="${sector.id}" value="${sector.name}" style="width:100px; padding:4px;"></td>
+                    <td><input type="number" class="sector-probability" data-id="${sector.id}" value="${sector.probability}" min="0" max="100" step="1" style="width:60px; padding:4px;"></td>
+                    <td style="background:${sector.gradientFrom}; text-align:center;">${sector.gradientFrom}</td>
+                    <td style="text-align:center;">قابل للتعديل</td>
+                </tr>
+            `).join('');
+        }
+
+        async function saveWheelSectorsToServer() {
+            if (!wheelSectorsFromServer) return;
+            
+            const updatedSectors = wheelSectorsFromServer.map(sector => {
+                const nameInput = document.querySelector(`.sector-name[data-id="${sector.id}"]`);
+                const probInput = document.querySelector(`.sector-probability[data-id="${sector.id}"]`);
+                return {
+                    ...sector,
+                    name: nameInput?.value || sector.name,
+                    probability: parseInt(probInput?.value) || 0
+                };
+            });
+            
+            const total = updatedSectors.reduce((sum, s) => sum + s.probability, 0);
+            if (Math.abs(total - 100) > 1) {
+                showMessage(`مجموع النسب يجب أن يكون 100% (الحالي: ${total}%)`, true);
+                return;
+            }
+            
+            const res = await apiCall('/api/admin/wheel-settings', { 
+                method: 'POST', 
+                body: JSON.stringify({ sectors: updatedSectors }) 
+            });
+            
+            if (res?.ok) {
+                showMessage('تم حفظ إعدادات العجلة بنجاح');
+                wheelSectorsFromServer = updatedSectors;
+            } else {
+                showMessage('فشل حفظ الإعدادات', true);
+            }
+        }
+
+        async function loadAdvancedStats() {
+            const res = await apiCall('/api/admin/advanced-stats');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const stats = data.stats;
+                    
+                    document.getElementById('statsTotalDepositsAmount').innerHTML = `${stats.deposits.totalAmount.toLocaleString()} SYP`;
+                    document.getElementById('statsTotalWithdrawalsAmount').innerHTML = `${stats.withdrawals.totalAmount.toLocaleString()} SYP`;
+                    document.getElementById('statsWinRate').innerHTML = `${stats.wheel.winRate}%`;
+                    document.getElementById('statsAvgReferrals').innerHTML = stats.users.total > 0 ? (stats.users.totalReferrals / stats.users.total).toFixed(1) : '0';
+                    
+                    const detailsHtml = `
+                        <div class="stats-charts">
+                            <div class="chart-card">
+                                <h4>🏆 توزيع جوائز العجلة</h4>
+                                ${Object.entries(stats.wheel.bySector).map(([name, data]) => `
+                                    <div class="info-row"><span>${name}</span><span>${data.count} مرة (${((data.count / stats.wheel.totalSpins) * 100).toFixed(1)}%)</span></div>
+                                `).join('')}
+                            </div>
+                            <div class="chart-card">
+                                <h4>💳 طرق الدفع</h4>
+                                ${Object.entries(stats.deposits.byMethod).map(([method, data]) => `
+                                    <div class="info-row"><span>${method === 'sham_cash' ? '🏦 شام كاش' : method === 'sham_cash_usd' ? '💵 شام كاش دولار' : '📱 سيرياتيل كاش'}</span><span>${data.count} عملية (${data.amount.toLocaleString()} SYP)</span></div>
+                                `).join('')}
+                            </div>
+                            <div class="chart-card">
+                                <h4>📊 إحصائيات الإحالات</h4>
+                                <div class="info-row"><span>إجمالي العمولات:</span><span>${stats.referral.totalCommissions} (${stats.referral.totalCommissionAmount.toLocaleString()} SYP)</span></div>
+                                <div class="info-row"><span>إجمالي المكافآت:</span><span>${stats.referral.totalBonuses} (${stats.referral.totalBonusAmount.toLocaleString()} SYP)</span></div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>👥 المستخدمون</h4>
+                                <div class="info-row"><span>إجمالي:</span><span>${stats.users.total}</span></div>
+                                <div class="info-row"><span>جدد اليوم:</span><span>${stats.users.today}</span></div>
+                                <div class="info-row"><span>هذا الأسبوع:</span><span>${stats.users.thisWeek}</span></div>
+                                <div class="info-row"><span>هذا الشهر:</span><span>${stats.users.thisMonth}</span></div>
+                                <div class="info-row"><span>لديهم إحالات:</span><span>${stats.users.withReferrals}</span></div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('advancedStatsDetails').innerHTML = detailsHtml;
+                }
+            }
+        }
+
         function drawWheel() {
             if (!ctx || !wheelCanvas) return;
             const size = wheelCanvas.width;
@@ -1121,18 +1331,15 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 4;
-                ctx.font = `bold ${size / 22}px "Segoe UI"`;
+                ctx.font = `bold ${size / 24}px "Segoe UI"`;
                 
                 let text = SECTORS[i].name;
                 if (text === "حظ أوفر") {
                     text = "😅";
-                    ctx.font = `${size / 16}px "Segoe UI"`;
-                } else if (text === "10 SYP") {
-                    text = "🎁 10";
-                } else if (text === "20 SYP") {
-                    text = "🎁 20";
-                } else if (text === "30 SYP") {
-                    text = "🎁 30";
+                    ctx.font = `${size / 18}px "Segoe UI"`;
+                } else {
+                    text = text.replace(" SYP", "");
+                    text = "🎁 " + text;
                 }
                 
                 ctx.fillText(text, radius * 0.7, 0);
@@ -1238,7 +1445,7 @@
                 return;
             }
             
-            const winningSectorIndex = spinData.sector - 1;
+            const winningSectorIndex = (spinData.sector - 1) % SECTORS.length;
             const angleStep = (Math.PI * 2) / SECTORS.length;
             const pointerAngle = -Math.PI / 2;
             const targetSectorMidAngle = pointerAngle;
@@ -1352,7 +1559,18 @@
                     } else { 
                         refInfo.classList.add('hidden'); 
                     } 
-                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>`; 
+                    document.getElementById('statsInner').innerHTML = `
+                        <div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div>
+                        <div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div>
+                        <div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div>
+                        <div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>
+                    `; 
                 } 
             }
         }
@@ -1619,6 +1837,7 @@
                 document.getElementById('referrerCodeInput').value = ''; 
                 await loadStats(); 
                 await loadEarnPageInfo(); 
+                await loadProfile();
             } else if (res) { 
                 const err = await res.json(); 
                 showMessage(err.error || 'فشل إضافة الكود', true); 
@@ -1686,7 +1905,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table>
+                container.innerHTML = `<td>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th> </tr>
                     </thead>
@@ -1763,7 +1982,6 @@
                                     <td>
                                         <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
                                         <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
-                                      </div>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1782,6 +2000,8 @@
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
                     document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || '';
                     document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5;
+                    document.getElementById('settingReferralBonusReferrer').value = data.settings.referralBonusForReferrer || 5;
+                    document.getElementById('settingReferralBonusNewUser').value = data.settings.referralBonusForNewUser || 5;
                     document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
                     document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
                     document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || '';
@@ -1806,6 +2026,8 @@
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value),
                 gameImageUrl: document.getElementById('settingGameImageUrl').value,
                 referralCommission: Number(document.getElementById('settingReferralCommission').value),
+                referralBonusForReferrer: Number(document.getElementById('settingReferralBonusReferrer').value),
+                referralBonusForNewUser: Number(document.getElementById('settingReferralBonusNewUser').value),
                 shamCashEnabled: document.getElementById('settingShamCashEnabled').checked,
                 shamCashApiKey: document.getElementById('settingShamCashApiKey').value,
                 shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value,
@@ -1924,6 +2146,8 @@
             loadAdminDeposits();
             loadAdminUsers();
             loadAdminSettings();
+            loadWheelSettingsFromServer();
+            loadAdvancedStats();
         }
 
         function showUserInterface() {
@@ -2040,7 +2264,13 @@
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
         document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
         document.getElementById('saveWheelCostBtn')?.addEventListener('click', saveWheelCost);
+        document.getElementById('saveWheelSectorsBtn')?.addEventListener('click', saveWheelSectorsToServer);
         document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
+        document.getElementById('refreshStatsBtn')?.addEventListener('click', () => {
+            loadAdminDashboard();
+            loadAdvancedStats();
+            showMessage('تم تحديث الإحصائيات');
+        });
         document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
         document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
         document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; document.getElementById('resetPassword').value = ''; });
@@ -2052,7 +2282,6 @@
         document.querySelectorAll('.fan-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const target = item.dataset.tab;
-                // إغلاق القائمة
                 document.getElementById('fanMenu').classList.remove('open');
                 document.getElementById('fanBtn').classList.remove('open');
 
@@ -2094,7 +2323,7 @@
             }
             container.innerHTML = `<table>
                 <thead>
-                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th></tr>
+                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                 </thead>
                 <tbody>
                     ${filtered.map(u => `
@@ -2114,7 +2343,7 @@
                         </tr>
                     `).join('')}
                 </tbody>
-            </table>`;
+            <table>`;
         });
 
         document.querySelectorAll('.close-modal').forEach(btn => {
@@ -2134,13 +2363,17 @@
                 const target = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminAdvancedStatsPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
                 if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
                 if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
                 if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
+                if (target === 'advanced-stats') {
+                    document.getElementById('adminAdvancedStatsPanel').classList.remove('hidden');
+                    loadAdvancedStats();
+                }
                 if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden');
             });
         });
@@ -2199,10 +2432,10 @@
             }
         });
 
-        console.log('✅ BOOMB App initialized successfully with extreme robustness!');
-        console.log('🎰 Golden and Blue shiny wheel ready for thousands of concurrent users!');
-        console.log('⚡ Idempotency and retry mechanisms active!');
-        console.log('🌸 Fan menu sidebar added successfully!');
+        console.log('✅ BOOMB App initialized successfully!');
+        console.log('🎡 Golden wheel ready | 📊 Advanced stats available');
+        console.log('🎁 Referral system: Both referrer and new user get rewards');
+        console.log('🌸 Fan menu with labels added');
     </script>
 </body>
 </html>
