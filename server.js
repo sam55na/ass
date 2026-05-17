@@ -351,14 +351,14 @@ class SyriatelCashClient {
 
 // ============= عجلة الحظ =============
 const WHEEL_SECTORS = [
-  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
-  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
-  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
-  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 },
-  { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
-  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
-  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
-  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 }
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 0 },
+  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 0 },
+  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 50 },
+  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 50 },
+  { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 0 },
+  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 0 },
+  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 0 },
+  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 0 }
 ];
 
 function getRandomSector() {
