@@ -136,6 +136,7 @@
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
 
+        /* القائمة الجانبية المروحة */
         .fan-menu {
             position: fixed;
             bottom: 85px;
@@ -146,7 +147,9 @@
             z-index: 999;
             pointer-events: none;
         }
-        .fan-menu.open { pointer-events: auto; }
+        .fan-menu.open {
+            pointer-events: auto;
+        }
         .fan-item {
             min-width: 110px;
             width: auto;
@@ -169,7 +172,9 @@
             padding: 0 16px;
             white-space: nowrap;
         }
-        .fan-menu.open .fan-item { animation: fanOpen 0.3s ease forwards; }
+        .fan-menu.open .fan-item {
+            animation: fanOpen 0.3s ease forwards;
+        }
         .fan-menu.open .fan-item:nth-child(1) { animation-delay: 0s; }
         .fan-menu.open .fan-item:nth-child(2) { animation-delay: 0.05s; }
         .fan-menu.open .fan-item:nth-child(3) { animation-delay: 0.1s; }
@@ -181,6 +186,7 @@
             border-color: white;
         }
 
+        /* زر المروحة الجانبي */
         .fan-btn {
             position: fixed;
             bottom: 20px;
@@ -213,17 +219,40 @@
             margin-top: 2px;
             opacity: 0.8;
         }
-        .fan-btn.open span { transform: rotate(45deg); }
+        .fan-btn.open span {
+            transform: rotate(45deg);
+        }
         
+        /* للشاشات الصغيرة جداً */
         @media (max-width: 480px) {
-            .fan-item { min-width: 95px; padding: 0 12px; font-size: 11px; height: 36px; }
-            .fan-btn { bottom: 15px; right: 15px; width: 45px; height: 45px; }
-            .fan-btn span { font-size: 20px; }
-            .fan-menu { bottom: 75px; right: 15px; gap: 10px; }
+            .fan-item {
+                min-width: 95px;
+                padding: 0 12px;
+                font-size: 11px;
+                height: 36px;
+            }
+            .fan-btn {
+                bottom: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+            }
+            .fan-btn span {
+                font-size: 20px;
+            }
+            .fan-menu {
+                bottom: 75px;
+                right: 15px;
+                gap: 10px;
+            }
         }
 
-        .bottom-nav { display: none; }
+        /* إخفاء الشريط السفلي القديم */
+        .bottom-nav {
+            display: none;
+        }
 
+        /* العجلة - حجم طبيعي كبير */
         .wheel-container {
             display: flex;
             flex-direction: column;
@@ -659,6 +688,7 @@
             </div>
         </div>
 
+        <!-- قائمة المروحة الجانبية بدلاً من الشريط السفلي -->
         <div class="fan-btn" id="fanBtn">
             <span>☰</span>
             <small>القائمة</small>
@@ -667,7 +697,6 @@
             <div class="fan-item" data-tab="stats">📊 إحصائياتي</div>
             <div class="fan-item" data-tab="wheel">🎡 عجلة الحظ</div>
             <div class="fan-item" data-tab="earn">🎁 الإحالات</div>
-            <div class="fan-item" data-tab="history">📋 سجل المعاملات</div>
         </div>
     </div>
 
@@ -887,16 +916,18 @@
                     <h3 class="section-title" style="margin-top: 20px;">🎁 جوائز العجلة</h3>
                     <div class="admin-table" style="background: var(--surface-light);">
                         <table style="width: 100%;">
-                            <thead>
-                                <tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr>
-                            </thead>
-                            <tbody id="wheelSectorsTable">
-                                <tr><td colspan="4" style="text-align:center;">جاري التحميل...</td></tr>
+                            <thead><tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr></thead>
+                            <tbody>
+                                <tr><td style="text-align:center;">1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
+                                <tr><td style="text-align:center;">2</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">3</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">4</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
+                                <tr><td style="text-align:center;">6</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">7</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
+                                <tr><td style="text-align:center;">8</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <button class="admin-btn" id="saveWheelSectorsBtn" style="width:100%;">💾 حفظ إعدادات العجلة</button>
                     </div>
                 </div>
             </div>
@@ -961,7 +992,6 @@
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
         let currentWheelSpinCost = 50;
-        let currentWheelSectors = []; // سيتم تحميلها من الخادم
         let pendingRequests = new Map();
         
         let wheelCanvas = null;
@@ -978,6 +1008,7 @@
             fanBtn.classList.toggle('open');
         });
         
+        // إغلاق القائمة عند النقر خارجها
         document.addEventListener('click', (e) => {
             const fanMenu = document.getElementById('fanMenu');
             const fanBtn = document.getElementById('fanBtn');
@@ -988,6 +1019,17 @@
                 }
             }
         });
+        
+        const SECTORS = [
+            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "50 SYP", value: 50, gradientFrom: "#00CC44", gradientTo: "#009933" },
+            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+            { name: "15 SYP", value: 15, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+            { name: "25 SYP", value: 25, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
+        ];
 
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
@@ -1056,19 +1098,17 @@
             }
         }
 
-        // دالة رسم العجلة من بيانات الخادم
-        function drawWheelFromSectors(sectors) {
-            if (!ctx || !wheelCanvas || !sectors || sectors.length === 0) return;
-            
+        function drawWheel() {
+            if (!ctx || !wheelCanvas) return;
             const size = wheelCanvas.width;
             const centerX = size / 2;
             const centerY = size / 2;
             const radius = size / 2 - 5;
-            const angleStep = (Math.PI * 2) / sectors.length;
+            const angleStep = (Math.PI * 2) / SECTORS.length;
             
             ctx.clearRect(0, 0, size, size);
             
-            for (let i = 0; i < sectors.length; i++) {
+            for (let i = 0; i < SECTORS.length; i++) {
                 const startAngle = i * angleStep + currentRotation;
                 const endAngle = startAngle + angleStep;
                 
@@ -1083,8 +1123,8 @@
                     centerX + Math.cos(endAngle) * radius * 0.7,
                     centerY + Math.sin(endAngle) * radius * 0.7
                 );
-                gradient.addColorStop(0, sectors[i].gradientFrom || sectors[i].color || "#FFD700");
-                gradient.addColorStop(1, sectors[i].gradientTo || "#FFA500");
+                gradient.addColorStop(0, SECTORS[i].gradientFrom);
+                gradient.addColorStop(1, SECTORS[i].gradientTo);
                 
                 ctx.fillStyle = gradient;
                 ctx.fill();
@@ -1100,15 +1140,15 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 4;
-                ctx.font = `bold ${size / 22}px "Segoe UI"`;
+                ctx.font = `bold ${size / 24}px "Segoe UI"`;
                 
-                let text = sectors[i].name;
+                let text = SECTORS[i].name;
                 if (text === "حظ أوفر") {
                     text = "😅";
-                    ctx.font = `${size / 16}px "Segoe UI"`;
+                    ctx.font = `${size / 18}px "Segoe UI"`;
                 } else {
                     text = text.replace(" SYP", "");
-                    text = `🎁 ${text}`;
+                    text = "🎁 " + text;
                 }
                 
                 ctx.fillText(text, radius * 0.7, 0);
@@ -1126,8 +1166,8 @@
             ctx.lineWidth = 3;
             ctx.stroke();
             
-            for (let i = 0; i < sectors.length; i++) {
-                const angle = (i * Math.PI * 2) / sectors.length;
+            for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI * 2) / 8;
                 const x = centerX + Math.cos(angle) * 12;
                 const y = centerY + Math.sin(angle) * 12;
                 ctx.beginPath();
@@ -1147,12 +1187,6 @@
                 if (data.success) {
                     const spinBtn = document.getElementById('spinWheelBtn');
                     const timerDiv = document.getElementById('wheelTimer');
-                    
-                    // تحديث إعدادات العجلة من الخادم
-                    if (data.wheelSectors && data.wheelSectors.length > 0) {
-                        currentWheelSectors = data.wheelSectors;
-                        drawWheelFromSectors(currentWheelSectors);
-                    }
                     
                     if (!data.canSpin && data.remainingSeconds > 0) {
                         spinBtn.disabled = true;
@@ -1193,9 +1227,6 @@
                     showMessage(`يجب الانتظار ${minutes}:${seconds.toString().padStart(2, '0')} قبل التدوير مرة أخرى`, true);
                     return;
                 }
-                if (statusData.wheelSectors && statusData.wheelSectors.length > 0) {
-                    currentWheelSectors = statusData.wheelSectors;
-                }
             }
             
             spinning = true;
@@ -1223,8 +1254,8 @@
                 return;
             }
             
-            const winningSectorIndex = spinData.sector - 1;
-            const angleStep = (Math.PI * 2) / currentWheelSectors.length;
+            const winningSectorIndex = (spinData.sector - 1) % SECTORS.length;
+            const angleStep = (Math.PI * 2) / SECTORS.length;
             const pointerAngle = -Math.PI / 2;
             const targetSectorMidAngle = pointerAngle;
             const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
@@ -1242,13 +1273,13 @@
                 const progress = Math.min(elapsed / duration, 1);
                 const easeOut = 1 - Math.pow(1 - progress, 3);
                 currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
-                drawWheelFromSectors(currentWheelSectors);
+                drawWheel();
                 
                 if (progress < 1) {
                     animationFrame = requestAnimationFrame(animateSpin);
                 } else {
                     currentRotation = finalTargetRotation % (Math.PI * 2);
-                    drawWheelFromSectors(currentWheelSectors);
+                    drawWheel();
                     
                     if (spinData.prizeAmount > 0) {
                         showMessage(`🎉 ${spinData.message}`, false);
@@ -1337,7 +1368,18 @@
                     } else { 
                         refInfo.classList.add('hidden'); 
                     } 
-                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>`; 
+                    document.getElementById('statsInner').innerHTML = `
+                        <div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div>
+                        <div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div>
+                        <div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div>
+                        <div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div>
+                        <div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>
+                    `; 
                 } 
             }
         }
@@ -1444,11 +1486,6 @@
                     currentUsdToSypRate = s.usdToSypRate || 13000; 
                     currentReferralCommission = s.referralCommission || 5; 
                     currentWheelSpinCost = s.wheelSpinCost || 50;
-                    
-                    // تحميل إعدادات العجلة من الخادم
-                    if (s.wheelSectors && s.wheelSectors.length > 0) {
-                        currentWheelSectors = s.wheelSectors;
-                    }
                     
                     const gameImage = document.getElementById('gameImage'); 
                     const defaultIcon = document.getElementById('defaultGameIcon'); 
@@ -1609,6 +1646,7 @@
                 document.getElementById('referrerCodeInput').value = ''; 
                 await loadStats(); 
                 await loadEarnPageInfo(); 
+                await loadProfile();
             } else if (res) { 
                 const err = await res.json(); 
                 showMessage(err.error || 'فشل إضافة الكود', true); 
@@ -1676,7 +1714,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<td>
+                container.innerHTML = `<table>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th> </tr>
                     </thead>
@@ -1705,7 +1743,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table>
+                container.innerHTML = `<td>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
                     </thead>
@@ -1735,7 +1773,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `</table>
+                    container.innerHTML = `<table>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                         </thead>
@@ -1786,64 +1824,6 @@
                     document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || '';
                     document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50;
                 }
-            }
-        }
-
-        async function loadWheelSectorsForAdmin() {
-            const res = await apiCall('/api/admin/wheel-settings');
-            if (res?.ok) {
-                const data = await res.json();
-                if (data.success && data.sectors) {
-                    const container = document.getElementById('wheelSectorsTable');
-                    container.innerHTML = data.sectors.map(sector => `
-                        <tr>
-                            <td style="text-align:center;"><input type="text" class="sector-name" value="${sector.name}" style="width:100px; text-align:center;"></td>
-                            <td style="text-align:center;"><input type="number" class="sector-value" value="${sector.value}" style="width:70px; text-align:center;"></td>
-                            <td style="text-align:center;"><input type="number" class="sector-probability" value="${sector.probability}" style="width:70px; text-align:center;" min="0" max="100"></td>
-                            <td style="text-align:center;"><input type="color" class="sector-color" value="${sector.color || '#1E90FF'}" style="width:50px;"></td>
-                        </tr>
-                    `).join('');
-                    window.currentWheelSectorsData = data.sectors;
-                }
-            }
-        }
-
-        async function saveWheelSectors() {
-            const rows = document.querySelectorAll('#wheelSectorsTable tr');
-            const sectors = [];
-            rows.forEach((row, index) => {
-                const nameInput = row.querySelector('.sector-name');
-                const valueInput = row.querySelector('.sector-value');
-                const probInput = row.querySelector('.sector-probability');
-                const colorInput = row.querySelector('.sector-color');
-                
-                if (nameInput && probInput) {
-                    sectors.push({
-                        id: index + 1,
-                        name: nameInput.value,
-                        type: nameInput.value === 'حظ أوفر' ? 'luck' : 'balance',
-                        value: parseFloat(valueInput?.value) || 0,
-                        probability: parseFloat(probInput.value) || 0,
-                        color: colorInput?.value || '#1E90FF',
-                        gradientFrom: colorInput?.value || '#1E90FF',
-                        gradientTo: '#0066CC'
-                    });
-                }
-            });
-            
-            const totalProb = sectors.reduce((sum, s) => sum + s.probability, 0);
-            if (Math.abs(totalProb - 100) > 0.1) {
-                showMessage(`مجموع النسب يجب أن يكون 100% (الحالي: ${totalProb}%)`, true);
-                return;
-            }
-            
-            const res = await apiCall('/api/admin/wheel-settings', { method: 'POST', body: JSON.stringify({ sectors }) });
-            if (res?.ok) {
-                showMessage('تم حفظ إعدادات العجلة بنجاح');
-                currentWheelSectors = sectors;
-                drawWheelFromSectors(currentWheelSectors);
-            } else {
-                showMessage('فشل حفظ الإعدادات', true);
             }
         }
 
@@ -1971,7 +1951,6 @@
             loadAdminDeposits();
             loadAdminUsers();
             loadAdminSettings();
-            loadWheelSectorsForAdmin();
         }
 
         function showUserInterface() {
@@ -1998,7 +1977,6 @@
                 document.getElementById('loader').style.display = 'none';
                 if (isAdmin) showAdminInterface();
                 else showUserInterface();
-                initWheel();
             } catch (err) {
                 console.error(err);
                 let msg = 'فشل تسجيل الدخول';
@@ -2018,9 +1996,7 @@
                 wheelCanvas.width = size;
                 wheelCanvas.height = size;
                 ctx = wheelCanvas.getContext('2d');
-                if (currentWheelSectors.length > 0) {
-                    drawWheelFromSectors(currentWheelSectors);
-                }
+                drawWheel();
                 checkWheelStatus();
             }
         }
@@ -2091,7 +2067,6 @@
         document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
         document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
         document.getElementById('saveWheelCostBtn')?.addEventListener('click', saveWheelCost);
-        document.getElementById('saveWheelSectorsBtn')?.addEventListener('click', saveWheelSectors);
         document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
         document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
         document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
@@ -2100,6 +2075,7 @@
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
 
+        // ربط عناصر القائمة المروحة
         document.querySelectorAll('.fan-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const target = item.dataset.tab;
@@ -2110,21 +2086,16 @@
                     document.getElementById('statsModal').style.display = 'flex';
                 } else if (target === 'wheel') {
                     await checkWheelStatus();
-                    if (wheelCanvas && ctx && currentWheelSectors.length > 0) {
+                    if (wheelCanvas && ctx) {
                         const size = Math.min(500, window.innerWidth - 100);
                         wheelCanvas.width = size;
                         wheelCanvas.height = size;
-                        drawWheelFromSectors(currentWheelSectors);
+                        drawWheel();
                     }
                     document.getElementById('wheelModal').style.display = 'flex';
                 } else if (target === 'earn') {
                     await loadEarnPageInfo();
                     document.getElementById('earnModal').style.display = 'flex';
-                } else if (target === 'history') {
-                    document.getElementById('historyModal').style.display = 'flex';
-                    await loadDeposits();
-                    await loadWithdrawals();
-                    await loadWheelHistoryForModal();
                 }
             });
         });
@@ -2147,7 +2118,7 @@
                 container.innerHTML = '<p style="text-align:center;padding:20px">🔍 لا يوجد نتائج</p>';
                 return;
             }
-            container.innerHTML = `<tr>
+            container.innerHTML = `<table>
                 <thead>
                     <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
                 </thead>
@@ -2194,10 +2165,7 @@
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
                 if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
-                if (target === 'wheel-settings') {
-                    document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
-                    loadWheelSectorsForAdmin();
-                }
+                if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
                 if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
                 if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden');
             });
@@ -2249,17 +2217,18 @@
         }
 
         window.addEventListener('resize', () => {
-            if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex' && currentWheelSectors.length > 0) {
+            if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex') {
                 const size = Math.min(500, window.innerWidth - 100);
                 wheelCanvas.width = size;
                 wheelCanvas.height = size;
-                drawWheelFromSectors(currentWheelSectors);
+                drawWheel();
             }
         });
 
-        console.log('✅ BOOMB App initialized successfully with server-based wheel configuration!');
-        console.log('🎰 Wheel sectors and probabilities are loaded from server only!');
-        console.log('🌸 Fan menu sidebar with history added successfully!');
+        console.log('✅ BOOMB App initialized successfully!');
+        console.log('🎡 Golden wheel ready | 📊 Advanced stats available');
+        console.log('🎁 Referral system: Both referrer and new user get rewards');
+        console.log('🌸 Fan menu with labels added');
     </script>
 </body>
 </html>
