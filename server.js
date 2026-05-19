@@ -1542,7 +1542,299 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'فشل التهيئة' });
   }
 });
+// ============= دوال لعبة البرج الذهبي =============
 
+// حالة اللعبة لكل مستخدم (مخزنة في Firestore)
+async function getGameState(userId) {
+  const docRef = db.collection('game_states').doc(userId);
+  const doc = await docRef.get();
+  
+  if (!doc.exists) {
+    return null;
+  }
+  return doc.data();
+}
+
+async function saveGameState(userId, state) {
+  const docRef = db.collection('game_states').doc(userId);
+  await docRef.set(state, { merge: true });
+}
+
+// بدء جولة جديدة
+app.post('/api/game/start', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { betAmount } = req.body;
+    
+    const validBets = [10, 20, 40, 80, 160, 320];
+    if (!validBets.includes(betAmount)) {
+      return res.status(400).json({ error: 'مبلغ رهان غير صالح' });
+    }
+    
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    
+    if (!userData) {
+      return res.status(404).json({ error: 'مستخدم غير موجود' });
+    }
+    
+    if ((userData.balance || 0) < betAmount) {
+      return res.status(400).json({ error: 'الرصيد غير كافٍ' });
+    }
+    
+    // خصم الرهان
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(-betAmount)
+    });
+    
+    // إنشاء حالة لعبة جديدة
+    const gameState = {
+      userId: uid,
+      betAmount: betAmount,
+      currentFloor: 0,
+      currentMultiplier: 0,
+      pendingProfit: 0,
+      isActive: true,
+      status: 'active',
+      floors: [],
+      startedAt: new Date(),
+      lastUpdate: new Date()
+    };
+    
+    await saveGameState(uid, gameState);
+    
+    res.json({
+      success: true,
+      gameState: {
+        betAmount: betAmount,
+        currentFloor: 0,
+        currentMultiplier: 0,
+        pendingProfit: 0,
+        isActive: true
+      },
+      newBalance: userData.balance - betAmount
+    });
+    
+  } catch (error) {
+    console.error('Start game error:', error);
+    res.status(500).json({ error: 'فشل بدء اللعبة' });
+  }
+});
+
+// إفلات طابق
+app.post('/api/game/drop', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { floorNumber, positionX, overlapWidth, requiredOverlap } = req.body;
+    
+    const gameState = await getGameState(uid);
+    
+    if (!gameState || !gameState.isActive) {
+      return res.status(400).json({ error: 'لا توجد جولة نشطة' });
+    }
+    
+    // المضاعفات حسب عدد الطوابق
+    const multipliers = {
+      1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+      6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+      11: 9.0, 12: 11.0, 13: 15.0
+    };
+    const MAX_FLOOR = 13;
+    
+    // التحقق من النجاح (تداخل 50% على الأقل)
+    const success = overlapWidth >= requiredOverlap;
+    
+    if (!success) {
+      // خسارة - إنهاء الجولة
+      await saveGameState(uid, { isActive: false, status: 'lost' });
+      
+      // تسجيل الخسارة
+      await db.collection('game_history').add({
+        userId: uid,
+        betAmount: gameState.betAmount,
+        result: 'loss',
+        floorsReached: floorNumber - 1,
+        endedAt: new Date()
+      });
+      
+      return res.json({
+        success: false,
+        result: 'loss',
+        message: 'فشل البناء! تداخل غير كافٍ',
+        floorsReached: floorNumber - 1
+      });
+    }
+    
+    // نجاح - إضافة الطابق
+    const newFloor = floorNumber;
+    const multiplier = multipliers[newFloor] || multipliers[MAX_FLOOR];
+    const pendingProfit = gameState.betAmount * multiplier;
+    
+    const updatedState = {
+      currentFloor: newFloor,
+      currentMultiplier: multiplier,
+      pendingProfit: pendingProfit,
+      lastUpdate: new Date()
+    };
+    
+    // إضافة الطابق إلى المصفوفة
+    const floors = gameState.floors || [];
+    floors.push({ floorNumber: newFloor, positionX: positionX, timestamp: new Date() });
+    updatedState.floors = floors;
+    
+    // التحقق من إكمال البرج
+    if (newFloor >= MAX_FLOOR) {
+      // فوز كامل - صرف الأرباح
+      const userRef = db.collection('users').doc(uid);
+      await userRef.update({
+        balance: admin.firestore.FieldValue.increment(pendingProfit)
+      });
+      
+      updatedState.isActive = false;
+      updatedState.status = 'completed';
+      updatedState.paidOut = true;
+      
+      await saveGameState(uid, updatedState);
+      
+      // تسجيل الفوز
+      await db.collection('game_history').add({
+        userId: uid,
+        betAmount: gameState.betAmount,
+        result: 'win',
+        winAmount: pendingProfit,
+        multiplier: multiplier,
+        floorsReached: newFloor,
+        endedAt: new Date()
+      });
+      
+      return res.json({
+        success: true,
+        result: 'completed',
+        multiplier: multiplier,
+        pendingProfit: pendingProfit,
+        message: '🎉 أكملت البرج! تم إضافة الأرباح إلى رصيدك',
+        newBalance: (await userRef.get()).data().balance
+      });
+    }
+    
+    await saveGameState(uid, updatedState);
+    
+    res.json({
+      success: true,
+      result: 'success',
+      floorNumber: newFloor,
+      multiplier: multiplier,
+      pendingProfit: pendingProfit,
+      message: `✅ الطابق ${newFloor} ثبُت! المضاعف ${multiplier}x`
+    });
+    
+  } catch (error) {
+    console.error('Drop floor error:', error);
+    res.status(500).json({ error: 'فشل إفلات الطابق' });
+  }
+});
+
+// جمع الأرباح
+app.post('/api/game/cashout', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    
+    const gameState = await getGameState(uid);
+    
+    if (!gameState || !gameState.isActive) {
+      return res.status(400).json({ error: 'لا توجد أرباح لجمعها' });
+    }
+    
+    if (gameState.pendingProfit <= 0 || gameState.currentFloor === 0) {
+      return res.status(400).json({ error: 'لا توجد أرباح لجمعها' });
+    }
+    
+    const profit = Math.floor(gameState.pendingProfit);
+    const userRef = db.collection('users').doc(uid);
+    
+    await userRef.update({
+      balance: admin.firestore.FieldValue.increment(profit)
+    });
+    
+    // إنهاء الجولة
+    await saveGameState(uid, { isActive: false, status: 'cashed_out', paidOut: true });
+    
+    // تسجيل السحب
+    await db.collection('game_history').add({
+      userId: uid,
+      betAmount: gameState.betAmount,
+      result: 'cashed_out',
+      winAmount: profit,
+      multiplier: gameState.currentMultiplier,
+      floorsReached: gameState.currentFloor,
+      endedAt: new Date()
+    });
+    
+    const updatedUser = await userRef.get();
+    
+    res.json({
+      success: true,
+      profit: profit,
+      newBalance: updatedUser.data().balance,
+      message: `💰 تم جمع ${profit} أرباح!`
+    });
+    
+  } catch (error) {
+    console.error('Cashout error:', error);
+    res.status(500).json({ error: 'فشل جمع الأرباح' });
+  }
+});
+
+// الحصول على حالة اللعبة الحالية
+app.get('/api/game/state', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    
+    const userDoc = await db.collection('users').doc(uid).get();
+    const gameState = await getGameState(uid);
+    
+    res.json({
+      success: true,
+      balance: userDoc.exists ? userDoc.data().balance : 0,
+      gameActive: gameState ? gameState.isActive : false,
+      gameState: gameState ? {
+        betAmount: gameState.betAmount,
+        currentFloor: gameState.currentFloor || 0,
+        currentMultiplier: gameState.currentMultiplier || 0,
+        pendingProfit: gameState.pendingProfit || 0
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('Get game state error:', error);
+    res.status(500).json({ error: 'فشل جلب حالة اللعبة' });
+  }
+});
+
+// الحصول على سجل اللعبة
+app.get('/api/game/history', requireAuth, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    
+    const snapshot = await db.collection('game_history')
+      .where('userId', '==', uid)
+      .orderBy('endedAt', 'desc')
+      .limit(50)
+      .get();
+    
+    const history = [];
+    snapshot.forEach(doc => {
+      history.push({ id: doc.id, ...doc.data() });
+    });
+    
+    res.json({ success: true, history });
+    
+  } catch (error) {
+    console.error('Get game history error:', error);
+    res.json({ success: true, history: [] });
+  }
+});
 // ============= تشغيل الخادم =============
 const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {

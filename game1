@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BOB - البرج الذهبي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0f1a;
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
+        }
+
+        /* شاشة التحميل */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0a0f1a 0%, #0a2f2a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 40px;
+            perspective: 500px;
+        }
+
+        .logo-text {
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: 8px;
+            background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700, #B8860B);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: logoShine 3s ease infinite, logoFloat 2s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(255,215,0,0.5);
+        }
+
+        @keyframes logoShine {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotateX(0deg); }
+            50% { transform: translateY(-10px) rotateX(5deg); }
+        }
+
+        .logo-sub {
+            font-size: 1.2rem;
+            color: #FFD700;
+            letter-spacing: 4px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .loading-bar-container {
+            width: 280px;
+            height: 4px;
+            background: rgba(255,215,0,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 30px 0 15px;
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        .loading-percent {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FFD700;
+            font-family: monospace;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .loading-status {
+            font-size: 0.85rem;
+            color: rgba(255,215,0,0.7);
+            margin-top: 10px;
+        }
+
+        /* اللعبة - مخفية حتى اكتمال التحميل */
+        .game-fullscreen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #0a2f2a;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-fullscreen.visible {
+            opacity: 1;
+        }
+
+        .canvas-area {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            background: #87CEEB;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+        }
+
+        /* الشريط السفلي */
+        .bottom-bar {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            backdrop-filter: blur(20px);
+            border-top: 3px solid #FFD700;
+            padding: 24px 30px 26px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .balance-card {
+            background: linear-gradient(145deg, #000000, #1a1a1a);
+            padding: 12px 28px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.3rem;
+            border: 1px solid #FFD70055;
+            box-shadow: 0 0 12px rgba(255,215,0,0.3);
+        }
+
+        .balance-card span {
+            color: #FFD700;
+            font-size: 2rem;
+            font-weight: 900;
+        }
+
+        .bet-selector {
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 16px;
+            border-radius: 60px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .bet-btn {
+            background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+            border: 1px solid #FFD70055;
+            color: #FFD700;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .bet-btn.active {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #000;
+            border-color: #FFF8DC;
+            box-shadow: 0 0 15px rgba(255,215,0,0.6);
+        }
+
+        .bet-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .multiplier-badge {
+            background: linear-gradient(145deg, #000000, #1c1c1c);
+            color: #FFD700;
+            border-radius: 60px;
+            padding: 12px 24px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 1px solid #FFD700;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 16px;
+        }
+
+        button {
+            border: none;
+            font-weight: bold;
+            font-size: 1.3rem;
+            padding: 12px 32px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            font-family: inherit;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #FFD700;
+            border: 1px solid #FFD70055;
+            box-shadow: 0 6px 0 #000000;
+        }
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #000000;
+        }
+
+        .drop-btn {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #000000;
+            font-weight: 900;
+            border: 1px solid #FFF8DC;
+            box-shadow: 0 6px 0 #8B6914;
+        }
+
+        .cashout-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: 1px solid #a8ffd0;
+            box-shadow: 0 6px 0 #1f8f4b;
+        }
+
+        .status-bar {
+            background: #000000dd;
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            color: #FFD700;
+            border-top: 1px solid #FFD70033;
+        }
+
+        @media (max-width: 850px) {
+            .bottom-bar { gap: 12px; padding: 16px; }
+            button { padding: 8px 20px; font-size: 1rem; }
+            .bet-btn { padding: 5px 12px; font-size: 0.8rem; }
+            .balance-card { padding: 8px 16px; font-size: 1rem; }
+            .balance-card span { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- شاشة التحميل -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="logo-container">
+            <div class="logo-text">BOB</div>
+            <div class="logo-sub">GOLDEN TOWER</div>
+        </div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loadingBar"></div>
+        </div>
+        <div class="loading-percent" id="loadingPercent">0%</div>
+        <div class="loading-status" id="loadingStatus">جاري الاتصال بالخادم...</div>
+    </div>
+
+    <!-- اللعبة -->
+    <div id="gameContainer" class="game-fullscreen">
+        <div class="canvas-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="bottom-bar">
+            <div class="balance-card">💰 <span id="balanceDisplay">0</span></div>
+            <div class="bet-selector" id="betSelector">
+                <div class="bet-btn" data-bet="10">10</div>
+                <div class="bet-btn" data-bet="20">20</div>
+                <div class="bet-btn" data-bet="40">40</div>
+                <div class="bet-btn" data-bet="80">80</div>
+                <div class="bet-btn" data-bet="160">160</div>
+                <div class="bet-btn" data-bet="320">320</div>
+            </div>
+            <div class="multiplier-badge" id="multiplierBadge">🏆 0.00x</div>
+            <div class="btn-group">
+                <button id="dropBtn" class="drop-btn">⬇️ إفلات</button>
+                <button id="cashoutBtn" class="cashout-btn">💰 جمع</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <span id="gameStatusMsg">✨ اضغط "إفلات" لبدء الجولة ✨</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvPo4HlsNhyf1WBmTzIr6CdR1c2lQ5sHU",
+            authDomain: "boomb-fa3e7.firebaseapp.com",
+            projectId: "boomb-fa3e7",
+            storageBucket: "boomb-fa3e7.firebasestorage.app",
+            messagingSenderId: "499624996530",
+            appId: "1:499624996530:web:235f71e450845c748523ab"
+        };
+
+        const API_URL = "https://ass-yygm.onrender.com";
+
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let userBalance = 0;
+        let gameActive = false;
+        let currentBet = 10;
+        let currentGameState = null;
+        
+        // متغيرات اللعبة المحلية
+        let canvas, ctx;
+        let cameraY = 0;
+        let builtFloors = [];
+        let ground = { x: 0, y: 0, w: 210, h: 26 };
+        
+        let swinging = {
+            x: 0, y: 0, w: 48, h: 28,
+            angle: 0, speed: 0.048, direction: 1, maxAngle: 0.85,
+            pivotX: 0, pivotY: -30, ropeLength: 210
+        };
+        
+        let isFalling = false;
+        let fallVelY = 0;
+        let fallPosX = 0, fallPosY = 0;
+        let fallW = 48, fallH = 28;
+        let fallFloorNum = 0;
+        let waitingForLanding = false;
+        let pendingProfit = 0;
+        let currentFloor = 0;
+        
+        let floatingMultipliers = [];
+        let shakeIntensity = 0, shakeDuration = 0;
+        
+        const MAX_FLOOR = 13;
+        const MULTIPLIERS = {
+            1: 0.5, 2: 0.7, 3: 0.9, 4: 1.1, 5: 1.3,
+            6: 1.5, 7: 1.7, 8: 3.0, 9: 5.0, 10: 7.0,
+            11: 9.0, 12: 11.0, 13: 15.0
+        };
+
+        // شاشة التحميل
+        let loadingProgress = 0;
+        let loadingInterval;
+        
+        function updateLoading(percent, status) {
+            loadingProgress = Math.min(percent, 100);
+            document.getElementById('loadingBar').style.width = loadingProgress + '%';
+            document.getElementById('loadingPercent').innerText = Math.floor(loadingProgress) + '%';
+            document.getElementById('loadingStatus').innerText = status;
+        }
+        
+        async function startLoading() {
+            updateLoading(0, 'جاري تهيئة اللعبة...');
+            
+            // محاكاة تقدم التحميل مع انتظار الخادم
+            for (let i = 0; i <= 90; i += 5) {
+                await new Promise(r => setTimeout(r, 30));
+                updateLoading(i, 'جاري الاتصال بالخادم...');
+            }
+            
+            // انتظار تسجيل الدخول
+            await new Promise(resolve => {
+                const checkAuth = setInterval(() => {
+                    if (currentUser) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
+            });
+            
+            updateLoading(95, 'جلب البيانات من الخادم...');
+            
+            // جلب حالة اللعبة من الخادم
+            await loadGameState();
+            
+            updateLoading(100, 'جاهز!');
+            await new Promise(r => setTimeout(r, 500));
+            
+            // إخفاء شاشة التحميل وإظهار اللعبة
+            const loadingScreen = document.getElementById('loadingScreen');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                gameContainer.classList.add('visible');
+            }, 1000);
+        }
+        
+        // دوال API
+        async function apiCall(endpoint, options = {}) {
+            const token = await auth.currentUser?.getIdToken();
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        ...options.headers
+                    }
+                });
+                if (response.status === 401) {
+                    return null;
+                }
+                return response;
+            } catch (error) {
+                console.error('API error:', error);
+                return null;
+            }
+        }
+        
+        async function loadGameState() {
+            const res = await apiCall('/api/game/state');
+            if (res?.ok) {
+                const data = await res.json();
+                userBalance = data.balance || 0;
+                gameActive = data.gameActive || false;
+                currentGameState = data.gameState;
+                
+                if (currentGameState) {
+                    currentBet = currentGameState.betAmount || 10;
+                    currentFloor = currentGameState.currentFloor || 0;
+                    pendingProfit = currentGameState.pendingProfit || 0;
+                    
+                    if (gameActive && currentFloor > 0) {
+                        // استعادة حالة اللعبة
+                        updateLocalGameState();
+                    }
+                }
+                
+                updateUI();
+            }
+        }
+        
+        async function startGame(betAmount) {
+            const res = await apiCall('/api/game/start', {
+                method: 'POST',
+                body: JSON.stringify({ betAmount })
+            });
+            
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    gameActive = true;
+                    currentBet = betAmount;
+                    currentFloor = 0;
+                    pendingProfit = 0;
+                    userBalance = data.newBalance;
+                    currentGameState = data.gameState;
+                    
+                    // إعادة تعيين اللعبة المحلية
+                    resetLocalGame();
+                    updateUI();
+                    updateStatusMessage(`🎉 جولة جديدة! رهان ${betAmount} - اضغط إفلات للبدء 🎉`);
+                    
+                    return true;
+                } else {
+                    updateStatusMessage(data.error || 'فشل بدء الجولة', true);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        async function dropFloor(overlapWidth, requiredOverlap, positionX) {
+            const floorNum = currentFloor + 1;
+            const res = await apiCall('/api/game/drop', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    floorNumber: floorNum, 
+                    positionX: positionX,
+                    overlapWidth: overlapWidth,
+                    requiredOverlap: requiredOverlap
+                })
+            });
+            
+            if (res?.ok) {
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (data.result === 'completed') {
+                        // فوز كامل
+                        gameActive = false;
+                        userBalance = data.newBalance;
+                        updateStatusMessage(data.message);
+                        updateUI();
+                        resetLocalGame();
+                        return { success: true, completed: true };
+                    } else {
+                        // نجاح
+                        currentFloor = data.floorNumber;
+                        pendingProfit = data.pendingProfit;
+                        updateStatusMessage(data.message);
+                        updateUI();
+                        return { success: true, completed: false, multiplier: data.multiplier };
+                    }
+                } else {
+                    // خسارة
+                    gameActive = false;
+                    currentGameState = null;
+                    updateStatusMessage(data.message, true);
+                    updateUI();
+                    resetLocalGame();
+                    return { success: false, loss: true };
+                }
+            }
+            return { success: false, error: true };
+        }
+        
+        async function cashout() {
+            const res = await apiCall('/api/game/cashout', { method: 'POST' });
+            
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    gameActive = false;
+                    userBalance = data.newBalance;
+                    pendingProfit = 0;
+                    currentFloor = 0;
+                    updateStatusMessage(data.message);
+                    updateUI();
+                    resetLocalGame();
+                    return true;
+                } else {
+                    updateStatusMessage(data.error || 'فشل جمع الأرباح', true);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = Math.floor(userBalance);
+            
+            const multiplier = currentFloor > 0 ? MULTIPLIERS[currentFloor] : 0;
+            if (gameActive && currentFloor < MAX_FLOOR) {
+                const nextMulti = MULTIPLIERS[currentFloor + 1] || MULTIPLIERS[MAX_FLOOR];
+                document.getElementById('multiplierBadge').innerHTML = `🎯 طابق ${currentFloor+1}: ${nextMulti.toFixed(2)}x`;
+            } else if (gameActive && currentFloor >= MAX_FLOOR) {
+                document.getElementById('multiplierBadge').innerHTML = `🏆 اكتمل!`;
+            } else {
+                document.getElementById('multiplierBadge').innerHTML = `🏆 مضاعف: ---`;
+            }
+            
+            // تحديث أزرار الرهان
+            document.querySelectorAll('.bet-btn').forEach(btn => {
+                const betVal = parseInt(btn.dataset.bet);
+                if (!gameActive && currentBet === betVal) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        function updateStatusMessage(msg, isError = false) {
+            const statusSpan = document.getElementById('gameStatusMsg');
+            statusSpan.innerHTML = msg;
+            statusSpan.style.color = isError ? '#ff8888' : '#FFD700';
+            setTimeout(() => {
+                if (statusSpan.innerHTML === msg) {
+                    statusSpan.style.color = '#FFD700';
+                }
+            }, 3000);
+        }
+        
+        // ============= دوال اللعبة المحلية =============
+        function resetLocalGame() {
+            builtFloors = [];
+            currentFloor = 0;
+            pendingProfit = 0;
+            isFalling = false;
+            waitingForLanding = false;
+            cameraY = 0;
+            floatingMultipliers = [];
+            addGround();
+            resetSwingingPosition();
+        }
+        
+        function addGround() {
+            if (!canvas) return;
+            let groundY = canvas.height - 48;
+            let groundX = canvas.width/2 - 105;
+            ground = { x: groundX, y: groundY, w: 210, h: 26 };
+            builtFloors = [];
+            builtFloors.push({
+                x: groundX + ground.w/2,
+                y: groundY + ground.h/2,
+                w: ground.w,
+                h: ground.h,
+                floorNumber: 0,
+                isGround: true
+            });
+        }
+        
+        function resetSwingingPosition() {
+            if (!canvas) return;
+            swinging.pivotX = canvas.width/2;
+            swinging.pivotY = -30;
+            swinging.angle = 0;
+            swinging.direction = 1;
+            updateSwingPosition();
+        }
+        
+        function updateSwingPosition() {
+            let offsetX = Math.sin(swinging.angle) * swinging.ropeLength;
+            let centerX = swinging.pivotX + offsetX;
+            let verticalOffset = (1 - Math.cos(swinging.angle * 0.65)) * 22;
+            let centerY = swinging.pivotY + swinging.ropeLength * 0.75 + verticalOffset;
+            swinging.x = centerX;
+            swinging.y = centerY;
+        }
+        
+        function updateSwing() {
+            if (gameActive && !waitingForLanding && !isFalling && currentFloor < MAX_FLOOR) {
+                swinging.angle += swinging.direction * swinging.speed;
+                if (swinging.angle > swinging.maxAngle) {
+                    swinging.angle = swinging.maxAngle;
+                    swinging.direction = -1;
+                } else if (swinging.angle < -swinging.maxAngle) {
+                    swinging.angle = -swinging.maxAngle;
+                    swinging.direction = 1;
+                }
+                updateSwingPosition();
+            }
+        }
+        
+        function addFloatingMultiplier(x, y, multiplier) {
+            floatingMultipliers.push({
+                x: x, y: y - 25,
+                text: `${multiplier.toFixed(2)}x`,
+                alpha: 1.0, life: 1.0, yOffset: 0
+            });
+        }
+        
+        function updateFloatingMultipliers() {
+            for(let i = 0; i < floatingMultipliers.length; i++) {
+                floatingMultipliers[i].life -= 0.025;
+                floatingMultipliers[i].alpha = floatingMultipliers[i].life;
+                floatingMultipliers[i].yOffset -= 1.2;
+                if(floatingMultipliers[i].life <= 0) {
+                    floatingMultipliers.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+        
+        function drawFloatingMultipliers(camY) {
+            for(let fm of floatingMultipliers) {
+                ctx.save();
+                ctx.globalAlpha = fm.alpha * 0.9;
+                ctx.font = `bold ${22 + (1 - fm.life) * 8}px 'Poppins'`;
+                ctx.fillStyle = "#FFD700";
+                ctx.shadowBlur = 8;
+                ctx.fillText(fm.text, fm.x - 30, fm.y + fm.yOffset - camY);
+                ctx.restore();
+            }
+        }
+        
+        function drawFancyFloor(x, y, w, h, floorNum, isGround = false) {
+            const mainColor = isGround ? "#3a2a1a" : ["#1a1a1a", "#2d2d2d", "#FFD700", "#B8860B"][floorNum % 4];
+            ctx.fillStyle = mainColor;
+            ctx.shadowBlur = 4;
+            ctx.fillRect(x - w/2, y - h/2, w, h);
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(x - w/2 + 4, y - h/2, w - 8, 4);
+            if(!isGround) {
+                ctx.font = "bold 12px 'Segoe UI'";
+                ctx.fillStyle = "#FFD700";
+                ctx.fillText(`${floorNum}`, x - 6, y + 5);
+            }
+        }
+        
+        function drawWithCamera() {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // السماء
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, "#87CEEB");
+            grad.addColorStop(1, "#D6EAF8");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(0, -cameraY);
+            
+            for(let f of builtFloors) {
+                if(f.isGround) {
+                    ctx.fillStyle = "#2a2a1a";
+                    ctx.fillRect(f.x - f.w/2, f.y - f.h/2, f.w, f.h);
+                    ctx.fillStyle = "#FFD700";
+                    ctx.fillRect(f.x - f.w/2 + 5, f.y - f.h/2, f.w-10, 4);
+                } else {
+                    drawFancyFloor(f.x, f.y, f.w, f.h, f.floorNumber, false);
+                }
+            }
+            
+            if(gameActive && !waitingForLanding && !isFalling && currentFloor < MAX_FLOOR) {
+                ctx.beginPath();
+                ctx.moveTo(swinging.pivotX, swinging.pivotY);
+                ctx.lineTo(swinging.x, swinging.y - swinging.h/2 + 5);
+                ctx.strokeStyle = "#FFD700";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                drawFancyFloor(swinging.x, swinging.y, swinging.w, swinging.h, currentFloor+1, false);
+            } else if(isFalling) {
+                drawFancyFloor(fallPosX, fallPosY, fallW, fallH, fallFloorNum, false);
+            }
+            
+            ctx.restore();
+            drawFloatingMultipliers(cameraY);
+        }
+        
+        function addShake(intensity, duration) {
+            shakeIntensity = intensity;
+            shakeDuration = duration;
+        }
+        
+        async function attemptDrop() {
+            if (!gameActive) {
+                // بدء جولة جديدة
+                const success = await startGame(currentBet);
+                return;
+            }
+            
+            if (waitingForLanding || isFalling) {
+                updateStatusMessage("الطابق في حالة سقوط! انتظر.");
+                return;
+            }
+            
+            if (currentFloor >= MAX_FLOOR) {
+                updateStatusMessage("🏆 البرج مكتمل! قم بجمع الأرباح.");
+                return;
+            }
+            
+            // حساب التداخل مع الطابق السابق
+            let lastFloor = builtFloors[builtFloors.length - 1];
+            let lastLeft = lastFloor.x - lastFloor.w/2;
+            let lastRight = lastFloor.x + lastFloor.w/2;
+            
+            let fallLeft = swinging.x - swinging.w/2;
+            let fallRight = swinging.x + swinging.w/2;
+            let overlapLeft = Math.max(fallLeft, lastLeft);
+            let overlapRight = Math.min(fallRight, lastRight);
+            let overlapWidth = Math.max(0, overlapRight - overlapLeft);
+            let requiredOverlap = swinging.w * 0.5;
+            
+            // بدء السقوط
+            isFalling = true;
+            waitingForLanding = true;
+            fallPosX = swinging.x;
+            fallPosY = swinging.y;
+            fallW = swinging.w;
+            fallH = swinging.h;
+            fallFloorNum = currentFloor + 1;
+            fallVelY = 3;
+            
+            updateStatusMessage(`💨 الطابق ${fallFloorNum} يسقط...`);
+            
+            // بدء حلقة السقوط
+            startFallLoop(overlapWidth, requiredOverlap);
+        }
+        
+        async function startFallLoop(expectedOverlap, requiredOverlap) {
+            const fallInterval = setInterval(async () => {
+                if (!isFalling) {
+                    clearInterval(fallInterval);
+                    return;
+                }
+                
+                fallVelY += 0.85;
+                fallPosY += fallVelY;
+                
+                let lastFloor = builtFloors[builtFloors.length - 1];
+                let lastTop = lastFloor.y - lastFloor.h/2;
+                
+                if (fallPosY + fallH/2 >= lastTop && fallVelY >= 0) {
+                    clearInterval(fallInterval);
+                    
+                    // إرسال النتيجة إلى الخادم
+                    const result = await dropFloor(expectedOverlap, requiredOverlap, fallPosX);
+                    
+                    if (result.success && !result.completed) {
+                        // نجاح
+                        let newYpos = lastTop - fallH/2;
+                        let newFloor = {
+                            x: fallPosX,
+                            y: newYpos,
+                            w: fallW,
+                            h: fallH,
+                            floorNumber: fallFloorNum
+                        };
+                        builtFloors.push(newFloor);
+                        currentFloor = fallFloorNum;
+                        
+                        addFloatingMultiplier(fallPosX, newYpos - fallH/2, result.multiplier);
+                        addShake(7, 160);
+                        cameraY -= 23;
+                        
+                        isFalling = false;
+                        waitingForLanding = false;
+                        updateUI();
+                        
+                        if (currentFloor < MAX_FLOOR) {
+                            swinging.speed = 0.048 + Math.min(0.095, currentFloor * 0.008);
+                            resetSwingingPosition();
+                        }
+                    } else if (result.loss) {
+                        // خسارة
+                        addShake(5, 120);
+                        isFalling = false;
+                        waitingForLanding = false;
+                        resetLocalGame();
+                    } else {
+                        isFalling = false;
+                        waitingForLanding = false;
+                    }
+                }
+                
+                if (fallPosY + fallH/2 > canvas.height + 120) {
+                    clearInterval(fallInterval);
+                    if (isFalling) {
+                        await dropFloor(0, requiredOverlap, fallPosX);
+                        isFalling = false;
+                        waitingForLanding = false;
+                        resetLocalGame();
+                    }
+                }
+                
+                drawWithCamera();
+            }, 16);
+        }
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            addGround();
+            resetSwingingPosition();
+        }
+        
+        function gameLoop() {
+            if (ctx && canvas) {
+                updateSwing();
+                updateFloatingMultipliers();
+                drawWithCamera();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ============= تهيئة اللعبة =============
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            addGround();
+            resetSwingingPosition();
+            gameLoop();
+            window.addEventListener('resize', resizeCanvas);
+        }
+        
+        // ============= أحداث Firebase =============
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadGameState();
+                startLoading();
+            } else {
+                // تسجيل دخول تلقائي
+                try {
+                    const result = await signInWithPopup(auth, provider);
+                    currentUser = result.user;
+                    await loadGameState();
+                    startLoading();
+                } catch (err) {
+                    console.error('Auth error:', err);
+                    document.getElementById('loadingStatus').innerText = 'خطأ في تسجيل الدخول، حاول مرة أخرى';
+                }
+            }
+        });
+        
+        // ============= أحداث UI =============
+        document.getElementById('dropBtn').addEventListener('click', attemptDrop);
+        document.getElementById('cashoutBtn').addEventListener('click', async () => {
+            if (gameActive && pendingProfit > 0) {
+                await cashout();
+            } else {
+                updateStatusMessage('لا توجد أرباح لجمعها', true);
+            }
+        });
+        
+        document.querySelectorAll('.bet-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!gameActive) {
+                    currentBet = parseInt(btn.dataset.bet);
+                    updateUI();
+                }
+            });
+        });
+        
+        initGame();
+    </script>
+</body>
+</html>
