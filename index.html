@@ -26,7 +26,6 @@
             --warning: #ff9800;
             --info: #2196f3;
             --gold: #FFD700;
-            --gold-dark: #B8860B;
             --radius: 10px;
             --radius-lg: 16px;
             --shadow: 0 2px 10px rgba(0,0,0,0.3);
@@ -38,11 +37,6 @@
         body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; }
         body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; }
         body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; }
-        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; }
-        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; }
-        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; }
-        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; }
-        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; }
 
         body {
             font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
@@ -59,8 +53,6 @@
             0% { opacity: 0; transform: translateY(20px) scale(0.8); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        
-        .animate-fade { animation: fadeIn 0.3s ease; }
         
         .loading-overlay {
             position: fixed; inset: 0;
@@ -92,7 +84,6 @@
             border: 1px solid var(--primary);
             box-shadow: var(--shadow);
         }
-        .avatar-btn:hover { transform: scale(1.05); }
         
         .balance-container { display: flex; gap: 6px; }
         .balance-card {
@@ -104,7 +95,6 @@
         .balance-value { font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
         .balance-value-large { font-size: 18px; }
 
-        /* أزرار مصغرة */
         .action-grid { display: flex; gap: 8px; margin: 4px 0; }
         .btn {
             flex: 1; padding: 8px 6px; border: none; border-radius: 40px;
@@ -115,7 +105,6 @@
         .btn-primary:active { transform: scale(0.97); }
         .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
 
-        /* منطقة اللعب مصغرة */
         .play-zone { text-align: center; margin: 8px 0; display: flex; flex-direction: column; align-items: center; }
         .game-sphere {
             width: 80px; height: 80px; margin: 0 auto 10px;
@@ -154,18 +143,10 @@
             z-index: 2;
         }
         
-        .fab-main:active {
-            transform: scale(0.9);
-        }
+        .fab-main:active { transform: scale(0.9); }
         
-        .fab-main span {
-            font-size: 28px;
-            transition: transform 0.3s;
-        }
-        
-        .fab-main.open span {
-            transform: rotate(135deg);
-        }
+        .fab-main span { font-size: 28px; transition: transform 0.3s; }
+        .fab-main.open span { transform: rotate(135deg); }
         
         .fab-options {
             position: absolute;
@@ -173,7 +154,7 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 12px;
+            gap: 15px;
             visibility: hidden;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -188,8 +169,8 @@
         }
         
         .fab-option {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             background: var(--surface-light);
             border-radius: 50%;
             display: flex;
@@ -203,26 +184,13 @@
             animation: floatUp 0.3s ease backwards;
             font-size: 20px;
         }
-        
         .fab-option:nth-child(1) { animation-delay: 0.05s; }
         .fab-option:nth-child(2) { animation-delay: 0.1s; }
         .fab-option:nth-child(3) { animation-delay: 0.15s; }
-        
-        .fab-option:active {
-            transform: scale(0.9);
-        }
-        
-        .fab-option span:first-child {
-            font-size: 20px;
-        }
-        
-        .fab-option span:last-child {
-            font-size: 9px;
-            margin-top: 2px;
-            color: var(--text-secondary);
-        }
+        .fab-option:active { transform: scale(0.9); }
+        .fab-option span:first-child { font-size: 22px; }
+        .fab-option span:last-child { font-size: 9px; margin-top: 2px; color: var(--text-secondary); }
 
-        /* باقي العناصر كما هي مع تصغير */
         .info-panel {
             background: rgba(18,18,18,0.95);
             border-radius: var(--radius-lg);
@@ -377,9 +345,8 @@
         
         @media (max-width: 480px) {
             .fab-main { width: 50px; height: 50px; }
-            .fab-option { width: 40px; height: 40px; font-size: 18px; }
+            .fab-option { width: 45px; height: 45px; font-size: 18px; }
             .wheel-wrapper { width: 200px; height: 200px; }
-            .stat-number { font-size: 16px; }
         }
     </style>
 </head>
@@ -442,22 +409,11 @@
     <!-- زر عائم كمروحة -->
     <div class="fab-container">
         <div class="fab-options" id="fabOptions">
-            <div class="fab-option" data-option="stats">
-                <span>📊</span>
-                <span>إحصائيات</span>
-            </div>
-            <div class="fab-option" data-option="wheel">
-                <span>🎡</span>
-                <span>عجلة</span>
-            </div>
-            <div class="fab-option" data-option="earn">
-                <span>🎁</span>
-                <span>اكسب</span>
-            </div>
+            <div class="fab-option" data-option="stats"><span>📊</span><span>إحصائيات</span></div>
+            <div class="fab-option" data-option="wheel"><span>🎡</span><span>عجلة</span></div>
+            <div class="fab-option" data-option="earn"><span>🎁</span><span>اكسب</span></div>
         </div>
-        <div class="fab-main" id="fabMain">
-            <span>⚡</span>
-        </div>
+        <div class="fab-main" id="fabMain"><span>⚡</span></div>
     </div>
 
     <!-- المودالات -->
@@ -488,7 +444,7 @@
     <div id="depositModal" class="modal"><div class="modal-content"><div class="modal-header"><span>💰 إيداع</span><span class="close-modal">&times;</span></div>
         <div class="form-group"><label>📱 اختر طريقة الدفع</label><div id="methodsList" class="methods-list"></div></div>
         <div id="addressInfo"></div>
-        <div class="form-group"><label>💵 المبلغ</label><input type="number" id="depositAmount" placeholder="المبلغ"><div id="minDepositHint" class="hint"></div></div>
+        <div class="form-group"><label>💵 المبلغ</label><input type="number" id="depositAmount" placeholder="المبلغ"><div id="minDepositHint"></div></div>
         <div class="form-group"><label>🔢 رقم العملية</label><input type="text" id="transactionId" placeholder="Transaction ID"></div>
         <button class="btn btn-primary" id="submitDepositBtn">تأكيد الإيداع</button>
     </div></div>
@@ -498,10 +454,6 @@
         <div class="form-group"><label>📍 عنوان المحفظة</label><input type="text" id="withdrawAddress"></div>
         <div class="form-group"><label>📱 طريقة السحب</label><select id="withdrawMethod"><option value="sham_cash">شام كاش</option><option value="syriatel_cash">سيرياتيل كاش</option></select></div>
         <button class="btn btn-primary" id="submitWithdrawBtn">تأكيد السحب</button>
-    </div></div>
-
-    <div id="resetModal" class="modal"><div class="modal-content"><div class="modal-header"><span>⚠️ تهيئة قاعدة البيانات</span><span class="close-modal">&times;</span></div>
-        <input type="password" id="resetPassword" placeholder="كلمة المرور"><button class="btn btn-danger" id="confirmResetBtn" style="margin-top:12px">تأكيد</button>
     </div></div>
 
     <div id="adminApp" class="hidden">
@@ -531,8 +483,8 @@
         provider.setCustomParameters({ prompt: 'select_account' });
 
         let currentUser = null, userData = null, isAdmin = false;
-        let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5, currentWheelSpinCost = 50;
-        let wheelCanvas = null, ctx = null, spinning = false, currentRotation = 0, animationFrame = null;
+        let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentReferralCommission = 5;
+        let wheelCanvas = null, ctx = null, spinning = false, currentRotation = 0;
         const SECTORS = [
             { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
             { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
@@ -546,22 +498,194 @@
 
         function showMessage(msg, isErr = false) { const toast = document.createElement('div'); toast.className = 'toast'; toast.style.background = isErr ? '#b91c1c' : '#1c7a1c'; toast.innerHTML = isErr ? `⚠️ ${msg}` : `✅ ${msg}`; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
         function setButtonLoading(btn, loading) { if (loading) { btn.classList.add('btn-loading'); btn.disabled = true; } else { btn.classList.remove('btn-loading'); btn.disabled = false; } }
-        async function apiCall(endpoint, options = {}) { const token = await auth.currentUser?.getIdToken(); try { const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers } }); if (response.status === 401) { showMessage('انتهت الجلسة', true); await signOut(auth); return null; } return response; } catch (error) { showMessage('خطأ في الاتصال', true); return null; } }
+        
+        async function apiCall(endpoint, options = {}) {
+            const token = await auth.currentUser?.getIdToken();
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers }
+                });
+                if (response.status === 401) { showMessage('انتهت الجلسة', true); await signOut(auth); return null; }
+                if (response.status === 403) { showMessage('غير مصرح', true); return null; }
+                return response;
+            } catch (error) { showMessage('خطأ في الاتصال', true); return null; }
+        }
 
-        function drawWheel() { if (!ctx || !wheelCanvas) return; const size = wheelCanvas.width, centerX = size/2, centerY = size/2, radius = size/2 - 5, angleStep = (Math.PI * 2) / SECTORS.length; ctx.clearRect(0, 0, size, size); for (let i = 0; i < SECTORS.length; i++) { const startAngle = i * angleStep + currentRotation, endAngle = startAngle + angleStep; ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle); ctx.closePath(); const gradient = ctx.createLinearGradient(centerX + Math.cos(startAngle)*radius*0.3, centerY + Math.sin(startAngle)*radius*0.3, centerX + Math.cos(endAngle)*radius*0.7, centerY + Math.sin(endAngle)*radius*0.7); gradient.addColorStop(0, SECTORS[i].gradientFrom); gradient.addColorStop(1, SECTORS[i].gradientTo); ctx.fillStyle = gradient; ctx.fill(); ctx.strokeStyle = "rgba(255,215,0,0.5)"; ctx.stroke(); ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(startAngle + angleStep/2); ctx.fillStyle = "#ffffff"; ctx.shadowBlur = 3; ctx.font = `bold ${size/20}px "Segoe UI"`; let text = SECTORS[i].name === "حظ أوفر" ? "😅" : SECTORS[i].name; ctx.fillText(text, radius * 0.7, 0); ctx.restore(); } ctx.beginPath(); ctx.arc(centerX, centerY, 15, 0, Math.PI*2); ctx.fillStyle = "#FFD700"; ctx.fill(); }
+        function drawWheel() {
+            if (!ctx || !wheelCanvas) return;
+            const size = wheelCanvas.width, centerX = size/2, centerY = size/2, radius = size/2 - 5, angleStep = (Math.PI * 2) / SECTORS.length;
+            ctx.clearRect(0, 0, size, size);
+            for (let i = 0; i < SECTORS.length; i++) {
+                const startAngle = i * angleStep + currentRotation, endAngle = startAngle + angleStep;
+                ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle); ctx.closePath();
+                const gradient = ctx.createLinearGradient(centerX + Math.cos(startAngle)*radius*0.3, centerY + Math.sin(startAngle)*radius*0.3, centerX + Math.cos(endAngle)*radius*0.7, centerY + Math.sin(endAngle)*radius*0.7);
+                gradient.addColorStop(0, SECTORS[i].gradientFrom); gradient.addColorStop(1, SECTORS[i].gradientTo);
+                ctx.fillStyle = gradient; ctx.fill(); ctx.strokeStyle = "rgba(255,215,0,0.5)"; ctx.stroke();
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(startAngle + angleStep/2); ctx.fillStyle = "#ffffff"; ctx.font = `bold ${size/20}px "Segoe UI"`;
+                let text = SECTORS[i].name === "حظ أوفر" ? "😅" : SECTORS[i].name; ctx.fillText(text, radius * 0.7, 0); ctx.restore();
+            }
+            ctx.beginPath(); ctx.arc(centerX, centerY, 15, 0, Math.PI*2); ctx.fillStyle = "#FFD700"; ctx.fill();
+        }
 
-        async function performSpin() { if (spinning) return; const spinBtn = document.getElementById('spinWheelBtn'); const statusRes = await apiCall('/api/user/wheel-status'); if (statusRes?.ok) { const statusData = await statusRes.json(); if (!statusData.hasEnoughBalance) { showMessage(`رصيد الإحالات غير كافٍ! تحتاج ${statusData.spinCost} SYP`, true); return; } if (!statusData.canSpin) return showMessage('يجب الانتظار', true); } spinning = true; spinBtn.disabled = true; const spinRes = await apiCall('/api/user/spin-wheel', { method: 'POST', body: JSON.stringify({}) }); if (!spinRes?.ok) { showMessage('فشل التدوير', true); spinning = false; spinBtn.disabled = false; return; } const spinData = await spinRes.json(); if (!spinData.success) { showMessage(spinData.message, true); spinning = false; spinBtn.disabled = false; return; } const winningSectorIndex = spinData.sector - 1, angleStep = (Math.PI*2)/SECTORS.length, pointerAngle = -Math.PI/2, targetSectorMidAngle = pointerAngle, targetSectorStartAngle = targetSectorMidAngle - (angleStep/2); let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep); targetRotation = ((targetRotation % (Math.PI*2)) + (Math.PI*2)) % (Math.PI*2); const fullRotations = 8 + Math.floor(Math.random() * 4), finalTargetRotation = targetRotation + (fullRotations * Math.PI*2); const startRotation = currentRotation, startTime = performance.now(), duration = 2500; function animateSpin(currentTime) { const elapsed = currentTime - startTime, progress = Math.min(elapsed/duration, 1), easeOut = 1 - Math.pow(1-progress, 3); currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut; drawWheel(); if (progress < 1) animationFrame = requestAnimationFrame(animateSpin); else { currentRotation = finalTargetRotation % (Math.PI*2); drawWheel(); showMessage(spinData.message, spinData.prizeAmount === 0); loadProfile(); loadStats(); checkWheelStatus(); spinning = false; spinBtn.disabled = false; } } animationFrame = requestAnimationFrame(animateSpin); }
+        async function checkWheelStatus() {
+            const res = await apiCall('/api/user/wheel-status');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const btn = document.getElementById('spinWheelBtn');
+                    btn.disabled = !data.canSpin || !data.hasEnoughBalance;
+                    document.getElementById('wheelCostDisplay').innerHTML = `💰 التكلفة: ${data.spinCost} SYP`;
+                    if (!data.canSpin && data.remainingSeconds > 0) {
+                        const m = Math.floor(data.remainingSeconds/60), s = data.remainingSeconds%60;
+                        document.getElementById('wheelTimer').innerHTML = `⏰ انتظر ${m}:${s.toString().padStart(2,'0')}`;
+                    } else document.getElementById('wheelTimer').innerHTML = '';
+                }
+            }
+        }
 
-        async function checkWheelStatus() { const res = await apiCall('/api/user/wheel-status'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('spinWheelBtn').disabled = !data.canSpin || !data.hasEnoughBalance; document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${data.spinCost} SYP`; if (!data.canSpin && data.remainingSeconds > 0) { const m = Math.floor(data.remainingSeconds/60), s = data.remainingSeconds%60; document.getElementById('wheelTimer').innerHTML = `⏰ انتظر ${m}:${s.toString().padStart(2,'0')}`; } else document.getElementById('wheelTimer').innerHTML = ''; } } }
+        async function performSpin() {
+            if (spinning) return;
+            const spinBtn = document.getElementById('spinWheelBtn');
+            spinning = true; spinBtn.disabled = true;
+            const spinRes = await apiCall('/api/user/spin-wheel', { method: 'POST', body: JSON.stringify({}) });
+            if (!spinRes?.ok) { showMessage('فشل التدوير', true); spinning = false; spinBtn.disabled = false; return; }
+            const spinData = await spinRes.json();
+            if (!spinData.success) { showMessage(spinData.message, true); spinning = false; spinBtn.disabled = false; return; }
+            
+            const winningSectorIndex = spinData.sector - 1, angleStep = (Math.PI*2)/SECTORS.length, pointerAngle = -Math.PI/2;
+            let targetRotation = pointerAngle - (winningSectorIndex * angleStep);
+            targetRotation = ((targetRotation % (Math.PI*2)) + (Math.PI*2)) % (Math.PI*2);
+            const fullRotations = 8 + Math.floor(Math.random() * 4), finalTargetRotation = targetRotation + (fullRotations * Math.PI*2);
+            const startRotation = currentRotation, startTime = performance.now(), duration = 2500;
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime, progress = Math.min(elapsed/duration, 1), easeOut = 1 - Math.pow(1-progress, 3);
+                currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
+                drawWheel();
+                if (progress < 1) requestAnimationFrame(animate);
+                else {
+                    currentRotation = finalTargetRotation % (Math.PI*2); drawWheel();
+                    showMessage(spinData.message, spinData.prizeAmount === 0);
+                    loadProfile(); loadStats(); checkWheelStatus();
+                    spinning = false; spinBtn.disabled = false;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
 
-        async function loadProfile() { const res = await apiCall('/api/user/profile'); if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; document.getElementById('mainBalance').innerText = (userData.balance||0).toLocaleString(); document.getElementById('referralBalance').innerText = (userData.referralBalance||0).toLocaleString(); isAdmin = data.isAdmin; } } }
-        async function loadStats() { const res = await apiCall('/api/user/stats'); if (res?.ok) { const data = await res.json(); if (data.success) { const s = data.stats; document.getElementById('profileRefCode').innerText = s.uniqueId; document.getElementById('profileRefEarn').innerText = (s.referralEarnings||0).toLocaleString()+' SYP'; document.getElementById('profileRefCount').innerText = s.referralCount; document.getElementById('profileTotalSpins').innerText = s.totalSpins||0; document.getElementById('profileTotalWinnings').innerText = (s.totalWinnings||0).toLocaleString()+' SYP'; document.getElementById('profileBalance').innerText = (s.balance||0).toLocaleString()+' SYP'; document.getElementById('profileReferralBalance').innerText = (s.referralBalance||0).toLocaleString()+' SYP'; document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 التسجيل</span><span>${s.joinDate?new Date(s.joinDate).toLocaleDateString('ar'):'-'}</span></div><div class="info-row"><span>👥 الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 أرباح الإحالات</span><span>${(s.referralEarnings||0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات</span><span>${(s.referralBalance||0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 الرصيد الأساسي</span><span>${(s.balance||0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 التدويرات</span><span>${s.totalSpins||0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings||0).toLocaleString()} SYP</span></div>`; if (s.referredBy && s.referrerInfo) { document.getElementById('referrerInfoProfile').classList.remove('hidden'); document.getElementById('referrerNameProfile').innerText = s.referredByName; } } } }
-        async function registerUser(refCode = null) { const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) }); if (res?.ok) await loadStats(); }
-        async function loadDepositSettings() { const res = await apiCall('/api/user/deposit-settings'); if (res?.ok) { const data = await res.json(); if (data.success) { currentMinDeposit = data.settings.minDeposit; currentMinWithdraw = data.settings.minWithdraw; currentUsdToSypRate = data.settings.usdToSypRate||13000; currentReferralCommission = data.settings.referralCommission||5; document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${currentMinDeposit} SYP`; document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى: ${currentMinWithdraw} SYP`; document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = ''; data.settings.methods?.forEach(method => { const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id; div.innerHTML = `<div>${method.icon||'🏦'}</div><div><div>${method.name}</div></div>`; div.onclick = () => { document.querySelectorAll('.method-card').forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم النسخ')">📋</button></div>`; }; methodsContainer.appendChild(div); }); if (data.settings.methods?.[0]) document.querySelector('.method-card')?.click(); } } }
-        async function deposit() { const selected = document.querySelector('.method-card.selected'); if (!selected) return showMessage('اختر طريقة الدفع', true); const method = selected.dataset.method, amount = document.getElementById('depositAmount').value, transactionId = document.getElementById('transactionId').value; if (!amount || amount < currentMinDeposit) return showMessage(`الحد الأدنى ${currentMinDeposit} SYP`, true); if (!transactionId) return showMessage('أدخل رقم العملية', true); const btn = document.getElementById('submitDepositBtn'); setButtonLoading(btn, true); const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) }); setButtonLoading(btn, false); if (res?.ok) { showMessage('تم الإيداع'); document.getElementById('depositModal').style.display = 'none'; loadProfile(); loadStats(); } else if (res) { const err = await res.json(); showMessage(err.error, true); } }
-        async function withdraw() { const amount = document.getElementById('withdrawAmount').value, address = document.getElementById('withdrawAddress').value, method = document.getElementById('withdrawMethod').value; if (!amount || amount < currentMinWithdraw) return showMessage(`الحد الأدنى ${currentMinWithdraw} SYP`, true); if (!address) return showMessage('أدخل العنوان', true); if (userData && amount > userData.balance) return showMessage('الرصيد غير كافٍ', true); const btn = document.getElementById('submitWithdrawBtn'); setButtonLoading(btn, true); const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) }); setButtonLoading(btn, false); if (res?.ok) { showMessage('تم إنشاء طلب السحب'); document.getElementById('withdrawModal').style.display = 'none'; loadProfile(); } else if (res) { const err = await res.json(); showMessage(err.error, true); } }
-        async function addReferrerCode() { const code = document.getElementById('referrerCodeInput').value.trim().toUpperCase(); if (!code) return showMessage('أدخل الكود', true); const btn = document.getElementById('submitReferrerCodeBtn'); setButtonLoading(btn, true); const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) }); setButtonLoading(btn, false); if (res?.ok) { showMessage('تم تفعيل الكود'); loadStats(); loadEarnPageInfo(); } else if (res) { const err = await res.json(); showMessage(err.error, true); } }
-        async function loadEarnPageInfo() { const res = await apiCall('/api/user/stats'); if (res?.ok) { const data = await res.json(); if (data.success) { document.getElementById('earnCodeDisplay').innerHTML = data.stats.uniqueId; if (data.stats.referredBy) { document.getElementById('addReferrerSection').style.display = 'none'; document.getElementById('referrerInfoSection').style.display = 'block'; document.getElementById('referrerNameDisplay').innerHTML = data.stats.referredByName; } else { document.getElementById('addReferrerSection').style.display = 'block'; document.getElementById('referrerInfoSection').style.display = 'none'; } } } }
+        async function loadProfile() {
+            const res = await apiCall('/api/user/profile');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    userData = data.user;
+                    document.getElementById('mainBalance').innerText = (userData.balance||0).toLocaleString();
+                    document.getElementById('referralBalance').innerText = (userData.referralBalance||0).toLocaleString();
+                    document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
+                    document.getElementById('profileBalance').innerText = (userData.balance||0).toLocaleString() + ' SYP';
+                    document.getElementById('profileReferralBalance').innerText = (userData.referralBalance||0).toLocaleString() + ' SYP';
+                    document.getElementById('profileTotalSpins').innerText = (userData.totalSpins||0).toLocaleString();
+                    document.getElementById('profileTotalWinnings').innerText = (userData.totalWinnings||0).toLocaleString() + ' SYP';
+                    isAdmin = data.isAdmin;
+                }
+            }
+        }
+
+        async function loadStats() {
+            const res = await apiCall('/api/user/stats');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.stats;
+                    document.getElementById('profileRefCode').innerText = s.uniqueId || '---';
+                    document.getElementById('profileRefEarn').innerText = (s.referralEarnings||0).toLocaleString() + ' SYP';
+                    document.getElementById('profileRefCount').innerText = s.referralCount || 0;
+                    document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`;
+                    if (s.referredBy && s.referrerInfo) {
+                        document.getElementById('referrerInfoProfile').classList.remove('hidden');
+                        document.getElementById('referrerNameProfile').innerText = s.referredByName;
+                    }
+                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 التسجيل</span><span>${s.joinDate?new Date(s.joinDate).toLocaleDateString('ar'):'-'}</span></div><div class="info-row"><span>👥 الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 أرباح الإحالات</span><span>${(s.referralEarnings||0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات</span><span>${(s.referralBalance||0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 الرصيد الأساسي</span><span>${(s.balance||0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 التدويرات</span><span>${s.totalSpins||0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings||0).toLocaleString()} SYP</span></div>`;
+                }
+            }
+        }
+
+        async function registerUser(refCode = null) {
+            const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) });
+            if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; isAdmin = data.isAdmin; await loadStats(); } }
+        }
+
+        async function loadDepositSettings() {
+            const res = await apiCall('/api/user/deposit-settings');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    currentMinDeposit = data.settings.minDeposit; currentMinWithdraw = data.settings.minWithdraw; currentReferralCommission = data.settings.referralCommission;
+                    document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${currentMinDeposit} SYP`;
+                    document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى: ${currentMinWithdraw} SYP`;
+                    document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission;
+                    const methodsContainer = document.getElementById('methodsList'); methodsContainer.innerHTML = '';
+                    data.settings.methods?.forEach(method => {
+                        const div = document.createElement('div'); div.className = 'method-card'; div.dataset.method = method.id;
+                        div.innerHTML = `<div>${method.icon||'🏦'}</div><div><div>${method.name}</div></div>`;
+                        div.onclick = () => {
+                            document.querySelectorAll('.method-card').forEach(c=>c.classList.remove('selected')); div.classList.add('selected');
+                            document.getElementById('addressInfo').innerHTML = `<div class="address-box"><span>${method.address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}');showMessage('تم النسخ')">📋</button></div>`;
+                        };
+                        methodsContainer.appendChild(div);
+                    });
+                    if (data.settings.methods?.[0]) document.querySelector('.method-card')?.click();
+                }
+            }
+        }
+
+        async function deposit() {
+            const selected = document.querySelector('.method-card.selected');
+            if (!selected) return showMessage('اختر طريقة الدفع', true);
+            const method = selected.dataset.method, amount = document.getElementById('depositAmount').value, transactionId = document.getElementById('transactionId').value;
+            if (!amount || amount < currentMinDeposit) return showMessage(`الحد الأدنى ${currentMinDeposit} SYP`, true);
+            if (!transactionId) return showMessage('أدخل رقم العملية', true);
+            const btn = document.getElementById('submitDepositBtn'); setButtonLoading(btn, true);
+            const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) });
+            setButtonLoading(btn, false);
+            if (res?.ok) { showMessage('تم الإيداع'); document.getElementById('depositModal').style.display = 'none'; loadProfile(); loadStats(); }
+            else if (res) { const err = await res.json(); showMessage(err.error, true); }
+        }
+
+        async function withdraw() {
+            const amount = document.getElementById('withdrawAmount').value, address = document.getElementById('withdrawAddress').value, method = document.getElementById('withdrawMethod').value;
+            if (!amount || amount < currentMinWithdraw) return showMessage(`الحد الأدنى ${currentMinWithdraw} SYP`, true);
+            if (!address) return showMessage('أدخل العنوان', true);
+            if (userData && amount > userData.balance) return showMessage('الرصيد غير كافٍ', true);
+            const btn = document.getElementById('submitWithdrawBtn'); setButtonLoading(btn, true);
+            const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) });
+            setButtonLoading(btn, false);
+            if (res?.ok) { showMessage('تم إنشاء طلب السحب'); document.getElementById('withdrawModal').style.display = 'none'; loadProfile(); }
+            else if (res) { const err = await res.json(); showMessage(err.error, true); }
+        }
+
+        async function addReferrerCode() {
+            const code = document.getElementById('referrerCodeInput').value.trim().toUpperCase();
+            if (!code) return showMessage('أدخل الكود', true);
+            const btn = document.getElementById('submitReferrerCodeBtn'); setButtonLoading(btn, true);
+            const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) });
+            setButtonLoading(btn, false);
+            if (res?.ok) { showMessage('تم تفعيل الكود'); loadStats(); loadEarnPageInfo(); }
+            else if (res) { const err = await res.json(); showMessage(err.error, true); }
+        }
+
+        async function loadEarnPageInfo() {
+            const res = await apiCall('/api/user/stats');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('earnCodeDisplay').innerHTML = data.stats.uniqueId;
+                    if (data.stats.referredBy) { document.getElementById('addReferrerSection').style.display = 'none'; document.getElementById('referrerInfoSection').style.display = 'block'; document.getElementById('referrerNameDisplay').innerHTML = data.stats.referredByName; }
+                    else { document.getElementById('addReferrerSection').style.display = 'block'; document.getElementById('referrerInfoSection').style.display = 'none'; }
+                }
+            }
+        }
+
         function copyReferralCode() { const code = document.getElementById('earnCodeDisplay').innerText; if (code) { navigator.clipboard.writeText(code); showMessage('تم نسخ الكود: '+code); } }
 
         // الأحداث
@@ -579,14 +703,27 @@
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
         document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; }));
         document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; }));
-        document.querySelectorAll('[data-history-tab]').forEach(btn => { btn.addEventListener('click', async () => { const tab = btn.dataset.historyTab; document.querySelectorAll('[data-history-tab]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.getElementById('depositsHistoryList').style.display = tab==='deposits'?'block':'none'; document.getElementById('withdrawsHistoryList').style.display = tab==='withdraws'?'block':'none'; document.getElementById('wheelHistoryList').style.display = tab==='wheel'?'block':'none'; if (tab==='deposits') { const res = await apiCall('/api/user/deposits'); if (res?.ok) { const data = await res.json(); document.getElementById('depositsHistoryList').innerHTML = data.deposits?.map(d=>`<div class="request-card"><strong>${d.amount.toLocaleString()} SYP</strong><br>${d.method}<br>${d.transactionId}</div>`).join('')||'لا توجد'; } } else if (tab==='withdraws') { const res = await apiCall('/api/user/withdraw-requests'); if (res?.ok) { const data = await res.json(); document.getElementById('withdrawsHistoryList').innerHTML = data.requests?.map(r=>`<div class="request-card"><strong>${r.amount.toLocaleString()} SYP</strong><br>الحالة: ${r.status}</div>`).join('')||'لا توجد'; } } else { const res = await apiCall('/api/user/wheel-history'); if (res?.ok) { const data = await res.json(); document.getElementById('wheelHistoryList').innerHTML = data.spins?.map(s=>`<div class="request-card"><strong>${s.sectorName}</strong><br>${s.prizeAmount>0?`فوز ${s.prizeAmount} SYP`:'حظ أوفر'}</div>`).join('')||'لا توجد'; } } }); });
 
-        // تحميل الثيم
-        async function loadTheme() { try { const res = await fetch(`${API_URL}/api/site-theme`); if (res.ok) { const data = await res.json(); if (data.theme) document.body.className = `theme-${data.theme}`; } } catch(e) {} }
-        loadTheme();
+        document.getElementById('switchToUserView')?.addEventListener('click', () => { document.getElementById('adminApp').classList.add('hidden'); document.getElementById('userApp').classList.remove('hidden'); });
+        document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
+        document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => { const settings = { minDeposit: Number(document.getElementById('settingMinDeposit').value), minWithdraw: Number(document.getElementById('settingMinWithdraw').value), gameImageUrl: document.getElementById('settingGameImageUrl').value, referralCommission: Number(document.getElementById('settingReferralCommission').value), wheelSpinCost: Number(document.getElementById('settingWheelSpinCost').value) }; const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); if (res?.ok) showMessage('تم الحفظ'); });
+        document.getElementById('saveThemeBtn')?.addEventListener('click', async () => { const theme = document.body.className.replace('theme-', ''); const res = await apiCall('/api/admin/update-theme', { method: 'POST', body: JSON.stringify({ theme }) }); if (res?.ok) showMessage('تم حفظ اللون'); });
+        document.querySelectorAll('.theme-color').forEach(el => { el.addEventListener('click', () => { const theme = el.dataset.theme; document.body.className = `theme-${theme}`; }); });
+
         function initWheel() { wheelCanvas = document.getElementById('wheelCanvas'); if (wheelCanvas) { const size = Math.min(380, window.innerWidth-80); wheelCanvas.width = size; wheelCanvas.height = size; ctx = wheelCanvas.getContext('2d'); drawWheel(); checkWheelStatus(); } }
 
-        onAuthStateChanged(auth, async (user) => { if (user) { currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDepositSettings(); await loadEarnPageInfo(); document.getElementById('loader').style.display = 'none'; document.getElementById('userApp').classList.remove('hidden'); initWheel(); if (isAdmin) { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); } } else { document.getElementById('loader').innerHTML = '<div class="spinner"></div><div style="font-size:24px;font-weight:bold">BOOMB</div>'; document.getElementById('loginBtn').style.display = 'block'; document.getElementById('loader').style.display = 'flex'; document.getElementById('loginBtn').onclick = async () => { await signInWithPopup(auth, provider); }; } });
+        onAuthStateChanged(auth, async (user) => {
+            const loader = document.getElementById('loader'), loginBtn = document.getElementById('loginBtn');
+            if (user) {
+                currentUser = user; await registerUser(); await loadProfile(); await loadStats(); await loadDepositSettings(); await loadEarnPageInfo();
+                loader.style.display = 'none'; document.getElementById('userApp').classList.remove('hidden'); initWheel();
+                if (isAdmin) { document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); }
+            } else {
+                loader.innerHTML = '<div class="spinner"></div><div style="font-size:24px;font-weight:bold">BOOMB</div>';
+                loginBtn.style.display = 'block'; loader.style.display = 'flex';
+                document.getElementById('loginBtn').onclick = async () => { await signInWithPopup(auth, provider); };
+            }
+        });
     </script>
 </body>
 </html>
