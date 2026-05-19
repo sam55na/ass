@@ -1,15 +1,16 @@
 {
   "name": "boomb-server",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
-  "description": "BOOMB Gaming Platform - High Performance Server",
-  "main": "server/index.js",
+  "description": "BOOMB Gaming Platform - High Performance Server for Thousands of Users",
+  "main": "server.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "nodemon server/index.js",
-    "pm2:start": "pm2 start server/index.js --name boomb-server",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "pm2:start": "pm2 start server.js --name boomb-server -i max",
     "pm2:stop": "pm2 stop boomb-server",
-    "pm2:restart": "pm2 restart boomb-server"
+    "pm2:restart": "pm2 restart boomb-server",
+    "pm2:logs": "pm2 logs boomb-server"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -18,14 +19,20 @@
     "helmet": "^7.1.0",
     "compression": "^1.7.4",
     "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
     "morgan": "^1.10.0",
     "node-cache": "^5.1.2",
-    "axios": "^1.6.2"
+    "axios": "^1.6.2",
+    "winston": "^3.11.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "keywords": ["gaming", "referral", "wheel-of-fortune", "firebase"],
+  "author": "BOOMB Team",
+  "license": "MIT"
 }
