@@ -236,7 +236,6 @@ async function loadWheelSettings() {
 
 // دالة اختيار قطاع عشوائي محسنة وآمنة
 function getRandomSector() {
-  // حساب المجموع الفعلي للنسب
   const totalProbability = WHEEL_SECTORS.reduce((sum, s) => sum + (s.probability || 0), 0);
   
   if (totalProbability === 0) {
@@ -257,8 +256,7 @@ function getRandomSector() {
     }
   }
   
-  // في حالة الخطأ، سجل المشكلة وارجع قطاع عشوائي
-  console.error(`ERROR: No sector selected! random=${random}, cumulative=${cumulative}`);
+  console.error(`ERROR: No sector selected! random=${random}`);
   const sectorsWithReward = WHEEL_SECTORS.filter(s => s.type === 'balance' && s.value > 0);
   if (sectorsWithReward.length > 0) {
     return sectorsWithReward[Math.floor(Math.random() * sectorsWithReward.length)];
@@ -424,7 +422,6 @@ async function handleReferralRewards(userId, referrerId) {
       const referrerBonus = settings.referralBonusForReferrer || 5;
       const newUserBonus = settings.referralBonusForNewUser || 5;
       
-      // مكافأة المُحيل (الشخص الذي دعا)
       const referrerRef = db.collection('users').doc(referrerId);
       await referrerRef.update({
         referralBalance: admin.firestore.FieldValue.increment(referrerBonus),
@@ -432,14 +429,12 @@ async function handleReferralRewards(userId, referrerId) {
         referrals: admin.firestore.FieldValue.arrayUnion(userId)
       });
       
-      // مكافأة المُحال (المستخدم الجديد)
       const userRef = db.collection('users').doc(userId);
       await userRef.update({
         balance: admin.firestore.FieldValue.increment(newUserBonus),
         referralBonusReceived: admin.firestore.FieldValue.increment(newUserBonus)
       });
       
-      // تسجيل المكافأة
       await db.collection('referral_rewards').add({
         userId: userId,
         referrerId: referrerId,
