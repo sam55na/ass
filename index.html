@@ -1,2041 +1,783 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="referrer" content="origin">
-    <meta name="theme-color" content="#ff0000">
-    <title>BOOMB - منصة الألعاب</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        :root {
-            --primary: #ff0000;
-            --primary-dark: #cc0000;
-            --primary-light: #ff3333;
-            --primary-bg: rgba(255,0,0,0.1);
-            --primary-glow: rgba(255,0,0,0.3);
-            --background: #0a0a0a;
-            --surface: #121212;
-            --surface-light: #1e1e1e;
-            --surface-lighter: #2a2a2a;
-            --text: #ffffff;
-            --text-secondary: #aaaaaa;
-            --border: #333333;
-            --error: #ff4444;
-            --success: #00cc44;
-            --warning: #ff9800;
-            --info: #2196f3;
-            --gold: #FFD700;
-            --gold-dark: #B8860B;
-            --radius: 10px;
-            --radius-lg: 16px;
-            --shadow: 0 2px 10px rgba(0,0,0,0.3);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; }
-        body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; }
-        body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; }
-        body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; }
-        body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; }
-        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; }
-        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; }
-        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; }
-        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; }
-        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
-            background: var(--background);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 8px;
-            transition: var(--transition);
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-        @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes goldenGlow { 0%, 100% { opacity: 0.5; filter: blur(8px); } 50% { opacity: 0.8; filter: blur(12px); } }
-        @keyframes centerPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); } 50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 25px rgba(255, 215, 0, 1); } }
-        @keyframes ripple { 0% { transform: scale(0); opacity: 0.5; } 100% { transform: scale(4); opacity: 0; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes rotateIn { from { transform: rotate(-180deg) scale(0); opacity: 0; } to { transform: rotate(0) scale(1); opacity: 1; } }
-        @keyframes fanOpen { from { transform: rotate(0deg) translateX(0) scale(0); opacity: 0; } to { transform: rotate(var(--angle)) translateX(70px) scale(1); opacity: 1; } }
-        @keyframes fanClose { from { transform: rotate(var(--angle)) translateX(70px) scale(1); opacity: 1; } to { transform: rotate(0deg) translateX(0) scale(0); opacity: 0; } }
-        
-        .animate-fade { animation: fadeIn 0.4s ease; }
-        .animate-pulse { animation: pulse 2s infinite; }
-        .loading-shimmer { background: linear-gradient(90deg, var(--surface) 25%, var(--surface-light) 50%, var(--surface) 75%); background-size: 1000px 100%; animation: shimmer 2s infinite; }
-        .float { animation: float 3s ease-in-out infinite; }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed; inset: 0;
-            background: var(--background);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 10000; flex-direction: column; gap: 15px;
-        }
-        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,51,51,0.2);
-            border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
-        
-        .btn-loading { pointer-events: none; opacity: 0.7; position: relative; }
-        .btn-loading .btn-text { visibility: hidden; }
-        .btn-loading::after {
-            content: ""; position: absolute; width: 16px; height: 16px;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white;
-            border-radius: 50%; animation: spin 0.5s linear infinite;
-        }
-
-        /* Main Container */
-        .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .admin-container { max-width: 1400px; margin: 0 auto; padding: 12px; }
-
-        /* Top Bar */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; gap: 10px; flex-wrap: wrap; }
-        .avatar-btn {
-            width: 42px; height: 42px; background: linear-gradient(145deg, var(--surface-light), var(--surface));
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition); border: 1px solid var(--primary);
-            box-shadow: var(--shadow); font-size: 20px;
-        }
-        .avatar-btn:hover { transform: scale(1.05); border-color: var(--primary-light); }
-        .avatar-btn:active { transform: scale(0.95); }
-        
-        /* Balance Cards */
-        .balance-container { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-        .balance-card {
-            background: rgba(20,20,20,0.8); backdrop-filter: blur(10px);
-            padding: 6px 12px; border-radius: 30px; text-align: center;
-            border: 1px solid var(--primary);
-            min-width: 100px;
-        }
-        .balance-card-small { padding: 4px 10px; min-width: 80px; }
-        .balance-label { font-size: 9px; color: var(--primary-light); }
-        .balance-value { font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .balance-value-large { font-size: 20px; }
-
-        /* Action Buttons */
-        .action-grid { display: flex; gap: 10px; margin: 6px 0; }
-        .btn {
-            flex: 1; padding: 10px 8px; border: none; border-radius: 40px;
-            font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-        }
-        .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 2px 10px var(--primary-glow); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px var(--primary-glow); }
-        .btn-primary:active { transform: translateY(0); }
-        .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
-        .btn-secondary:hover { background: var(--primary-bg); transform: translateY(-1px); }
-        .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
-        .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
-        .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
-
-        /* Game Sphere */
-        .play-zone { text-align: center; margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
-        .game-sphere {
-            width: 100px; height: 100px; margin: 0 auto 15px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition);
-            box-shadow: 0 0 20px var(--primary-glow);
-            background-size: cover; background-position: center;
-            position: relative;
-        }
-        .game-sphere::before {
-            content: ''; position: absolute; inset: -3px;
-            border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
-            opacity: 0.5; z-index: -1;
-        }
-        .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--primary-glow); }
-        .game-sphere:active { transform: scale(0.98); }
-        .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 45px; }
-        #playNowBtn { margin-top: 6px; width: 60%; padding: 8px; font-size: 12px; }
-
-        /* Fan Menu - Main Button */
-        .fan-menu-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-        }
-        
-        .fan-toggle-btn {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 20px var(--primary-glow);
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: white;
-            position: relative;
-            z-index: 10;
-        }
-        
-        .fan-toggle-btn::before {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-light), var(--primary));
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: -1;
-        }
-        
-        .fan-toggle-btn:hover::before {
-            opacity: 0.5;
-        }
-        
-        .fan-toggle-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .fan-toggle-btn.open {
-            transform: rotate(45deg) scale(1.1);
-        }
-        
-        /* Fan Menu Items */
-        .fan-menu-items {
-            position: absolute;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 300px;
-            pointer-events: none;
-        }
-        
-        .fan-item {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(145deg, var(--surface-light), var(--surface));
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-            font-size: 24px;
-            color: var(--primary-light);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            pointer-events: none;
-            opacity: 0;
-            transform: scale(0);
-            backdrop-filter: blur(10px);
-        }
-        
-        .fan-item.active {
-            pointer-events: auto;
-            opacity: 1;
-        }
-        
-        .fan-item:hover {
-            transform: scale(1.15) rotate(360deg);
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-        
-        .fan-item:active {
-            transform: scale(0.95) rotate(360deg);
-        }
-        
-        /* Positions for fan items (semi-circle 180 degrees) */
-        .fan-item[data-pos="0"] { --angle: -90deg; transform: rotate(var(--angle)) translateX(75px) rotate(90deg); }
-        .fan-item[data-pos="1"] { --angle: -60deg; transform: rotate(var(--angle)) translateX(75px) rotate(60deg); }
-        .fan-item[data-pos="2"] { --angle: -30deg; transform: rotate(var(--angle)) translateX(75px) rotate(30deg); }
-        .fan-item[data-pos="3"] { --angle: 0deg; transform: rotate(var(--angle)) translateX(75px) rotate(0deg); }
-        .fan-item[data-pos="4"] { --angle: 30deg; transform: rotate(var(--angle)) translateX(75px) rotate(-30deg); }
-        .fan-item[data-pos="5"] { --angle: 60deg; transform: rotate(var(--angle)) translateX(75px) rotate(-60deg); }
-        .fan-item[data-pos="6"] { --angle: 90deg; transform: rotate(var(--angle)) translateX(75px) rotate(-90deg); }
-        
-        .fan-item.active[data-pos] {
-            animation: fanOpen 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-        }
-        
-        .fan-item.closing[data-pos] {
-            animation: fanClose 0.3s ease forwards;
-        }
-        
-        /* Ripple Effect */
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 215, 0, 0.5);
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        }
-
-        /* Info Panels */
-        .info-panel {
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg); padding: 16px;
-            border: 1px solid var(--primary);
-        }
-        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-        .ref-code-block {
-            background: var(--surface); padding: 10px; border-radius: 30px;
-            text-align: center; font-family: monospace; font-size: 16px;
-            margin: 12px 0 6px; border: 1px solid var(--primary);
-            cursor: pointer; transition: var(--transition);
-        }
-        .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); }
-
-        /* Wheel */
-        .wheel-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin: 15px 0;
-            position: relative;
-        }
-        
-        .wheel-wrapper {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            margin: 0 auto;
-        }
-        
-        .wheel-wrapper::before {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: -8px;
-            right: -8px;
-            bottom: -8px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
-            z-index: -1;
-            animation: goldenGlow 2s ease-in-out infinite;
-        }
-        
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-        }
-        
-        .wheel-pointer {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 18px solid transparent;
-            border-right: 18px solid transparent;
-            border-top: 38px solid #FFD700;
-            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
-            z-index: 10;
-        }
-        
-        .wheel-pointer::before {
-            content: '▼';
-            position: absolute;
-            top: -38px;
-            left: -10px;
-            color: #FFD700;
-            font-size: 20px;
-        }
-        
-        .wheel-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 45px;
-            height: 45px;
-            background: radial-gradient(circle, #FFD700, #B8860B);
-            border-radius: 50%;
-            border: 2px solid #FFF8DC;
-            z-index: 5;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
-            animation: centerPulse 1.5s ease-in-out infinite;
-        }
-        
-        .spin-button {
-            margin-top: 20px;
-            padding: 10px 30px;
-            font-size: 16px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: #1a1a2e;
-            border: none;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 15px rgba(255, 215, 0, 0.4);
-        }
-        
-        .spin-button:hover:not(:disabled) {
-            transform: scale(1.03);
-            box-shadow: 0 5px 25px rgba(255, 215, 0, 0.6);
-        }
-        
-        .spin-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .wheel-info {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-            background: var(--surface-light);
-            border-radius: var(--radius);
-        }
-        
-        .wheel-cost { font-size: 14px; color: var(--warning); margin-bottom: 8px; }
-        .timer-text { font-size: 12px; color: var(--text-secondary); }
-
-        /* Modals */
-        .modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.96); backdrop-filter: blur(12px);
-            z-index: 2000; justify-content: center; align-items: center; padding: 12px;
-            animation: fadeIn 0.3s ease;
-        }
-        .modal-content {
-            background: var(--surface); border-radius: var(--radius-lg);
-            max-width: 500px; width: 100%; padding: 20px 16px;
-            border: 1px solid var(--primary); max-height: 85vh; overflow-y: auto;
-            animation: slideIn 0.3s ease;
-        }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--primary); padding-bottom: 10px;
-            margin-bottom: 16px; font-size: 18px; font-weight: 600; color: var(--primary-light);
-        }
-        .close-modal { font-size: 26px; cursor: pointer; transition: var(--transition); width: 32px; text-align: center; }
-        .close-modal:hover { transform: scale(1.1); color: var(--error); }
-
-        /* Methods & Forms */
-        .methods-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-        .method-card {
-            background: var(--surface-light); border: 2px solid var(--border);
-            border-radius: var(--radius); padding: 12px; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; gap: 12px;
-        }
-        .method-card:hover { border-color: var(--primary); transform: translateX(-3px); }
-        .method-card.selected { border-color: var(--primary); background: var(--primary-bg); }
-        .method-icon { font-size: 24px; }
-        .method-name { font-size: 14px; font-weight: bold; }
-        .method-currency { font-size: 11px; color: var(--primary-light); margin-top: 2px; }
-        
-        .address-box {
-            background: var(--surface); padding: 10px; border-radius: var(--radius);
-            margin: 10px 0; display: flex; justify-content: space-between;
-            align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .address-box span { font-family: monospace; font-size: 12px; word-break: break-all; flex: 1; }
-        .copy-btn { background: var(--primary); border: none; color: white; padding: 5px 12px; border-radius: 25px; cursor: pointer; font-size: 12px; }
-        
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; margin-bottom: 5px; color: var(--primary-light); font-size: 12px; font-weight: 500; }
-        input, select, textarea {
-            background: var(--surface-light); border: 1px solid var(--border);
-            color: var(--text); padding: 10px 12px; border-radius: var(--radius);
-            width: 100%; font-size: 13px; transition: var(--transition);
-        }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
-        .hint { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
-
-        /* Request Cards */
-        .request-card {
-            background: var(--surface-light); margin-bottom: 10px; padding: 10px;
-            border-radius: var(--radius); border-right: 3px solid var(--primary);
-            transition: var(--transition); font-size: 12px;
-        }
-        .request-card:hover { transform: translateX(-3px); background: var(--surface-lighter); }
-        .request-card.pending { border-right-color: var(--warning); }
-        .request-card.approved { border-right-color: var(--success); }
-        .request-card.rejected { border-right-color: var(--error); }
-
-        /* Toast */
-        .toast {
-            position: fixed; bottom: 100px; left: 12px; right: 12px;
-            background: var(--primary-dark); backdrop-filter: blur(8px);
-            padding: 10px; border-radius: 40px; text-align: center;
-            z-index: 3000; animation: slideIn 0.3s ease; font-size: 13px;
-            font-weight: 500;
-        }
-
-        /* Admin Panel */
-        .admin-header {
-            background: var(--surface); padding: 12px 16px; border-radius: var(--radius-lg);
-            margin-bottom: 16px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 10px;
-        }
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px; margin-bottom: 20px;
-        }
-        .stat-card {
-            background: var(--surface); padding: 12px; border-radius: var(--radius);
-            text-align: center; border: 1px solid var(--border);
-        }
-        .stat-number { font-size: 22px; font-weight: bold; color: var(--primary); }
-        .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
-        .stat-icon { font-size: 22px; margin-bottom: 6px; }
-        
-        .admin-table {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            overflow-x: auto;
-        }
-        .admin-table-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface-light);
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        }
-        .admin-table-title { font-size: 16px; font-weight: bold; color: var(--primary-light); }
-        
-        .tabs-bar {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .tab {
-            cursor: pointer;
-            padding: 8px 18px;
-            background: var(--surface-light);
-            border-radius: var(--radius);
-            transition: var(--transition);
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .tab:hover { background: var(--primary-bg); transform: translateY(-2px); }
-        .tab.active { background: var(--primary); color: white; }
-        
-        .section-title { color: var(--primary-light); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 16px; }
-        .hidden { display: none; }
-        
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 15px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        .badge-success { background: var(--success); color: white; }
-        .badge-warning { background: var(--warning); color: #1a1a2e; }
-        .badge-danger { background: var(--error); color: white; }
-        .badge-info { background: var(--info); color: white; }
-        
-        .theme-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; justify-content: center; }
-        .theme-color { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
-        .theme-color:hover { transform: scale(1.1); }
-        .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 8px white; }
-        
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; padding: 12px; }
-        .search-input { flex: 1; min-width: 150px; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--border); }
-        th { background: var(--primary-bg); color: var(--primary-light); font-weight: 600; }
-        .admin-btn { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; }
-        .admin-btn-small { padding: 4px 8px; font-size: 10px; margin: 2px; }
-        
-        @media (max-width: 768px) {
-            body { padding: 6px; }
-            .balance-card { padding: 4px 8px; min-width: 80px; }
-            .balance-value { font-size: 12px; }
-            .balance-value-large { font-size: 16px; }
-            .game-sphere { width: 80px; height: 80px; font-size: 35px; }
-            .wheel-wrapper { width: 180px; height: 180px; }
-            .spin-button { padding: 8px 25px; font-size: 14px; }
-            .fan-toggle-btn { width: 50px; height: 50px; font-size: 24px; }
-            .fan-item { width: 42px; height: 42px; font-size: 20px; }
-            .fan-item[data-pos] { --translate: 65px; transform: rotate(var(--angle)) translateX(65px) rotate(calc(var(--angle) * -1)); }
-            .stat-number { font-size: 18px; }
-            .tab { padding: 6px 14px; font-size: 11px; }
-        }
-    </style>
-</head>
-<body>
-    <div id="loader" class="loading-overlay">
-        <div class="spinner"></div>
-        <div style="font-size: 24px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
-        <button id="loginBtn" class="btn btn-primary" style="margin-top:15px;width:200px;display:none">🔐 تسجيل دخول Google</button>
-    </div>
-
-    <div id="userApp" class="app-container hidden">
-        <div id="homeScreen">
-            <div class="top-bar">
-                <div class="avatar-btn" id="openProfileBtn">👤</div>
-                <div class="balance-container">
-                    <div class="balance-card">
-                        <div class="balance-label">الرصيد الأساسي</div>
-                        <div class="balance-value balance-value-large"><span id="mainBalance">0</span> SYP</div>
-                    </div>
-                    <div class="balance-card balance-card-small">
-                        <div class="balance-label">🎁 رصيد الإحالات</div>
-                        <div class="balance-value"><span id="referralBalance">0</span> SYP</div>
-                    </div>
-                </div>
-            </div>
-            <div class="action-grid">
-                <button class="btn btn-primary" id="depositAction">💰 إيداع</button>
-                <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
-            </div>
-            <div class="play-zone">
-                <div class="game-sphere default-icon" id="gameIconContainer">
-                    <img id="gameImage" class="game-image hidden" alt="Game Icon">
-                    <span id="defaultGameIcon">🎮</span>
-                </div>
-                <button class="btn btn-primary animate-pulse" id="playNowBtn">🎲 العب الآن</button>
-            </div>
-        </div>
-
-        <div id="profileScreen" class="hidden">
-            <div class="top-bar">
-                <div class="avatar-btn" id="backHomeBtn">←</div>
-                <div id="adminSwitchContainer"></div>
-            </div>
-            <div class="info-panel">
-                <div class="info-row"><span>👤 الاسم</span><span id="profileName">-</span></div>
-                <div class="info-row"><span>🔑 كود الإحالة</span><span id="profileRefCode">-</span></div>
-                <div class="info-row"><span>💰 الرصيد الأساسي</span><span id="profileBalance">0 SYP</span></div>
-                <div class="info-row"><span>🎁 رصيد الإحالات</span><span id="profileReferralBalance">0 SYP</span></div>
-                <div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span id="profileRefEarn">0 SYP</span></div>
-                <div class="info-row"><span>👥 عدد الإحالات</span><span id="profileRefCount">0</span></div>
-                <div class="info-row"><span>💰 إجمالي الإيداع</span><span id="profileTotalDeposit">0 SYP</span></div>
-                <div class="info-row"><span>💸 إجمالي السحب</span><span id="profileTotalWithdraw">0 SYP</span></div>
-                <div class="info-row"><span>🎡 عدد التدويرات</span><span id="profileTotalSpins">0</span></div>
-                <div class="info-row"><span>🏅 إجمالي أرباح العجلة</span><span id="profileTotalWinnings">0 SYP</span></div>
-                <div id="referrerInfoProfile" class="info-row hidden"><span>🎁 تمت الدعوة بواسطة</span><span id="referrerNameProfile">-</span></div>
-                <div class="ref-code-block" id="refCodeBlock">📋 اضغط لنسخ الكود</div>
-                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:12px">🚪 تسجيل خروج</button>
-            </div>
-        </div>
-
-        <!-- Fan Menu (Floating Action Button) -->
-        <div class="fan-menu-container">
-            <button class="fan-toggle-btn" id="fanToggleBtn">🎮</button>
-            <div class="fan-menu-items" id="fanMenuItems">
-                <div class="fan-item" data-pos="0" data-action="profile">👤</div>
-                <div class="fan-item" data-pos="1" data-action="stats">📊</div>
-                <div class="fan-item" data-pos="2" data-action="wheel">🎡</div>
-                <div class="fan-item" data-pos="3" data-action="history">📋</div>
-                <div class="fan-item" data-pos="4" data-action="earn">🎁</div>
-                <div class="fan-item" data-pos="5" data-action="deposit">💰</div>
-                <div class="fan-item" data-pos="6" data-action="withdraw">💸</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div id="wheelModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span>🎡 عجلة الحظ</span>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="wheel-container">
-                <div class="wheel-wrapper">
-                    <canvas id="wheelCanvas" width="400" height="400"></canvas>
-                    <div class="wheel-pointer"></div>
-                    <div class="wheel-center"></div>
-                </div>
-                <button id="spinWheelBtn" class="spin-button">🎡 دَوّر العجلة 🎡</button>
-                <div class="wheel-info">
-                    <div class="wheel-cost" id="wheelCostDisplay">تكلفة التدويرة: 0 SYP</div>
-                    <div class="timer-text" id="wheelTimer"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>📊 الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.5, user-scalable=yes">
+  <meta name="referrer" content="origin">
+  <title>BOOMB</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
-    <div id="historyModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>📋 سجل المعاملات</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 10px;">
-                <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border);">
-                    <button class="tab active" data-history-tab="deposits" style="flex:1;">💰 الإيداعات</button>
-                    <button class="tab" data-history-tab="withdraws" style="flex:1;">💸 السحوبات</button>
-                    <button class="tab" data-history-tab="wheel" style="flex:1;">🎡 العجلة</button>
-                </div>
-                <div id="depositsHistoryList" style="max-height: 400px; overflow-y: auto;"></div>
-                <div id="withdrawsHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
-                <div id="wheelHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
-            </div>
+    :root {
+      --primary: #ff0000;
+      --primary-dark: #cc0000;
+      --primary-light: #ff3333;
+      --primary-bg: rgba(255,0,0,0.1);
+      --primary-glow: rgba(255,0,0,0.3);
+      --background: #0a0a0a;
+      --surface: #121212;
+      --surface-light: #1e1e1e;
+      --text: #ffffff;
+      --text-secondary: #aaaaaa;
+      --border: #333333;
+      --error: #ff4444;
+      --success: #00cc44;
+      --warning: #ff9800;
+      --gold: #FFD700;
+      --gold-dark: #B8860B;
+      --blue-shiny: #1E90FF;
+      --radius: 8px;
+      --radius-lg: 16px;
+      --shadow: 0 2px 10px rgba(0,0,0,0.3);
+      --transition: all 0.2s ease;
+    }
+
+    body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; --primary-bg: rgba(255,0,0,0.1); }
+    body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; --primary-bg: rgba(33,150,243,0.1); }
+    body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; --primary-bg: rgba(76,175,80,0.1); }
+    body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; --primary-bg: rgba(156,39,176,0.1); }
+    body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; --primary-bg: rgba(255,152,0,0.1); }
+    body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; --primary-bg: rgba(233,30,99,0.1); }
+    body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; --primary-bg: rgba(0,150,136,0.1); }
+    body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; --primary-bg: rgba(0,188,212,0.1); }
+    body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; --primary-bg: rgba(255,193,7,0.1); }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--background); color: var(--text); min-height: 100vh; padding: 8px; transition: var(--transition); }
+
+    /* سكرول بار */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+    /* أنيميشن */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+
+    .animate-fade { animation: fadeIn 0.3s ease; }
+    .animate-pulse { animation: pulse 2s infinite; }
+
+    /* تحميل */
+    .loading-overlay { position: fixed; inset: 0; background: var(--background); display: flex; justify-content: center; align-items: center; z-index: 10000; flex-direction: column; gap: 12px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,51,51,0.2); border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+    /* أزرار */
+    .btn { padding: 10px 16px; border: none; border-radius: 40px; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 2px 10px var(--primary-glow); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px var(--primary-glow); }
+    .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
+    .btn-secondary:hover { background: var(--primary-bg); }
+    .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-loading { pointer-events: none; opacity: 0.7; position: relative; }
+    .btn-loading .btn-text { visibility: hidden; }
+    .btn-loading::after { content: ""; position: absolute; width: 16px; height: 16px; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+
+    /* حاوية التطبيق */
+    .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 12px; }
+    .admin-container { max-width: 1400px; margin: 0 auto; padding: 12px; }
+
+    /* الشريط العلوي */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; gap: 8px; flex-wrap: wrap; }
+    .avatar-btn { width: 40px; height: 40px; background: linear-gradient(145deg, var(--surface-light), var(--surface)); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); border: 1px solid var(--primary); box-shadow: var(--shadow); font-size: 20px; }
+    .avatar-btn:hover { transform: scale(1.05); border-color: var(--primary-light); }
+
+    /* بطاقات الرصيد */
+    .balance-container { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .balance-card { background: rgba(20,20,20,0.8); backdrop-filter: blur(12px); padding: 6px 12px; border-radius: 30px; text-align: center; border: 1px solid var(--primary); min-width: 100px; }
+    .balance-card-small { padding: 4px 10px; min-width: 80px; }
+    .balance-label { font-size: 9px; color: var(--primary-light); }
+    .balance-value { font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
+    .balance-value-large { font-size: 20px; }
+
+    /* شبكة الأزرار */
+    .action-grid { display: flex; gap: 10px; margin: 6px 0; }
+    .action-grid .btn { flex: 1; padding: 10px 6px; font-size: 13px; }
+
+    /* منطقة اللعب */
+    .play-zone { text-align: center; margin: 12px 0; display: flex; flex-direction: column; align-items: center; }
+    .game-sphere { width: 100px; height: 100px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px var(--primary-glow); position: relative; }
+    .game-sphere::before { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent); opacity: 0.5; z-index: -1; }
+    .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--primary-glow); }
+    .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 48px; }
+    .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+    /* التنقل السفلي */
+    .bottom-nav { display: flex; justify-content: space-around; background: rgba(18,18,18,0.95); backdrop-filter: blur(14px); padding: 6px 4px; border-radius: 50px; margin-top: auto; gap: 2px; border: 1px solid var(--primary); }
+    .nav-tab { flex: 1; text-align: center; padding: 8px 2px; cursor: pointer; border-radius: 40px; transition: var(--transition); color: var(--text-secondary); font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .nav-tab:hover { background: var(--primary-bg); color: var(--primary-light); transform: translateY(-1px); }
+    .nav-tab.active { background: var(--primary-bg); color: var(--primary-light); }
+
+    /* لوحة المعلومات */
+    .info-panel { background: rgba(18,18,18,0.95); backdrop-filter: blur(16px); border-radius: var(--radius-lg); padding: 16px; border: 1px solid var(--primary); }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .ref-code-block { background: var(--surface); padding: 10px; border-radius: 30px; text-align: center; font-family: monospace; font-size: 16px; margin: 12px 0 6px; border: 1px solid var(--primary); cursor: pointer; transition: var(--transition); }
+    .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.01); }
+
+    /* المودالات */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); backdrop-filter: blur(12px); z-index: 1100; justify-content: center; align-items: center; padding: 12px; animation: fadeIn 0.3s ease; }
+    .modal-content { background: var(--surface); border-radius: var(--radius-lg); max-width: 500px; width: 100%; padding: 20px 16px; border: 1px solid var(--primary); max-height: 85vh; overflow-y: auto; animation: slideIn 0.3s ease; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; margin-bottom: 16px; font-size: 18px; font-weight: 600; color: var(--primary-light); }
+    .close-modal { font-size: 24px; cursor: pointer; transition: var(--transition); }
+    .close-modal:hover { transform: scale(1.1); color: var(--error); }
+
+    /* العجلة */
+    .wheel-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 12px 0; position: relative; }
+    .wheel-wrapper { position: relative; width: 220px; height: 220px; margin: 0 auto; }
+    .wheel-wrapper::before { content: ""; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; border-radius: 50%; background: linear-gradient(135deg, #FFD700, #FFA500); z-index: -1; animation: pulse 2s ease-in-out infinite; }
+    canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border-radius: 50%; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+    .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid #FFD700; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)); z-index: 10; }
+    .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; background: radial-gradient(circle, #FFD700, #B8860B); border-radius: 50%; border: 2px solid #FFF8DC; z-index: 5; box-shadow: 0 0 15px rgba(255,215,0,0.8); animation: pulse 1.5s ease-in-out infinite; }
+    .spin-button { margin-top: 20px; padding: 12px 30px; font-size: 16px; font-weight: bold; background: linear-gradient(135deg, #FFD700, #FFA500); color: #1a1a2e; border: none; border-radius: 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 3px 15px rgba(255,215,0,0.5); }
+    .spin-button:hover:not(:disabled) { transform: scale(1.03); box-shadow: 0 5px 20px rgba(255,215,0,0.8); }
+    .spin-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .wheel-info { text-align: center; margin-top: 12px; padding: 10px; background: var(--surface-light); border-radius: var(--radius); }
+
+    /* قوائم الدفع */
+    .methods-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .method-card { background: var(--surface-light); border: 2px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 10px; }
+    .method-card:hover { border-color: var(--primary); transform: translateX(-3px); }
+    .method-card.selected { border-color: var(--primary); background: var(--primary-bg); }
+    .method-icon { font-size: 24px; }
+    .method-name { font-size: 14px; font-weight: bold; }
+    .method-currency { font-size: 11px; color: var(--primary-light); }
+
+    /* نموذج */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; color: var(--primary-light); font-size: 12px; font-weight: 500; }
+    input, select, textarea { background: var(--surface-light); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius); width: 100%; font-size: 13px; transition: var(--transition); }
+    input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+
+    /* بطاقات الطلبات */
+    .request-card { background: var(--surface-light); margin-bottom: 10px; padding: 10px; border-radius: var(--radius); border-right: 3px solid var(--primary); transition: var(--transition); font-size: 12px; }
+    .request-card:hover { transform: translateX(-3px); background: var(--surface-lighter); }
+    .request-card.pending { border-right-color: var(--warning); }
+    .request-card.approved { border-right-color: var(--success); }
+    .request-card.rejected { border-right-color: var(--error); }
+
+    /* توست */
+    .toast { position: fixed; bottom: 70px; left: 12px; right: 12px; background: var(--primary-dark); backdrop-filter: blur(8px); padding: 10px; border-radius: 40px; text-align: center; z-index: 1200; animation: slideIn 0.3s ease; font-weight: 500; font-size: 13px; }
+
+    /* لوحة المدير */
+    .admin-header { background: var(--surface); padding: 12px 16px; border-radius: var(--radius-lg); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid var(--primary); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); padding: 12px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: var(--transition); }
+    .stat-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+    .stat-number { font-size: 24px; font-weight: bold; color: var(--primary); }
+    .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
+    .admin-btn { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: var(--transition); font-size: 12px; }
+    .admin-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .admin-table { background: var(--surface); border-radius: var(--radius-lg); overflow-x: auto; padding: 0; }
+    .admin-table-header { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface-light); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--border); font-size: 11px; }
+    th { background: var(--primary-bg); color: var(--primary-light); font-weight: 600; position: sticky; top: 0; }
+    tr:hover { background: var(--surface-light); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+    .badge-success { background: var(--success); color: white; }
+    .badge-warning { background: var(--warning); color: #1a1a2e; }
+    .badge-danger { background: var(--error); color: white; }
+    .badge-info { background: var(--info); color: white; }
+    .tabs-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; background: var(--surface); padding: 8px; border-radius: var(--radius-lg); }
+    .tab { cursor: pointer; padding: 8px 16px; background: var(--surface-light); border-radius: var(--radius); transition: var(--transition); font-weight: 500; font-size: 12px; }
+    .tab:hover { background: var(--primary-bg); transform: translateY(-1px); color: var(--primary-light); }
+    .tab.active { background: var(--primary); color: white; }
+    .theme-color { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+    .theme-color.active { border-color: white; transform: scale(1.1); }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+
+    .hidden { display: none; }
+    @media (max-width: 480px) { .balance-value { font-size: 14px; } .stat-number { font-size: 18px; } th, td { padding: 8px 4px; font-size: 10px; } .wheel-wrapper { width: 200px; height: 200px; } }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body class="theme-red">
+  <div id="loader" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="font-size: 24px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
+    <button id="loginBtn" class="btn btn-primary" style="margin-top: 16px; width: 180px;">🔐 تسجيل الدخول</button>
+  </div>
+
+  <div id="userApp" class="app-container hidden">
+    <div id="homeScreen">
+      <div class="top-bar">
+        <div class="avatar-btn" id="openProfileBtn">👤</div>
+        <div class="balance-container">
+          <div class="balance-card">
+            <div class="balance-label">الرصيد</div>
+            <div class="balance-value balance-value-large"><span id="mainBalance">0</span></div>
+          </div>
+          <div class="balance-card balance-card-small">
+            <div class="balance-label">🎁 رصيد الإحالات</div>
+            <div class="balance-value"><span id="referralBalance">0</span></div>
+          </div>
         </div>
+      </div>
+      <div class="action-grid">
+        <button class="btn btn-primary" id="depositAction">💰 إيداع</button>
+        <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
+      </div>
+      <div class="play-zone">
+        <div class="game-sphere default-icon" id="gameIconContainer">
+          <img id="gameImage" class="game-image hidden" alt="Game Icon">
+          <span id="defaultGameIcon">🎮</span>
+        </div>
+        <button class="btn btn-primary animate-pulse" id="playNowBtn" style="width: 70%;">🎲 ابدأ اللعب</button>
+      </div>
     </div>
 
-    <div id="earnModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>🎁 اكسب مجانا</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 15px;">
-                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; margin-bottom: 15px; text-align: center;">
-                    <h4 style="color: var(--primary-light); margin-bottom: 10px; font-size: 14px;">🏆 كود الإحالة الخاص بك</h4>
-                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 6px 0; font-size: 18px; font-weight: bold;"></div>
-                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 6px; padding: 8px;">📋 نسخ الكود</button>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 10px;">
-                        🎁 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
-                        💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع
-                    </p>
-                </div>
-                
-                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; margin-bottom: 15px;">
-                    <h4 style="color: var(--warning); margin-bottom: 10px; font-size: 14px;">👥 هل لديك كود إحالة؟</h4>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
-                    <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 16px; margin-bottom: 10px;">
-                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%; padding: 8px;">🎁 تفعيل الكود</button>
-                </div>
-                
-                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; display: none;">
-                    <h4 style="color: var(--success); margin-bottom: 10px; font-size: 14px;">✅ تم التفعيل بنجاح</h4>
-                    <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
-                    <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
-                </div>
-            </div>
-        </div>
+    <div id="profileScreen" class="hidden">
+      <div class="top-bar">
+        <div class="avatar-btn" id="backHomeBtn">←</div>
+        <div id="adminSwitchContainer"></div>
+      </div>
+      <div class="info-panel">
+        <div class="info-row"><span>👤 الاسم</span><span id="profileName">-</span></div>
+        <div class="info-row"><span>🔑 كود الإحالة</span><span id="profileRefCode">-</span></div>
+        <div class="info-row"><span>💰 الرصيد</span><span id="profileBalance">0 SYP</span></div>
+        <div class="info-row"><span>🎁 رصيد الإحالات</span><span id="profileReferralBalance">0 SYP</span></div>
+        <div class="info-row"><span>🏆 إجمالي أرباح الإحالة</span><span id="profileRefEarn">0 SYP</span></div>
+        <div class="info-row"><span>👥 عدد الإحالات</span><span id="profileRefCount">0</span></div>
+        <div class="info-row"><span>💰 إجمالي الإيداع</span><span id="profileTotalDeposit">0 SYP</span></div>
+        <div class="info-row"><span>💸 إجمالي السحب</span><span id="profileTotalWithdraw">0 SYP</span></div>
+        <div class="info-row"><span>🎡 عدد التدويرات</span><span id="profileTotalSpins">0</span></div>
+        <div class="info-row"><span>🏅 إجمالي الأرباح</span><span id="profileTotalWinnings">0 SYP</span></div>
+        <div id="referrerInfoProfile" class="hidden info-row"><span>👤 المحيل</span><span id="referrerNameProfile">-</span></div>
+        <div class="ref-code-block" id="refCodeBlock">📋 انقر لنسخ كود الإحالة</div>
+        <div id="statsInner"></div>
+      </div>
+      <button class="btn btn-danger" id="logoutMainBtn" style="margin-top: 12px;">🚪 تسجيل خروج</button>
     </div>
 
-    <div id="depositModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>💰 إيداع</span><span class="close-modal" id="closeDepositModal">&times;</span></div>
-            <div class="form-group"><label>📱 اختر طريقة الدفع</label><div id="methodsList" class="methods-list"></div></div>
-            <div id="addressInfo"></div>
-            <div class="form-group"><label>💵 المبلغ</label><input type="number" id="depositAmount" placeholder="أدخل المبلغ"><div id="minDepositHint" class="hint"></div><div id="exchangeRateHint" class="hint" style="color: var(--warning);"></div></div>
-            <div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"></div>
-            <button class="btn btn-primary" id="submitDepositBtn" style="width:100%"><span class="btn-text">تأكيد الإيداع</span></button>
-        </div>
+    <div class="bottom-nav">
+      <div class="nav-tab" data-tab="stats">📊 إحصائيات</div>
+      <div class="nav-tab" data-tab="wheel">🎡 العجلة</div>
+      <div class="nav-tab" data-tab="earn">🔗 اربح</div>
     </div>
+  </div>
 
-    <div id="withdrawModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>💸 سحب</span><span class="close-modal" id="closeWithdrawModal">&times;</span></div>
-            <div class="form-group"><label>💵 المبلغ (SYP)</label><input type="number" id="withdrawAmount" placeholder="أدخل المبلغ"><div id="minWithdrawHint" class="hint"></div></div>
-            <div class="form-group"><label>📍 عنوان المحفظة / رقم الجوال</label><input type="text" id="withdrawAddress" placeholder="أدخل عنوان السحب"></div>
-            <div class="form-group"><label>📱 طريقة السحب</label><select id="withdrawMethod"><option value="sham_cash">شام كاش</option><option value="syriatel_cash">سيرياتيل كاش</option></select></div>
-            <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%"><span class="btn-text">تأكيد السحب</span></button>
-        </div>
+  <div id="adminApp" class="admin-container hidden">
+    <div class="admin-header">
+      <div><strong>🔧 لوحة التحكم</strong></div>
+      <button class="admin-btn" id="switchToUserView">👤 عرض المستخدم</button>
+      <button class="admin-btn" id="adminLogoutBtn">🚪 خروج</button>
     </div>
-
-    <div id="resetModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>⚠️ تهيئة قاعدة البيانات</span><span class="close-modal" id="closeResetModal">&times;</span></div>
-            <div style="text-align:center; margin-bottom:15px"><p style="color:var(--error); margin-bottom:12px">⚠️ تحذير: هذا الإجراء نهائي!</p><p>سيتم حذف جميع البيانات</p></div>
-            <div class="form-group"><label>🔑 كلمة المرور</label><input type="password" id="resetPassword" placeholder="أدخل كلمة المرور"></div>
-            <button class="btn btn-danger" id="confirmResetBtn" style="width:100%"><span class="btn-text">تأكيد التهيئة</span></button>
-        </div>
+    <div class="stats-grid" id="adminStats"></div>
+    <div class="tabs-bar">
+      <div class="tab" data-tab="withdraws">💸 طلبات السحب</div>
+      <div class="tab" data-tab="deposits">💰 الإيداعات</div>
+      <div class="tab" data-tab="users">👥 المستخدمين</div>
+      <div class="tab" data-tab="settings">⚙️ الإعدادات</div>
+      <div class="tab" data-tab="wheel-settings">🎡 العجلة</div>
+      <div class="tab" data-tab="themes">🎨 الثيمات</div>
+      <div class="tab" data-tab="reset">🔄 تهيئة</div>
     </div>
-
-    <div id="adminApp" class="hidden">
-        <div class="admin-container">
-            <div class="admin-header">
-                <h2 style="font-size: 18px;">🔧 لوحة التحكم</h2>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <span style="background:var(--primary);padding:3px 10px;border-radius:20px;font-size:11px">sam55nam@gmail.com</span>
-                    <button class="admin-btn" id="switchToUserView">🌐 الموقع</button>
-                    <button class="admin-btn" id="adminLogoutBtn">🚪 تسجيل خروج</button>
-                </div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div class="stat-label">المستخدمين</div></div>
-                <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number" id="statNewToday">0</div><div class="stat-label">جدد اليوم</div></div>
-                <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" id="statTotalBalance">0</div><div class="stat-label">إجمالي الرصيد</div></div>
-                <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" id="statTotalDeposited">0</div><div class="stat-label">الإيداعات</div></div>
-                <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" id="statTotalWithdrawn">0</div><div class="stat-label">السحوبات</div></div>
-                <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" id="statPendingWithdraws">0</div><div class="stat-label">طلبات معلقة</div></div>
-                <div class="stat-card"><div class="stat-icon">🎡</div><div class="stat-number" id="statTotalSpins">0</div><div class="stat-label">إجمالي التدويرات</div></div>
-                <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number" id="statTotalWinnings">0</div><div class="stat-label">أرباح العجلة</div></div>
-            </div>
-
-            <div class="tabs-bar">
-                <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
-                <div class="tab" data-tab="deposits">💰 الإيداعات</div>
-                <div class="tab" data-tab="users">👥 المستخدمين</div>
-                <div class="tab" data-tab="settings">⚙️ الإعدادات</div>
-                <div class="tab" data-tab="wheel-settings">🎡 العجلة</div>
-                <div class="tab" data-tab="themes">🎨 الألوان</div>
-                <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
-            </div>
-
-            <div id="adminWithdrawsPanel" class="admin-table">
-                <div class="admin-table-header"><div class="admin-table-title">💸 طلبات السحب</div></div>
-                <div class="filter-bar">
-                    <select id="filterWithdrawStatus">
-                        <option value="all">جميع الطلبات</option>
-                        <option value="pending">⏳ قيد المراجعة</option>
-                        <option value="approved">✅ مقبولة</option>
-                        <option value="rejected">❌ مرفوضة</option>
-                    </select>
-                    <button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button>
-                </div>
-                <div id="withdrawsTable" style="padding: 0 12px 12px 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
-            </div>
-            
-            <div id="adminDepositsPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title">💰 الإيداعات</div></div>
-                <div id="depositsTable" style="padding: 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
-            </div>
-            
-            <div id="adminUsersPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title">👥 إدارة المستخدمين</div></div>
-                <div style="padding: 12px;"><input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%;"></div>
-                <div id="usersTable" style="padding: 0 12px 12px 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
-            </div>
-            
-            <div id="adminSettingsPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title">⚙️ إعدادات النظام</div></div>
-                <div style="padding: 16px;">
-                    <h3 class="section-title">الحدود العامة</h3>
-                    <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
-                    <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
-                    <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="رابط مباشر للصورة"></div>
-                    <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
-                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:10px">💾 حفظ الإعدادات</button>
-                </div>
-            </div>
-
-            <div id="adminWheelSettingsPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title">🎡 إعدادات العجلة</div></div>
-                <div style="padding: 16px;">
-                    <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
-                    <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
-                </div>
-            </div>
-
-            <div id="adminThemesPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title">🎨 اختيار لون الموقع</div></div>
-                <div style="padding: 16px; text-align: center;">
-                    <div class="theme-selector">
-                        <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
-                        <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
-                        <div class="theme-color" style="background: #4caf50;" data-theme="green" title="أخضر"></div>
-                        <div class="theme-color" style="background: #9c27b0;" data-theme="purple" title="بنفسجي"></div>
-                        <div class="theme-color" style="background: #ff9800;" data-theme="orange" title="برتقالي"></div>
-                        <div class="theme-color" style="background: #e91e63;" data-theme="pink" title="وردي"></div>
-                        <div class="theme-color" style="background: #009688;" data-theme="teal" title="تركواز"></div>
-                        <div class="theme-color" style="background: #3f51b5;" data-theme="indigo" title="نيلي"></div>
-                        <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
-                        <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
-                    </div>
-                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:15px">💾 حفظ اللون</button>
-                </div>
-            </div>
-
-            <div id="adminResetPanel" class="admin-table hidden">
-                <div class="admin-table-header"><div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div></div>
-                <div style="padding: 16px; text-align: center;">
-                    <p style="color:var(--error); margin-bottom:12px">⚠️ تحذير: هذا الإجراء نهائي!</p>
-                    <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
-                </div>
-            </div>
-        </div>
+    <div id="adminWithdrawsPanel" class="hidden">
+      <div class="filter-bar"><select id="filterWithdrawStatus"><option value="all">الكل</option><option value="pending">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select><button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button></div>
+      <div id="withdrawsTable" class="admin-table"></div>
     </div>
+    <div id="adminDepositsPanel" class="hidden"><div id="depositsTable" class="admin-table"></div></div>
+    <div id="adminUsersPanel" class="hidden"><input type="text" id="searchUsers" placeholder="🔍 بحث..." class="search-input" style="margin-bottom:12px;padding:8px;"><div id="usersTable" class="admin-table"></div></div>
+    <div id="adminSettingsPanel" class="hidden"><div style="padding:16px;"><h3>إعدادات عامة</h3><div class="form-group"><label>💰 الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div><div class="form-group"><label>💸 الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div><div class="form-group"><label>🎁 عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission"></div><div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="https://..."></div><h3>شام كاش</h3><div class="form-group"><label><input type="checkbox" id="settingShamCashEnabled"> تفعيل شام كاش</label></div><div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div><div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingShamCashPrivateAddress"></div><div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashPublicAddress"></div><h3>شام كاش (دولار)</h3><div class="form-group"><label><input type="checkbox" id="settingShamCashUsdEnabled"> تفعيل شام كاش دولار</label></div><div class="form-group"><label>💱 سعر الصرف (USD to SYP)</label><input type="number" id="settingUsdToSypRate" value="13000"></div><div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashUsdApiKey"></div><div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingShamCashUsdPrivateAddress"></div><div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashUsdPublicAddress"></div><h3>سيرياتيل</h3><div class="form-group"><label><input type="checkbox" id="settingSyriatelEnabled"> تفعيل سيرياتيل</label></div><div class="form-group"><label>🔑 API Key</label><input type="password" id="settingSyriatelApiKey"></div><div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingSyriatelPrivateAddress"></div><div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingSyriatelPublicAddress"></div><button class="admin-btn" id="saveSettingsBtn" style="width:100%;margin-top:16px;">💾 حفظ الإعدادات</button></div></div>
+    <div id="adminWheelSettingsPanel" class="hidden"><div style="padding:16px;"><div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div><button class="admin-btn" id="saveWheelCostBtn">💾 حفظ السعر</button><h3 style="margin-top:20px;">🎁 جوائز العجلة</h3><div class="admin-table"><table><thead><tr><th>#</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr></thead><tbody><tr><td>1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;">ذهبي</td></tr><tr><td>2</td><td>10 SYP</td><td>10%</td><td style="background:#1E90FF;">أزرق</td></tr><tr><td>3</td><td>20 SYP</td><td>5%</td><td style="background:#1E90FF;">أزرق</td></tr><tr><td>4</td><td>30 SYP</td><td>5%</td><td style="background:#1E90FF;">أزرق</td></tr><tr><td>5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;">ذهبي</td></tr><tr><td>6</td><td>10 SYP</td><td>10%</td><td style="background:#1E90FF;">أزرق</td></tr><tr><td>7</td><td>20 SYP</td><td>5%</td><td style="background:#1E90FF;">أزرق</td></tr><tr><td>8</td><td>30 SYP</td><td>5%</td><td style="background:#1E90FF;">أزرق</td></tr></tbody></table></div></div></div>
+    <div id="adminThemesPanel" class="hidden"><div style="padding:16px;"><h3>🎨 اختيار الثيم</h3><div class="theme-selector" id="themeSelector"></div><button class="admin-btn" id="saveThemeBtn" style="margin-top:16px;">💾 حفظ الثيم</button></div></div>
+    <div id="adminResetPanel" class="hidden"><div style="padding:16px;"><div class="form-group"><label>🔐 كلمة المرور</label><input type="password" id="resetPassword"></div><button class="admin-btn btn-danger" id="openResetModalBtn">⚠️ إعادة تهيئة قاعدة البيانات</button></div></div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  <!-- مودالات -->
+  <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header">📊 الإحصائيات<span class="close-modal">&times;</span></div><div id="statsModalContent"></div></div></div>
+  <div id="wheelModal" class="modal"><div class="modal-content"><div class="modal-header">🎡 العجلة الذهبية<span class="close-modal">&times;</span></div><div class="wheel-container"><div class="wheel-wrapper"><canvas id="wheelCanvas" width="400" height="400"></canvas><div class="wheel-pointer"></div><div class="wheel-center"></div></div><button class="spin-button" id="spinWheelBtn">🎲 دوّر</button><div class="wheel-info"><div id="wheelCostDisplay" class="wheel-cost"></div><div id="wheelTimer" class="timer-text"></div></div></div></div></div>
+  <div id="earnModal" class="modal"><div class="modal-content"><div class="modal-header">🔗 نظام الإحالات<span class="close-modal">&times;</span></div><div><div class="ref-code-block" id="earnCodeDisplay" style="font-size:18px;">------</div><button class="btn btn-primary" id="copyReferralCodeBtn" style="width:100%;margin:10px 0;">📋 نسخ الكود</button><div id="addReferrerSection"><div class="form-group"><label>🔑 كود المحيل</label><input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة"><button class="btn btn-primary" id="submitReferrerCodeBtn" style="width:100%;margin-top:8px;">➕ إضافة محيل</button></div></div><div id="referrerInfoSection" class="hidden info-panel"><div class="info-row"><span>👤 المحيل</span><span id="referrerNameDisplay">-</span></div><div class="info-row"><span>🔑 كود المحيل</span><span id="referrerCodeDisplay">-</span></div></div><div class="info-panel" style="margin-top:16px;"><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success" id="commissionPercentDisplay">5</span>%</span></div></div></div></div></div>
+  <div id="depositModal" class="modal"><div class="modal-content"><div class="modal-header">💰 إيداع<span class="close-modal">&times;</span></div><div class="form-group"><label>📱 اختر طريقة الدفع</label><div id="methodsList" class="methods-list"></div></div><div id="addressInfo"></div><div class="form-group"><label>💵 المبلغ (SYP)</label><input type="number" id="depositAmount" placeholder="أدخل المبلغ"><div id="minDepositHint" class="hint"></div><div id="exchangeRateHint" class="hint" style="color:var(--warning);"></div></div><div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"><div class="hint" style="color:#ff8888">⚠️ تأكد من إدخال الرقم الصحيح</div></div><button class="btn btn-primary" id="submitDepositBtn" style="width:100%"><span class="btn-text">تأكيد الإيداع</span></button></div></div>
+  <div id="withdrawModal" class="modal"><div class="modal-content"><div class="modal-header">💸 سحب<span class="close-modal">&times;</span></div><div class="form-group"><label>💵 المبلغ (SYP)</label><input type="number" id="withdrawAmount" placeholder="أدخل المبلغ"><div id="minWithdrawHint" class="hint"></div></div><div class="form-group"><label>🏦 طريقة السحب</label><select id="withdrawMethod"><option value="bank">تحويل بنكي</option><option value="shamcash">شام كاش</option><option value="mobile">محفظة جوال</option></select></div><div class="form-group"><label>📍 عنوان السحب</label><input type="text" id="withdrawAddress" placeholder="رقم المحفظة أو رقم الحساب"></div><button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%"><span class="btn-text">تقديم طلب السحب</span></button></div></div>
+  <div id="resetModal" class="modal"><div class="modal-content"><div class="modal-header">⚠️ تأكيد التهيئة<span class="close-modal" id="closeResetModal">&times;</span></div><p style="margin-bottom:16px;">هل أنت متأكد؟ سيتم حذف جميع البيانات نهائياً!</p><div class="form-group"><label>🔑 كلمة المرور</label><input type="password" id="resetPasswordConfirm" placeholder="أدخل كلمة المرور"></div><button class="btn btn-danger" id="confirmResetBtn" style="width:100%">تأكيد التهيئة</button></div></div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCvPo4HlsNhyf1WBmTzIr6CdR1c2lQ5sHU",
-            authDomain: "boomb-fa3e7.firebaseapp.com",
-            projectId: "boomb-fa3e7",
-            storageBucket: "boomb-fa3e7.firebasestorage.app",
-            messagingSenderId: "499624996530",
-            appId: "1:499624996530:web:235f71e450845c748523ab"
-        };
+  <script>
+    // ============== تهيئة Firebase ==============
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "boomb-fa3e7.firebaseapp.com",
+      projectId: "boomb-fa3e7",
+      storageBucket: "boomb-fa3e7.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://your-server.onrender.com';
 
-        const API_URL = "https://ass-yygm.onrender.com";
-        const ADMIN_EMAIL = "sam55nam@gmail.com";
+    let currentUser = null, userData = null, isAdmin = false, spinning = false;
+    let wheelCanvas = null, ctx = null, currentRotation = 0, animationFrame = null;
+    let currentMinDeposit = 100, currentMinWithdraw = 200, currentUsdToSypRate = 13000, currentReferralCommission = 5, currentWheelSpinCost = 50;
+    const pendingRequests = new Map();
 
-        const fbApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fbApp);
-        auth.useDeviceLanguage();
-        
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+    // ============== دوال مساعدة ==============
+    function showMessage(msg, isErr = false) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.background = isErr ? '#b91c1c' : '#1c7a1c';
+      toast.innerHTML = isErr ? `⚠️ ${msg}` : `✅ ${msg}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
 
-        let currentUser = null, userData = null, isAdmin = false;
-        let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
-        let currentWheelSpinCost = 50;
-        
-        let wheelCanvas = null;
-        let ctx = null;
-        let spinning = false;
-        let currentRotation = 0;
-        let animationFrame = null;
-        
-        // Fan menu state
-        let isFanOpen = false;
-        
-        const SECTORS = [
-            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
-            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
-            { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
-            { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
-        ];
+    function setButtonLoading(btn, loading) {
+      if (loading) { btn.classList.add('btn-loading'); btn.disabled = true; }
+      else { btn.classList.remove('btn-loading'); btn.disabled = false; }
+    }
 
-        // Helper Functions
-        function showMessage(msg, isErr = false) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.background = isErr ? '#b91c1c' : '#1c7a1c';
-            toast.innerHTML = isErr ? `⚠️ ${msg}` : `✅ ${msg}`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
+    async function fetchWithRetry(url, options = {}, retries = 3) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers } });
+          if (response.status === 429) { const retryAfter = parseInt(response.headers.get('retry-after')) || 2; await new Promise(r => setTimeout(r, retryAfter * 1000)); continue; }
+          return response;
+        } catch (error) { if (i === retries - 1) throw error; await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); }
+      }
+    }
 
-        function setButtonLoading(btn, loading) {
-            if (loading) { btn.classList.add('btn-loading'); btn.disabled = true; }
-            else { btn.classList.remove('btn-loading'); btn.disabled = false; }
-        }
+    async function apiCall(endpoint, options = {}, requestKey = null) {
+      if (requestKey && pendingRequests.has(requestKey)) return null;
+      if (requestKey) pendingRequests.set(requestKey, true);
+      try {
+        const response = await fetchWithRetry(`${API_URL}${endpoint}`, options);
+        if (response.status === 401) { showMessage('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى'); await auth.signOut(); return null; }
+        if (response.status === 403) { showMessage('غير مصرح لك بهذه العملية', true); return null; }
+        return response;
+      } catch (error) { console.error('API error:', error); showMessage('خطأ في الاتصال بالخادم', true); return null; }
+      finally { if (requestKey) pendingRequests.delete(requestKey); }
+    }
 
-        function createRipple(event, element) {
-            const rect = element.getBoundingClientRect();
-            const ripple = document.createElement('div');
-            ripple.className = 'ripple';
-            const size = Math.max(rect.width, rect.height);
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = (event.clientX - rect.left - size/2) + 'px';
-            ripple.style.top = (event.clientY - rect.top - size/2) + 'px';
-            element.style.position = 'relative';
-            element.style.overflow = 'hidden';
-            element.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-        }
+    // ============== العجلة ==============
+    const SECTORS = [
+      { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+      { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+      { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+      { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+      { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
+      { name: "10 SYP", value: 10, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+      { name: "20 SYP", value: 20, gradientFrom: "#1E90FF", gradientTo: "#0066CC" },
+      { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
+    ];
 
-        async function apiCall(endpoint, options = {}) {
-            const token = await auth.currentUser?.getIdToken();
-            try {
-                const response = await fetch(`${API_URL}${endpoint}`, {
-                    ...options,
-                    headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...options.headers }
-                });
-                if (response.status === 401) { showMessage('انتهت الجلسة، سجل دخول مجدداً', true); await signOut(auth); return null; }
-                if (response.status === 403) { showMessage('غير مصرح بهذه العملية', true); return null; }
-                if (response.status === 429) { showMessage('طلبات كثيرة جداً، انتظر قليلاً', true); return null; }
-                return response;
-            } catch (error) { console.error('API error:', error); showMessage('خطأ في الاتصال بالخادم', true); return null; }
-        }
+    function drawWheel() {
+      if (!ctx || !wheelCanvas) return;
+      const size = wheelCanvas.width;
+      const centerX = size / 2, centerY = size / 2, radius = size / 2 - 5;
+      const angleStep = (Math.PI * 2) / SECTORS.length;
+      ctx.clearRect(0, 0, size, size);
+      for (let i = 0; i < SECTORS.length; i++) {
+        const startAngle = i * angleStep + currentRotation;
+        const endAngle = startAngle + angleStep;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        const gradient = ctx.createLinearGradient(centerX + Math.cos(startAngle) * radius * 0.3, centerY + Math.sin(startAngle) * radius * 0.3, centerX + Math.cos(endAngle) * radius * 0.7, centerY + Math.sin(endAngle) * radius * 0.7);
+        gradient.addColorStop(0, SECTORS[i].gradientFrom);
+        gradient.addColorStop(1, SECTORS[i].gradientTo);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,215,0,0.5)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + angleStep / 2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 4;
+        ctx.font = `bold ${size / 22}px "Segoe UI"`;
+        let text = SECTORS[i].name;
+        if (text === "حظ أوفر") text = "😅";
+        else if (text === "10 SYP") text = "🎁 10";
+        else if (text === "20 SYP") text = "🎁 20";
+        else if (text === "30 SYP") text = "🎁 30";
+        ctx.fillText(text, radius * 0.7, 0);
+        ctx.restore();
+      }
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
+      const centerGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 5, centerX, centerY, 20);
+      centerGradient.addColorStop(0, "#FFD700");
+      centerGradient.addColorStop(1, "#B8860B");
+      ctx.fillStyle = centerGradient;
+      ctx.fill();
+    }
 
-        // Fan Menu Functions
-        function openFanMenu() {
-            if (isFanOpen) return;
-            isFanOpen = true;
-            const toggleBtn = document.getElementById('fanToggleBtn');
-            const items = document.querySelectorAll('.fan-item');
-            
-            toggleBtn.classList.add('open');
-            
-            items.forEach((item, index) => {
-                item.classList.remove('closing');
-                item.classList.add('active');
-                // Staggered animation
-                setTimeout(() => {
-                    item.style.animation = `fanOpen 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards`;
-                }, index * 30);
-            });
-        }
+    async function checkWheelStatus() {
+      const res = await apiCall('/api/user/wheel-status');
+      if (res?.ok) {
+        const data = await res.json();
+        document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${data.spinCost} SYP (من رصيد الإحالات)`;
+        if (!data.canSpin && data.remainingSeconds > 0) {
+          const minutes = Math.floor(data.remainingSeconds / 60);
+          const seconds = data.remainingSeconds % 60;
+          document.getElementById('wheelTimer').innerHTML = `⏰ يمكنك التدوير بعد: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        } else { document.getElementById('wheelTimer').innerHTML = `🎉 جاهز للتدوير!`; }
+      }
+    }
 
-        function closeFanMenu() {
-            if (!isFanOpen) return;
-            isFanOpen = false;
-            const toggleBtn = document.getElementById('fanToggleBtn');
-            const items = document.querySelectorAll('.fan-item');
-            
-            toggleBtn.classList.remove('open');
-            
-            items.forEach((item, index) => {
-                item.classList.add('closing');
-                item.classList.remove('active');
-                setTimeout(() => {
-                    item.style.animation = '';
-                }, 300);
-            });
-        }
+    async function performSpin() {
+      if (spinning) return;
+      const spinBtn = document.getElementById('spinWheelBtn');
+      const statusRes = await apiCall('/api/user/wheel-status');
+      if (statusRes?.ok) {
+        const statusData = await statusRes.json();
+        if (!statusData.hasEnoughBalance) { showMessage(`رصيد الإحالات غير كافٍ تحتاج ${statusData.spinCost} SYP`, true); return; }
+        if (!statusData.canSpin) { const minutes = Math.floor(statusData.remainingSeconds / 60); const seconds = statusData.remainingSeconds % 60; showMessage(`يجب الانتظار ${minutes}:${seconds.toString().padStart(2, '0')} قبل التدوير مرة أخرى`, true); return; }
+      }
+      spinning = true;
+      spinBtn.disabled = true;
+      const spinRes = await apiCall('/api/user/spin-wheel', { method: 'POST', body: JSON.stringify({}) }, 'spin-wheel');
+      if (!spinRes?.ok) { let errorMsg = 'فشل التدوير'; try { const err = await spinRes.json(); errorMsg = err.error || errorMsg; } catch(e) {} showMessage(errorMsg, true); spinning = false; spinBtn.disabled = false; return; }
+      const spinData = await spinRes.json();
+      if (!spinData.success) { showMessage(spinData.message || 'فشل التدوير', true); spinning = false; spinBtn.disabled = false; return; }
+      const winningSectorIndex = spinData.sector - 1;
+      const angleStep = (Math.PI * 2) / SECTORS.length;
+      const pointerAngle = -Math.PI / 2;
+      const targetSectorMidAngle = pointerAngle;
+      const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
+      let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep);
+      targetRotation = ((targetRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+      const fullRotations = 10 + Math.floor(Math.random() * 6);
+      const finalTargetRotation = targetRotation + (fullRotations * Math.PI * 2);
+      const startRotation = currentRotation;
+      const startTime = performance.now();
+      const duration = 3000;
+      function animateSpin(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
+        drawWheel();
+        if (progress < 1) { animationFrame = requestAnimationFrame(animateSpin); }
+        else { currentRotation = finalTargetRotation % (Math.PI * 2); drawWheel(); showMessage(spinData.message, false); loadProfile(); loadStats(); checkWheelStatus(); spinning = false; spinBtn.disabled = false; }
+      }
+      animationFrame = requestAnimationFrame(animateSpin);
+    }
 
-        function toggleFanMenu() {
-            if (isFanOpen) {
-                closeFanMenu();
-            } else {
-                openFanMenu();
-            }
-        }
+    // ============== الثيمات ==============
+    function setTheme(theme) {
+      document.body.className = `theme-${theme}`;
+      localStorage.setItem('site_theme', theme);
+    }
 
-        // Fan menu actions
-        const fanActions = {
-            profile: () => {
-                closeFanMenu();
-                document.getElementById('homeScreen').classList.add('hidden');
-                document.getElementById('profileScreen').classList.remove('hidden');
-                if (isAdmin) {
-                    const container = document.getElementById('adminSwitchContainer');
-                    if (container && !container.querySelector('.admin-btn')) {
-                        const btn = document.createElement('button');
-                        btn.className = 'admin-btn';
-                        btn.innerText = '🔧 لوحة الأدمن';
-                        btn.onclick = () => { closeFanMenu(); showAdminInterface(); };
-                        container.innerHTML = '';
-                        container.appendChild(btn);
-                    }
-                }
-            },
-            stats: () => {
-                closeFanMenu();
-                document.getElementById('statsModal').style.display = 'flex';
-                loadStats();
-            },
-            wheel: async () => {
-                closeFanMenu();
-                await checkWheelStatus();
-                if (wheelCanvas && ctx) {
-                    const size = Math.min(400, window.innerWidth - 80);
-                    wheelCanvas.width = size;
-                    wheelCanvas.height = size;
-                    drawWheel();
-                }
-                document.getElementById('wheelModal').style.display = 'flex';
-            },
-            history: () => {
-                closeFanMenu();
-                document.getElementById('historyModal').style.display = 'flex';
-                loadDeposits();
-                loadWithdrawals();
-                loadWheelHistoryForModal();
-            },
-            earn: () => {
-                closeFanMenu();
-                loadEarnPageInfo();
-                document.getElementById('earnModal').style.display = 'flex';
-            },
-            deposit: async () => {
-                closeFanMenu();
-                await loadDepositSettings();
-                document.getElementById('depositModal').style.display = 'flex';
-            },
-            withdraw: async () => {
-                closeFanMenu();
-                await loadDepositSettings();
-                document.getElementById('withdrawModal').style.display = 'flex';
-            }
-        };
+    async function loadThemeFromServer() {
+      try {
+        const response = await fetch(`${API_URL}/api/site-theme`);
+        if (response.ok) { const data = await response.json(); if (data.success && data.theme) setTheme(data.theme); }
+      } catch (error) { console.error('Error loading theme:', error); }
+    }
 
-        // Wheel Functions
-        function drawWheel() {
-            if (!ctx || !wheelCanvas) return;
-            const size = wheelCanvas.width;
-            const centerX = size / 2;
-            const centerY = size / 2;
-            const radius = size / 2 - 5;
-            const angleStep = (Math.PI * 2) / SECTORS.length;
-            
-            ctx.clearRect(0, 0, size, size);
-            
-            for (let i = 0; i < SECTORS.length; i++) {
-                const startAngle = i * angleStep + currentRotation;
-                const endAngle = startAngle + angleStep;
-                
-                ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-                ctx.closePath();
-                
-                const gradient = ctx.createLinearGradient(
-                    centerX + Math.cos(startAngle) * radius * 0.3,
-                    centerY + Math.sin(startAngle) * radius * 0.3,
-                    centerX + Math.cos(endAngle) * radius * 0.7,
-                    centerY + Math.sin(endAngle) * radius * 0.7
-                );
-                gradient.addColorStop(0, SECTORS[i].gradientFrom);
-                gradient.addColorStop(1, SECTORS[i].gradientTo);
-                
-                ctx.fillStyle = gradient;
-                ctx.fill();
-                ctx.strokeStyle = "rgba(255, 215, 0, 0.4)";
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate(startAngle + angleStep / 2);
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillStyle = "#ffffff";
-                ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.shadowBlur = 3;
-                ctx.font = `bold ${size / 24}px "Segoe UI"`;
-                
-                let text = SECTORS[i].name;
-                if (text === "حظ أوفر") {
-                    text = "😅";
-                    ctx.font = `${size / 18}px "Segoe UI"`;
-                } else {
-                    text = text.replace(" SYP", "");
-                }
-                
-                ctx.fillText(text, radius * 0.7, 0);
-                ctx.restore();
-            }
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
-            const centerGradient = ctx.createRadialGradient(centerX - 3, centerY - 3, 3, centerX, centerY, 18);
-            centerGradient.addColorStop(0, "#FFD700");
-            centerGradient.addColorStop(1, "#B8860B");
-            ctx.fillStyle = centerGradient;
-            ctx.fill();
-            ctx.strokeStyle = "#FFD700";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
+    // ============== تحميل البيانات ==============
+    async function loadProfile() {
+      const res = await apiCall('/api/user/profile');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        userData = data.user;
+        document.getElementById('mainBalance').innerText = (userData.balance || 0).toLocaleString();
+        document.getElementById('referralBalance').innerText = (userData.referralBalance || 0).toLocaleString();
+        document.getElementById('profileName').innerText = userData.name || currentUser?.displayName;
+        document.getElementById('profileBalance').innerText = (userData.balance || 0).toLocaleString() + ' SYP';
+        document.getElementById('profileReferralBalance').innerText = (userData.referralBalance || 0).toLocaleString() + ' SYP';
+        document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0).toLocaleString() + ' SYP';
+        document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0).toLocaleString() + ' SYP';
+        document.getElementById('profileTotalSpins').innerText = (userData.totalSpins || 0).toLocaleString();
+        document.getElementById('profileTotalWinnings').innerText = (userData.totalWinnings || 0).toLocaleString() + ' SYP';
+        isAdmin = data.isAdmin;
+      } }
+    }
 
-        async function checkWheelStatus() {
-            const res = await apiCall('/api/user/wheel-status');
-            if (res?.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    const spinBtn = document.getElementById('spinWheelBtn');
-                    const timerDiv = document.getElementById('wheelTimer');
-                    
-                    if (!data.canSpin && data.remainingSeconds > 0) {
-                        spinBtn.disabled = true;
-                        const minutes = Math.floor(data.remainingSeconds / 60);
-                        const seconds = data.remainingSeconds % 60;
-                        timerDiv.innerHTML = `⏰ يتبقى ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                    } else {
-                        spinBtn.disabled = false;
-                        timerDiv.innerHTML = '';
-                    }
-                    
-                    document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${data.spinCost} SYP`;
-                    currentWheelSpinCost = data.spinCost;
-                    
-                    if (!data.hasEnoughBalance) {
-                        spinBtn.disabled = true;
-                        timerDiv.innerHTML = `⚠️ رصيد الإحالات غير كافٍ!`;
-                    }
-                }
-            }
-        }
+    async function loadStats() {
+      const res = await apiCall('/api/user/stats');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        const s = data.stats;
+        document.getElementById('profileRefCode').innerText = s.uniqueId || '---';
+        document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0).toLocaleString() + ' SYP';
+        document.getElementById('profileRefCount').innerText = s.referralCount || 0;
+        document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة: ${s.uniqueId} (انقر للنسخ)`;
+        const refInfo = document.getElementById('referrerInfoProfile');
+        if (s.referredBy && s.referrerInfo) { refInfo.classList.remove('hidden'); document.getElementById('referrerNameProfile').innerText = s.referredByName || s.referrerInfo.name; }
+        else { refInfo.classList.add('hidden'); }
+        document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 إجمالي الأرباح</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>`;
+      } }
+    }
 
-        async function performSpin() {
-            if (spinning) return;
-            
-            const spinBtn = document.getElementById('spinWheelBtn');
-            
-            const statusRes = await apiCall('/api/user/wheel-status');
-            if (statusRes?.ok) {
-                const statusData = await statusRes.json();
-                if (!statusData.hasEnoughBalance) {
-                    showMessage(`رصيد الإحالات غير كافٍ!`, true);
-                    return;
-                }
-                if (!statusData.canSpin) {
-                    const minutes = Math.floor(statusData.remainingSeconds / 60);
-                    const seconds = statusData.remainingSeconds % 60;
-                    showMessage(`يجب الانتظار ${minutes}:${seconds.toString().padStart(2, '0')}`, true);
-                    return;
-                }
-            }
-            
-            spinning = true;
-            spinBtn.disabled = true;
-            
-            const spinRes = await apiCall('/api/user/spin-wheel', { method: 'POST', body: JSON.stringify({}) });
-            
-            if (!spinRes?.ok) {
-                let errorMsg = 'فشل التدوير';
-                try {
-                    const err = await spinRes.json();
-                    errorMsg = err.error || errorMsg;
-                } catch(e) {}
-                showMessage(errorMsg, true);
-                spinning = false;
-                spinBtn.disabled = false;
-                return;
-            }
-            
-            const spinData = await spinRes.json();
-            if (!spinData.success) {
-                showMessage(spinData.message || 'فشل التدوير', true);
-                spinning = false;
-                spinBtn.disabled = false;
-                return;
-            }
-            
-            const winningSectorIndex = spinData.sector - 1;
-            const angleStep = (Math.PI * 2) / SECTORS.length;
-            const pointerAngle = -Math.PI / 2;
-            const targetSectorMidAngle = pointerAngle;
-            const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
-            let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep);
-            targetRotation = ((targetRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const fullRotations = 8 + Math.floor(Math.random() * 6);
-            const finalTargetRotation = targetRotation + (fullRotations * Math.PI * 2);
-            
-            const startRotation = currentRotation;
-            const startTime = performance.now();
-            const duration = 2800;
-            
-            function animateSpin(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                currentRotation = startRotation + (finalTargetRotation - startRotation) * easeOut;
-                drawWheel();
-                
-                if (progress < 1) {
-                    animationFrame = requestAnimationFrame(animateSpin);
-                } else {
-                    currentRotation = finalTargetRotation % (Math.PI * 2);
-                    drawWheel();
-                    
-                    if (spinData.prizeAmount > 0) {
-                        showMessage(`🎉 ${spinData.message}`, false);
-                    } else {
-                        showMessage(`😅 ${spinData.message}`, false);
-                    }
-                    
-                    loadProfile();
-                    loadStats();
-                    checkWheelStatus();
-                    
-                    spinning = false;
-                    spinBtn.disabled = false;
-                }
-            }
-            
-            animationFrame = requestAnimationFrame(animateSpin);
-        }
+    async function loadDepositSettings() {
+      const res = await apiCall('/api/user/deposit-settings');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        const s = data.settings;
+        currentMinDeposit = s.minDeposit;
+        currentMinWithdraw = s.minWithdraw;
+        currentUsdToSypRate = s.usdToSypRate || 13000;
+        currentReferralCommission = s.referralCommission || 5;
+        currentWheelSpinCost = s.wheelSpinCost || 50;
+        const gameImage = document.getElementById('gameImage'), defaultIcon = document.getElementById('defaultGameIcon'), container = document.getElementById('gameIconContainer');
+        if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { gameImage.src = s.gameImageUrl; gameImage.classList.remove('hidden'); defaultIcon.classList.add('hidden'); container.classList.remove('default-icon'); }
+        else { gameImage.classList.add('hidden'); defaultIcon.classList.remove('hidden'); container.classList.add('default-icon'); }
+        document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى للإيداع: ${s.minDeposit.toLocaleString()} SYP`;
+        document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`;
+        document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission;
+        const methodsContainer = document.getElementById('methodsList');
+        methodsContainer.innerHTML = '';
+        s.methods.forEach(m => { const methodDiv = document.createElement('div'); methodDiv.className = 'method-card'; methodDiv.dataset.method = m.id; methodDiv.innerHTML = `<div class="method-icon">${m.icon}</div><div><div class="method-name">${m.name}</div><div class="method-currency">العملة: ${m.currency}</div></div>`; methodDiv.onclick = () => { document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected')); methodDiv.classList.add('selected'); const addressInfo = document.getElementById('addressInfo'); if (m.id === 'shamcash') addressInfo.innerHTML = `<div class="address-box"><span>🏦 عنوان التحويل: ${s.shamCashPublicAddress || 'غير متوفر'}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${s.shamCashPublicAddress}')">نسخ</button></div>`; else if (m.id === 'shamcash_usd') addressInfo.innerHTML = `<div class="address-box"><span>💵 عنوان التحويل (دولار): ${s.shamCashUsdPublicAddress || 'غير متوفر'}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${s.shamCashUsdPublicAddress}')">نسخ</button></div><div class="exchange-hint">💱 السعر: 1 USD = ${currentUsdToSypRate} SYP</div>`; else addressInfo.innerHTML = ''; }; methodsContainer.appendChild(methodDiv); });
+        if (s.methods[0]) document.querySelector('.method-card')?.click();
+      } }
+    }
 
-        // Profile & Data Functions
-        async function loadProfile() {
-            const res = await apiCall('/api/user/profile');
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    userData = data.user; 
-                    document.getElementById('mainBalance').innerText = (userData.balance || 0).toLocaleString(); 
-                    document.getElementById('referralBalance').innerText = (userData.referralBalance || 0).toLocaleString(); 
-                    document.getElementById('profileName').innerText = userData.name || currentUser?.displayName; 
-                    document.getElementById('profileBalance').innerText = (userData.balance || 0).toLocaleString() + ' SYP'; 
-                    document.getElementById('profileReferralBalance').innerText = (userData.referralBalance || 0).toLocaleString() + ' SYP'; 
-                    document.getElementById('profileTotalDeposit').innerText = (userData.totalDeposited || 0).toLocaleString() + ' SYP'; 
-                    document.getElementById('profileTotalWithdraw').innerText = (userData.totalWithdrawn || 0).toLocaleString() + ' SYP';
-                    document.getElementById('profileTotalSpins').innerText = (userData.totalSpins || 0).toLocaleString();
-                    document.getElementById('profileTotalWinnings').innerText = (userData.totalWinnings || 0).toLocaleString() + ' SYP';
-                    isAdmin = data.isAdmin; 
-                } 
-            }
-        }
+    async function registerUser(refCode = null) {
+      const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) });
+      if (res?.ok) { const data = await res.json(); if (data.success) { userData = data.user; isAdmin = data.isAdmin; await loadStats(); } }
+    }
 
-        async function loadStats() {
-            const res = await apiCall('/api/user/stats');
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    const s = data.stats; 
-                    document.getElementById('profileRefCode').innerText = s.uniqueId || '---'; 
-                    document.getElementById('profileRefEarn').innerText = (s.referralEarnings || 0).toLocaleString() + ' SYP'; 
-                    document.getElementById('profileRefCount').innerText = s.referralCount || 0; 
-                    document.getElementById('refCodeBlock').innerHTML = `🔗 كود الإحالة : ${s.uniqueId}`; 
-                    const refInfo = document.getElementById('referrerInfoProfile'); 
-                    if (s.referredBy && s.referrerInfo) { 
-                        refInfo.classList.remove('hidden'); 
-                        document.getElementById('referrerNameProfile').innerText = s.referredByName || s.referrerInfo.name; 
-                    } else { 
-                        refInfo.classList.add('hidden'); 
-                    } 
-                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div>`; 
-                } 
-            }
-        }
+    async function deposit() {
+      const selected = document.querySelector('.method-card.selected');
+      if (!selected) { showMessage('اختر طريقة الدفع أولاً', true); return; }
+      const method = selected.dataset.method;
+      const amount = document.getElementById('depositAmount').value;
+      const transactionId = document.getElementById('transactionId').value;
+      if (!amount || amount < currentMinDeposit) { showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinDeposit.toLocaleString()} SYP)`, true); return; }
+      if (!transactionId) { showMessage('أدخل رقم العملية', true); return; }
+      const btn = document.getElementById('submitDepositBtn');
+      setButtonLoading(btn, true);
+      const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) }, 'deposit');
+      setButtonLoading(btn, false);
+      if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('depositModal').style.display = 'none'; document.getElementById('depositAmount').value = ''; document.getElementById('transactionId').value = ''; await loadProfile(); await loadStats(); }
+      else if (res) { const err = await res.json(); showMessage(err.error || 'فشل الإيداع', true); }
+    }
 
-        async function loadDeposits() {
-            const res = await apiCall('/api/user/deposits');
-            if (res?.ok) { 
-                const data = await res.json(); 
-                const container = document.getElementById('depositsHistoryList'); 
-                if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد إيداعات سابقة</p>'; 
-                    return; 
-                } 
-                container.innerHTML = data.deposits.map(d => { 
-                    let dateStr = '-'; 
-                    if (d.verifiedAt) { 
-                        try { 
-                            const date = new Date(d.verifiedAt); 
-                            if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar'); 
-                        } catch(e) {} 
-                    } 
-                    return `<div class="request-card"><div><strong>💰 ${d.amount.toLocaleString()} SYP</strong></div><div>📱 ${d.method}</div><div>📅 ${dateStr}</div><div><span class="badge badge-success">✅ مكتمل</span></div></div>`; 
-                }).join(''); 
-            }
-        }
+    async function withdraw() {
+      const amount = document.getElementById('withdrawAmount').value;
+      const address = document.getElementById('withdrawAddress').value;
+      const method = document.getElementById('withdrawMethod').value;
+      if (!amount || amount < currentMinWithdraw) { showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinWithdraw.toLocaleString()} SYP)`, true); return; }
+      if (!address) { showMessage('أدخل عنوان السحب', true); return; }
+      if (userData && amount > userData.balance) { showMessage(`الرصيد الأساسي غير كافٍ (رصيدك ${userData.balance.toLocaleString()} SYP)`, true); return; }
+      const btn = document.getElementById('submitWithdrawBtn');
+      setButtonLoading(btn, true);
+      const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) }, 'withdraw');
+      setButtonLoading(btn, false);
+      if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('withdrawModal').style.display = 'none'; document.getElementById('withdrawAmount').value = ''; document.getElementById('withdrawAddress').value = ''; await loadProfile(); await loadStats(); }
+      else if (res) { const err = await res.json(); showMessage(err.error || 'فشل السحب', true); }
+    }
 
-        async function loadWithdrawals() {
-            const res = await apiCall('/api/user/withdraw-requests');
-            if (res?.ok) { 
-                const data = await res.json(); 
-                const container = document.getElementById('withdrawsHistoryList'); 
-                if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد سحوبات سابقة</p>'; 
-                    return; 
-                } 
-                container.innerHTML = data.requests.map(r => { 
-                    let statusHtml = r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>'); 
-                    return `<div class="request-card ${r.status}"><div><strong>💸 ${r.amount.toLocaleString()} SYP</strong></div><div>الحالة: ${statusHtml}</div></div>`; 
-                }).join(''); 
-            }
-        }
+    async function addReferrerCode() {
+      const code = document.getElementById('referrerCodeInput').value.trim().toUpperCase();
+      if (!code) { showMessage('الرجاء إدخال كود الإحالة', true); return; }
+      const btn = document.getElementById('submitReferrerCodeBtn');
+      setButtonLoading(btn, true);
+      const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) }, 'add-referrer');
+      setButtonLoading(btn, false);
+      if (res?.ok) { const data = await res.json(); showMessage(data.message); document.getElementById('referrerCodeInput').value = ''; await loadStats(); await loadEarnPageInfo(); }
+      else if (res) { const err = await res.json(); showMessage(err.error || 'فشل إضافة الكود', true); }
+    }
 
-        async function loadWheelHistoryForModal() {
-            const res = await apiCall('/api/user/wheel-history');
-            if (res?.ok) {
-                const data = await res.json();
-                const container = document.getElementById('wheelHistoryList');
-                if (!data.spins?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:15px">🎡 لا توجد تدويرات سابقة</p>';
-                    return;
-                }
-                container.innerHTML = data.spins.map(spin => {
-                    const isWin = spin.prizeAmount > 0;
-                    return `<div class="request-card">
-                        <div><strong>🎡 ${spin.sectorName}</strong></div>
-                        <div>💰 ${isWin ? `فزت بـ ${spin.prizeAmount} SYP` : 'حظ أوفر'}</div>
-                        <div><span class="badge ${isWin ? 'badge-success' : 'badge-danger'}">${isWin ? 'فوز' : 'خسارة'}</span></div>
-                    </div>`;
-                }).join('');
-            }
-        }
+    async function loadEarnPageInfo() {
+      const res = await apiCall('/api/user/stats');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        const s = data.stats;
+        document.getElementById('earnCodeDisplay').innerHTML = s.uniqueId || '---';
+        const addSection = document.getElementById('addReferrerSection'), infoSection = document.getElementById('referrerInfoSection');
+        if (s.referredBy && s.referrerInfo) { addSection.style.display = 'none'; infoSection.style.display = 'block'; document.getElementById('referrerNameDisplay').innerHTML = s.referredByName || s.referrerInfo.name; document.getElementById('referrerCodeDisplay').innerHTML = s.referrerInfo.uniqueId; }
+        else { addSection.style.display = 'block'; infoSection.style.display = 'none'; }
+      } }
+    }
 
-        async function registerUser(refCode = null) {
-            const res = await apiCall('/api/user/register', { method: 'POST', body: JSON.stringify({ referrerId: refCode }) });
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    userData = data.user; 
-                    isAdmin = data.isAdmin; 
-                    await loadStats(); 
-                } 
-            }
-        }
+    function copyReferralCode() { const code = document.getElementById('earnCodeDisplay').innerText; if (code && code !== '---') { navigator.clipboard.writeText(code); showMessage(`تم نسخ كود الإحالة: ${code}`); } else { showMessage('لا يوجد كود إحالة لعرضه', true); } }
 
-        async function loadDepositSettings() {
-            const res = await apiCall('/api/user/deposit-settings');
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    const s = data.settings; 
-                    currentMinDeposit = s.minDeposit; 
-                    currentMinWithdraw = s.minWithdraw; 
-                    currentUsdToSypRate = s.usdToSypRate || 13000; 
-                    currentReferralCommission = s.referralCommission || 5; 
-                    currentWheelSpinCost = s.wheelSpinCost || 50;
-                    
-                    const gameImage = document.getElementById('gameImage'); 
-                    const defaultIcon = document.getElementById('defaultGameIcon'); 
-                    const container = document.getElementById('gameIconContainer'); 
-                    if (s.gameImageUrl && s.gameImageUrl.trim() !== '') { 
-                        gameImage.src = s.gameImageUrl; 
-                        gameImage.classList.remove('hidden'); 
-                        defaultIcon.classList.add('hidden'); 
-                        container.classList.remove('default-icon'); 
-                    } else { 
-                        gameImage.classList.add('hidden'); 
-                        defaultIcon.classList.remove('hidden'); 
-                        container.classList.add('default-icon'); 
-                    }
-                    
-                    document.getElementById('minDepositHint').innerHTML = `💰 الحد الأدنى: ${s.minDeposit.toLocaleString()} SYP`; 
-                    document.getElementById('minWithdrawHint').innerHTML = `💰 الحد الأدنى للسحب: ${s.minWithdraw.toLocaleString()} SYP`; 
-                    document.getElementById('commissionPercentDisplay').innerHTML = currentReferralCommission; 
-                    
-                    const methodsContainer = document.getElementById('methodsList');
-                    methodsContainer.innerHTML = '';
-                    
-                    if (!s.methods || s.methods.length === 0) {
-                        methodsContainer.innerHTML = '<div class="method-card disabled">🚫 لا توجد طرق دفع متاحة حالياً</div>';
-                        return;
-                    }
-                    
-                    s.methods.forEach(method => {
-                        const methodDiv = document.createElement('div');
-                        methodDiv.className = 'method-card';
-                        methodDiv.dataset.method = method.id;
-                        methodDiv.innerHTML = `
-                            <div class="method-icon">${method.icon || '🏦'}</div>
-                            <div>
-                                <div class="method-name">${method.name}</div>
-                                ${method.currency === 'USD' ? `<div class="method-currency">💱 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP</div>` : ''}
-                            </div>
-                        `;
-                        methodDiv.onclick = () => {
-                            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
-                            methodDiv.classList.add('selected');
-                            
-                            let exchangeText = '';
-                            if (method.currency === 'USD') {
-                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 6px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
-                            }
-                            
-                            document.getElementById('addressInfo').innerHTML = `
-                                <div class="address-box">
-                                    <span>${method.address}</span>
-                                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${method.address}'); showMessage('تم نسخ العنوان')">📋 نسخ</button>
-                                </div>
-                                ${exchangeText}
-                            `;
-                            
-                            const exchangeHint = document.getElementById('exchangeRateHint');
-                            if (method.currency === 'USD') {
-                                exchangeHint.innerHTML = `💱 السعر: 1 USD = ${currentUsdToSypRate.toLocaleString()} SYP`;
-                                exchangeHint.style.display = 'block';
-                            } else {
-                                exchangeHint.style.display = 'none';
-                            }
-                        };
-                        methodsContainer.appendChild(methodDiv);
-                    });
-                    
-                    if (s.methods[0]) {
-                        document.querySelector('.method-card')?.click();
-                    }
-                } 
-            }
-        }
+    function showUserInterface() { document.getElementById('adminApp').classList.add('hidden'); document.getElementById('userApp').classList.remove('hidden'); }
+    function showAdminInterface() { if (!isAdmin) { showMessage('غير مصرح', true); return; } document.getElementById('userApp').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); loadAdminDashboard(); loadAdminWithdraws(); loadAdminUsers(); loadAdminSettings(); }
 
-        async function deposit() {
-            const selected = document.querySelector('.method-card.selected'); 
-            if (!selected) { 
-                showMessage('اختر طريقة الدفع أولاً', true); 
-                return; 
-            }
-            const method = selected.dataset.method; 
-            const amount = document.getElementById('depositAmount').value; 
-            const transactionId = document.getElementById('transactionId').value;
-            if (!amount || amount < currentMinDeposit) { 
-                showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinDeposit.toLocaleString()} SYP)`, true); 
-                return; 
-            }
-            if (!transactionId) { 
-                showMessage('أدخل رقم العملية', true); 
-                return; 
-            }
-            const btn = document.getElementById('submitDepositBtn'); 
-            setButtonLoading(btn, true);
-            const res = await apiCall('/api/user/deposit', { method: 'POST', body: JSON.stringify({ method, amount: Number(amount), transactionId }) });
-            setButtonLoading(btn, false);
-            if (res?.ok) { 
-                const data = await res.json(); 
-                showMessage(data.message); 
-                document.getElementById('depositModal').style.display = 'none'; 
-                document.getElementById('depositAmount').value = ''; 
-                document.getElementById('transactionId').value = ''; 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadDeposits(); 
-            } else if (res) { 
-                const err = await res.json(); 
-                showMessage(err.error || 'فشل الإيداع', true); 
-            }
-        }
+    async function loadAdminDashboard() {
+      const res = await apiCall('/api/admin/dashboard');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        const s = data.stats;
+        document.getElementById('adminStats').innerHTML = `<div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number">${(s.totalUsers || 0).toLocaleString()}</div><div class="stat-label">إجمالي المستخدمين</div></div><div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-number">${(s.newToday || 0).toLocaleString()}</div><div class="stat-label">جدد اليوم</div></div><div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number">${(s.totalBalance || 0).toLocaleString()}</div><div class="stat-label">إجمالي الرصيد</div></div><div class="stat-card"><div class="stat-icon">📥</div><div class="stat-number">${(s.totalDeposited || 0).toLocaleString()}</div><div class="stat-label">إجمالي الإيداعات</div></div><div class="stat-card"><div class="stat-icon">📤</div><div class="stat-number">${(s.totalWithdrawn || 0).toLocaleString()}</div><div class="stat-label">إجمالي السحوبات</div></div><div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number">${(s.pendingWithdrawals || 0).toLocaleString()}</div><div class="stat-label">طلبات سحب معلقة</div></div><div class="stat-card"><div class="stat-icon">🎡</div><div class="stat-number">${(s.totalSpins || 0).toLocaleString()}</div><div class="stat-label">إجمالي التدويرات</div></div><div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-number">${(s.totalWinnings || 0).toLocaleString()}</div><div class="stat-label">إجمالي الأرباح</div></div>`;
+      } }
+    }
 
-        async function withdraw() {
-            const amount = document.getElementById('withdrawAmount').value; 
-            const address = document.getElementById('withdrawAddress').value; 
-            const method = document.getElementById('withdrawMethod').value;
-            if (!amount || amount < currentMinWithdraw) { 
-                showMessage(`المبلغ غير صالح (الحد الأدنى ${currentMinWithdraw.toLocaleString()} SYP)`, true); 
-                return; 
-            }
-            if (!address) { 
-                showMessage('أدخل عنوان السحب', true); 
-                return; 
-            }
-            if (userData && amount > userData.balance) { 
-                showMessage(`الرصيد الأساسي غير كافٍ (رصيدك: ${userData.balance.toLocaleString()} SYP)`, true); 
-                return; 
-            }
-            const btn = document.getElementById('submitWithdrawBtn'); 
-            setButtonLoading(btn, true);
-            const res = await apiCall('/api/user/withdraw', { method: 'POST', body: JSON.stringify({ amount: Number(amount), address, method }) });
-            setButtonLoading(btn, false);
-            if (res?.ok) { 
-                const data = await res.json(); 
-                showMessage(data.message); 
-                document.getElementById('withdrawModal').style.display = 'none'; 
-                document.getElementById('withdrawAmount').value = ''; 
-                document.getElementById('withdrawAddress').value = ''; 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadWithdrawals(); 
-            } else if (res) { 
-                const err = await res.json(); 
-                showMessage(err.error || 'فشل السحب', true); 
-            }
-        }
+    async function loadAdminWithdraws() {
+      const status = document.getElementById('filterWithdrawStatus')?.value || 'all';
+      const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`);
+      if (res?.ok) { const data = await res.json(); const container = document.getElementById('withdrawsTable'); if (!data.requests?.length) { container.innerHTML = '<p style="text-align:center;padding:20px;">📭 لا توجد طلبات</p>'; return; }
+        container.innerHTML = `<table><thead><tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>📅 التاريخ</th><th>📌 الحالة</th><th>🛠️ إجراء</th></tr></thead><tbody>${data.requests.map(r => `<tr><td><small>${r.userName || r.userEmail || '-'}</small></td><td>${(r.amount || 0).toLocaleString()} SYP</td><td><small>${r.address || '-'}</small></td><td><small>${r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleString('ar') : '-'}</small></td><td><span class="badge ${r.status === 'pending' ? 'badge-warning' : r.status === 'approved' ? 'badge-success' : 'badge-danger'}">${r.status === 'pending' ? 'قيد المراجعة' : r.status === 'approved' ? 'مقبول' : 'مرفوض'}</span></td><td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '-'}</td></tr>`).join('')}</tbody></table>`; }
+    }
 
-        async function addReferrerCode() { 
-            const code = document.getElementById('referrerCodeInput').value.trim().toUpperCase(); 
-            if (!code) { 
-                showMessage('الرجاء إدخال كود الإحالة', true); 
-                return; 
-            } 
-            const btn = document.getElementById('submitReferrerCodeBtn'); 
-            setButtonLoading(btn, true); 
-            const res = await apiCall('/api/user/add-referrer', { method: 'POST', body: JSON.stringify({ referrerCode: code }) }); 
-            setButtonLoading(btn, false); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                showMessage(data.message); 
-                document.getElementById('referrerCodeInput').value = ''; 
-                await loadStats(); 
-                await loadEarnPageInfo(); 
-            } else if (res) { 
-                const err = await res.json(); 
-                showMessage(err.error || 'فشل إضافة الكود', true); 
-            } 
-        }
+    async function loadAdminUsers() {
+      const res = await apiCall('/api/admin/users');
+      if (res?.ok) { const data = await res.json(); if (data.success) { allUsers = data.users; const container = document.getElementById('usersTable'); renderUsersTable(allUsers); } }
+    }
 
-        async function loadEarnPageInfo() { 
-            const res = await apiCall('/api/user/stats'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    const s = data.stats; 
-                    document.getElementById('earnCodeDisplay').innerHTML = s.uniqueId || '---'; 
-                    const addSection = document.getElementById('addReferrerSection'); 
-                    const infoSection = document.getElementById('referrerInfoSection'); 
-                    if (s.referredBy && s.referrerInfo) { 
-                        addSection.style.display = 'none'; 
-                        infoSection.style.display = 'block'; 
-                        document.getElementById('referrerNameDisplay').innerHTML = s.referredByName || s.referrerInfo.name; 
-                        document.getElementById('referrerCodeDisplay').innerHTML = s.referrerInfo.uniqueId; 
-                    } else { 
-                        addSection.style.display = 'block'; 
-                        infoSection.style.display = 'none'; 
-                    } 
-                } 
-            } 
-        }
+    function renderUsersTable(users) {
+      const container = document.getElementById('usersTable');
+      if (!users.length) { container.innerHTML = '<p style="text-align:center;padding:20px;">🔍 لا توجد نتائج</p>'; return; }
+      container.innerHTML = `<table><thead><tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎡 التدويرات</th><th>⚙️ إجراءات</th></tr></thead><tbody>${users.map(u => `<tr><td><small>${u.email || '-'}</small></td><td><strong>${u.name || '-'}</strong></td><td><code>${u.uniqueId || '-'}</code></td><td><span class="badge badge-info">${(u.balance || 0).toLocaleString()}</span></td><td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()}</span></td><td>${u.referralCount || 0}</td><td>${u.totalSpins || 0}</td><td><button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء حظر' : '🔒 حظر'}</button></td></tr>`).join('')}</tbody></table>`;
+    }
 
-        function copyReferralCode() { 
-            const code = document.getElementById('earnCodeDisplay').innerText; 
-            if (code && code !== '---') { 
-                navigator.clipboard.writeText(code); 
-                showMessage('تم نسخ كود الإحالة: ' + code); 
-            } else { 
-                showMessage('لا يوجد كود إحالة لعرضه', true); 
-            } 
-        }
+    window.editBalance = async (userId, currentBalance) => {
+      const newBalance = prompt(`الرصيد الحالي: ${currentBalance}\nأدخل الرصيد الجديد (ب SYP):`, currentBalance);
+      if (newBalance !== null) { const res = await apiCall('/api/admin/edit-balance', { method: 'POST', body: JSON.stringify({ userId, amount: Number(newBalance) - currentBalance, type: 'main' }) }); if (res?.ok) { showMessage('تم تعديل الرصيد'); loadAdminUsers(); } else { showMessage('فشل تعديل الرصيد', true); } }
+    };
+    window.toggleBan = async (userId) => { const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId }) }); if (res?.ok) { showMessage('تم تغيير حالة الحظر'); loadAdminUsers(); } };
+    window.approveWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); if (res?.ok) { showMessage('تم قبول الطلب'); loadAdminWithdraws(); loadAdminDashboard(); } };
+    window.rejectWithdraw = async (id) => { const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); if (res?.ok) { showMessage('تم رفض الطلب'); loadAdminWithdraws(); loadAdminDashboard(); } };
 
-        async function loadThemeFromServer() {
-            try {
-                const response = await fetch(`${API_URL}/api/site-theme`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.theme) {
-                        setTheme(data.theme);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading theme:', error);
-            }
-        }
-        
-        function setTheme(theme) {
-            document.body.className = `theme-${theme}`;
-            localStorage.setItem('site_theme', theme);
-            document.querySelectorAll('.theme-color').forEach(el => {
-                if (el.dataset.theme === theme) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-        }
-        
-        async function saveThemeToServer(theme) {
-            const res = await apiCall('/api/admin/update-theme', { method: 'POST', body: JSON.stringify({ theme }) });
-            if (res?.ok) {
-                showMessage('تم حفظ اللون وتحديثه');
-                return true;
-            }
-            return false;
-        }
+    async function loadAdminSettings() {
+      const res = await apiCall('/api/admin/settings');
+      if (res?.ok) { const data = await res.json(); if (data.success) {
+        document.getElementById('settingMinDeposit').value = data.settings.minDeposit;
+        document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw;
+        document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || '';
+        document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5;
+        document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled;
+        document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || '';
+        document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || '';
+        document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || '';
+        document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false;
+        document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000;
+        document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || '';
+        document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || '';
+        document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || '';
+        document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled;
+        document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || '';
+        document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || '';
+        document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || '';
+        document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50;
+        const themeSelector = document.getElementById('themeSelector');
+        const themes = ['red', 'blue', 'green', 'purple', 'orange', 'pink', 'teal', 'cyan', 'amber'];
+        themeSelector.innerHTML = themes.map(t => `<div class="theme-color" style="background: var(--primary, #ff0000)" data-theme="${t}" data-color="${t}"></div>`).join('');
+        document.querySelectorAll('.theme-color').forEach(el => { el.onclick = async () => { const theme = el.dataset.theme; const success = await saveThemeToServer(theme); if (success) setTheme(theme); }; if (el.dataset.theme === data.settings.siteTheme) el.classList.add('active'); });
+      } }
+    }
 
-        // Admin Functions
-        let allUsers = [];
+    async function saveAdminSettings() {
+      const settings = { minDeposit: Number(document.getElementById('settingMinDeposit').value), minWithdraw: Number(document.getElementById('settingMinWithdraw').value), gameImageUrl: document.getElementById('settingGameImageUrl').value, referralCommission: Number(document.getElementById('settingReferralCommission').value), shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, shamCashApiKey: document.getElementById('settingShamCashApiKey').value, shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value };
+      const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) });
+      if (res?.ok) { showMessage('تم حفظ الإعدادات بنجاح'); await loadAdminSettings(); await loadDepositSettings(); } else { showMessage('فشل حفظ الإعدادات', true); }
+    }
 
-        async function loadAdminDashboard() { 
-            const res = await apiCall('/api/admin/dashboard'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    document.getElementById('statTotalUsers').innerText = (data.stats.totalUsers || 0).toLocaleString(); 
-                    document.getElementById('statNewToday').innerText = (data.stats.newToday || 0).toLocaleString(); 
-                    document.getElementById('statTotalBalance').innerText = (data.stats.totalBalance || 0).toLocaleString(); 
-                    document.getElementById('statTotalDeposited').innerText = (data.stats.totalDeposited || 0).toLocaleString(); 
-                    document.getElementById('statTotalWithdrawn').innerText = (data.stats.totalWithdrawn || 0).toLocaleString(); 
-                    document.getElementById('statPendingWithdraws').innerText = (data.stats.pendingWithdrawals || 0).toLocaleString(); 
-                    document.getElementById('statTotalSpins').innerText = (data.stats.totalSpins || 0).toLocaleString(); 
-                    document.getElementById('statTotalWinnings').innerText = (data.stats.totalWinnings || 0).toLocaleString(); 
-                } 
-            } 
-        }
+    async function saveWheelCost() {
+      const cost = Number(document.getElementById('settingWheelSpinCost').value);
+      if (!cost || cost < 10 || cost > 10000) { showMessage('السعر غير صالح (يجب أن يكون بين 10 و 10000)', true); return; }
+      const res = await apiCall('/api/admin/update-wheel-cost', { method: 'POST', body: JSON.stringify({ cost }) });
+      if (res?.ok) { showMessage('تم تحديث سعر التدويرة بنجاح'); currentWheelSpinCost = cost; document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${cost} SYP (من رصيد الإحالات)`; } else { showMessage('فشل تحديث السعر', true); }
+    }
 
-        async function loadAdminWithdraws() { 
-            const status = document.getElementById('filterWithdrawStatus')?.value || 'all'; 
-            const res = await apiCall(`/api/admin/withdraw-requests?status=${status}`); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                const container = document.getElementById('withdrawsTable'); 
-                if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا توجد طلبات سحب</p>'; 
-                    return; 
-                } 
-                container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>
-                    ${data.requests.map(r => `
-                        <tr>
-                            <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
-                            <td>${r.amount.toLocaleString()} SYP</td>
-                            <td style="direction:ltr; text-align:left; font-size:10px;">${r.address}</td>
-                            <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅</span>' : '<span class="badge badge-danger">❌</span>')}</td>
-                            <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">رفض</button>` : '✓'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody></table>`; 
-            } 
-        }
+    async function saveThemeToServer(theme) {
+      const res = await apiCall('/api/admin/update-theme', { method: 'POST', body: JSON.stringify({ theme }) });
+      if (res?.ok) { showMessage('تم حفظ اللون وتحديثه لجميع المستخدمين'); return true; }
+      return false;
+    }
 
-        async function loadAdminDeposits() { 
-            const res = await apiCall('/api/admin/deposits'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                const container = document.getElementById('depositsTable'); 
-                if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا توجد إيداعات</p>'; 
-                    return; 
-                } 
-                container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>رقم العملية</th></tr></thead><tbody>
-                    ${data.deposits.map(d => `
-                        <tr>
-                            <td>${d.userName || d.userEmail || d.userId}</td>
-                            <td>${d.amount.toLocaleString()} SYP</td>
-                            <td>${d.method}</td>
-                            <td><code style="font-size:9px;">${d.transactionId}</code></td>
-                        </tr>
-                    `).join('')}
-                </tbody></table>`; 
-            } 
-        }
+    async function saveTheme() { const currentTheme = document.body.className.replace('theme-', ''); await saveThemeToServer(currentTheme); }
 
-        async function loadAdminUsers() { 
-            const res = await apiCall('/api/admin/users'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    allUsers = data.users; 
-                    const container = document.getElementById('usersTable'); 
-                    if (!allUsers.length) { 
-                        container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا يوجد مستخدمين</p>'; 
-                        return; 
-                    } 
-                    container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>رصيد الإحالات</th><th>الإجراءات</th></tr></thead><tbody>
-                        ${allUsers.map(u => `
-                            <tr>
-                                <td><small>${u.email || '-'}</small></td>
-                                <td><strong>${u.name || '-'}</strong></td>
-                                <td><code>${u.uniqueId || '-'}</code></td>
-                                <td>${(u.balance || 0).toLocaleString()}</td>
-                                <td>${(u.referralBalance || 0).toLocaleString()}</td>
-                                <td>
-                                    <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
-                                    <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody></table>`; 
-                } 
-            } 
-        }
+    async function resetDatabase() {
+      const pwd = document.getElementById('resetPasswordConfirm').value;
+      if (!pwd) { showMessage('الرجاء إدخال كلمة المرور', true); return; }
+      const btn = document.getElementById('confirmResetBtn');
+      setButtonLoading(btn, true);
+      const res = await apiCall('/api/admin/reset-database', { method: 'POST', body: JSON.stringify({ password: pwd }) });
+      setButtonLoading(btn, false);
+      if (res?.ok) { const data = await res.json(); showMessage(`✅ ${data.message}`); document.getElementById('resetModal').style.display = 'none'; document.getElementById('resetPasswordConfirm').value = ''; setTimeout(() => location.reload(), 2000); }
+      else if (res) { const err = await res.json(); showMessage(err.error || 'فشل التهيئة', true); }
+    }
 
-        async function loadAdminSettings() { 
-            const res = await apiCall('/api/admin/settings'); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                if (data.success) { 
-                    document.getElementById('settingMinDeposit').value = data.settings.minDeposit; 
-                    document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; 
-                    document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; 
-                    document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; 
-                    document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50;
-                } 
-            } 
-        }
+    // ============== تهيئة الأحداث ==============
+    function initWheel() {
+      wheelCanvas = document.getElementById('wheelCanvas');
+      if (wheelCanvas) { const size = Math.min(400, window.innerWidth - 80); wheelCanvas.width = size; wheelCanvas.height = size; ctx = wheelCanvas.getContext('2d'); drawWheel(); checkWheelStatus(); }
+    }
 
-        async function saveAdminSettings() { 
-            const settings = { 
-                minDeposit: Number(document.getElementById('settingMinDeposit').value), 
-                minWithdraw: Number(document.getElementById('settingMinWithdraw').value), 
-                gameImageUrl: document.getElementById('settingGameImageUrl').value, 
-                referralCommission: Number(document.getElementById('settingReferralCommission').value)
-            }; 
-            const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); 
-            if (res?.ok) { 
-                showMessage('تم حفظ الإعدادات'); 
-                await loadAdminSettings(); 
-                await loadDepositSettings(); 
-            } else { 
-                showMessage('فشل حفظ الإعدادات', true); 
-            } 
-        }
+    document.getElementById('openProfileBtn')?.addEventListener('click', () => { document.getElementById('homeScreen').classList.add('hidden'); document.getElementById('profileScreen').classList.remove('hidden'); if (isAdmin) { const container = document.getElementById('adminSwitchContainer'); if (container && !container.querySelector('.admin-btn')) { const btn = document.createElement('button'); btn.className = 'admin-btn'; btn.innerText = '🔧 لوحة الأدمن'; btn.onclick = showAdminInterface; container.innerHTML = ''; container.appendChild(btn); } } });
+    document.getElementById('backHomeBtn')?.addEventListener('click', () => { document.getElementById('profileScreen').classList.add('hidden'); document.getElementById('homeScreen').classList.remove('hidden'); });
+    document.getElementById('depositAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('depositModal').style.display = 'flex'; });
+    document.getElementById('withdrawAction')?.addEventListener('click', async () => { await loadDepositSettings(); document.getElementById('withdrawModal').style.display = 'flex'; });
+    document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
+    document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
+    document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظم اللعبة قريباً!'));
+    document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await auth.signOut(); location.reload(); });
+    document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
+    document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await auth.signOut(); location.reload(); });
+    document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
+    document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
+    document.getElementById('saveWheelCostBtn')?.addEventListener('click', saveWheelCost);
+    document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
+    document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
+    document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
+    document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; document.getElementById('resetPasswordConfirm').value = ''; });
+    document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
+    document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
+    document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
+    document.getElementById('searchUsers')?.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); renderUsersTable(filtered); });
+    document.getElementById('filterWithdrawStatus')?.addEventListener('change', loadAdminWithdraws);
+    document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', function() { this.closest('.modal').style.display = 'none'; }));
+    document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; }));
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { const target = tab.dataset.tab; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden')); if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden'); if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden'); if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden'); if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden'); if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden'); if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden'); }));
+    document.querySelectorAll('.nav-tab').forEach(tab => tab.addEventListener('click', async () => { const target = tab.dataset.tab; document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); if (target === 'stats') document.getElementById('statsModal').style.display = 'flex'; else if (target === 'wheel') { await checkWheelStatus(); if (wheelCanvas && ctx) { const size = Math.min(400, window.innerWidth - 80); wheelCanvas.width = size; wheelCanvas.height = size; drawWheel(); } document.getElementById('wheelModal').style.display = 'flex'; } else if (target === 'earn') { await loadEarnPageInfo(); document.getElementById('earnModal').style.display = 'flex'; } }));
+    document.getElementById('refCodeBlock')?.addEventListener('click', () => { const code = document.getElementById('profileRefCode').innerText; if (code && code !== '---') { navigator.clipboard.writeText(code); showMessage(`تم نسخ كود الإحالة: ${code}`); } else { showMessage('لا يوجد كود إحالة لعرضه', true); } });
+    window.addEventListener('resize', () => { if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex') { const size = Math.min(400, window.innerWidth - 80); wheelCanvas.width = size; wheelCanvas.height = size; drawWheel(); } });
 
-        async function saveWheelCost() {
-            const cost = Number(document.getElementById('settingWheelSpinCost').value);
-            if (!cost || cost < 10 || cost > 10000) {
-                showMessage('السعر غير صالح', true);
-                return;
-            }
-            const res = await apiCall('/api/admin/update-wheel-cost', { method: 'POST', body: JSON.stringify({ cost }) });
-            if (res?.ok) {
-                showMessage('تم تحديث سعر التدويرة');
-            } else {
-                showMessage('فشل تحديث السعر', true);
-            }
-        }
+    // ============== مصادقة المستخدم ==============
+    async function handleGoogleSignIn() {
+      const btn = document.getElementById('loginBtn');
+      setButtonLoading(btn, true);
+      try {
+        await auth.signOut().catch(() => {});
+        const result = await firebase.auth().signInWithPopup(provider);
+        currentUser = result.user;
+        const params = new URLSearchParams(window.location.search);
+        await registerUser(params.get('ref'));
+        await loadProfile();
+        await loadStats();
+        await loadDepositSettings();
+        await loadEarnPageInfo();
+        await loadThemeFromServer();
+        document.getElementById('loader').style.display = 'none';
+        if (isAdmin) showAdminInterface();
+        else showUserInterface();
+        initWheel();
+      } catch (err) {
+        console.error(err);
+        let msg = 'فشل تسجيل الدخول';
+        if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة';
+        else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت';
+        showMessage(msg, true);
+      } finally { setButtonLoading(btn, false); }
+    }
 
-        async function saveTheme() { 
-            const currentTheme = document.body.className.replace('theme-', ''); 
-            await saveThemeToServer(currentTheme); 
-        }
+    firebase.auth().onAuthStateChanged(async (user) => {
+      const loader = document.getElementById('loader');
+      const loginBtn = document.getElementById('loginBtn');
+      if (user) {
+        currentUser = user;
+        await registerUser();
+        await loadProfile();
+        await loadStats();
+        await loadDepositSettings();
+        await loadEarnPageInfo();
+        await loadThemeFromServer();
+        loader.style.display = 'none';
+        if (isAdmin) showAdminInterface();
+        else showUserInterface();
+        initWheel();
+      } else {
+        loader.innerHTML = '<div class="spinner"></div><div style="font-size:24px;font-weight:bold;background:linear-gradient(135deg, var(--primary), white);background-clip:text;-webkit-background-clip:text;color:transparent;">BOOMB</div>';
+        loginBtn.style.display = 'block';
+        loader.appendChild(loginBtn);
+        loader.style.display = 'flex';
+        document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn);
+      }
+    });
 
-        async function resetDatabase() { 
-            const pwd = document.getElementById('resetPassword').value; 
-            if (!pwd) { 
-                showMessage('الرجاء إدخال كلمة المرور', true); 
-                return; 
-            } 
-            const btn = document.getElementById('confirmResetBtn'); 
-            setButtonLoading(btn, true); 
-            const res = await apiCall('/api/admin/reset-database', { method: 'POST', body: JSON.stringify({ password: pwd }) }); 
-            setButtonLoading(btn, false); 
-            if (res?.ok) { 
-                const data = await res.json(); 
-                showMessage(`✅ ${data.message}`); 
-                document.getElementById('resetModal').style.display = 'none'; 
-                document.getElementById('resetPassword').value = ''; 
-                setTimeout(() => location.reload(), 2000); 
-            } else if (res) { 
-                const err = await res.json(); 
-                showMessage(err.error || 'فشل التهيئة', true); 
-            } 
-        }
-
-        window.approveWithdraw = async (id) => { 
-            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'approve' }) }); 
-            if (res?.ok) { 
-                showMessage('تم قبول الطلب'); 
-                loadAdminWithdraws(); 
-                loadAdminDashboard(); 
-            } 
-        };
-        
-        window.rejectWithdraw = async (id) => { 
-            const res = await apiCall('/api/admin/process-withdraw', { method: 'POST', body: JSON.stringify({ requestId: id, action: 'reject' }) }); 
-            if (res?.ok) { 
-                showMessage('تم رفض الطلب'); 
-                loadAdminWithdraws(); 
-                loadAdminDashboard(); 
-            } 
-        };
-        
-        window.toggleBan = async (id) => { 
-            const res = await apiCall('/api/admin/toggle-ban', { method: 'POST', body: JSON.stringify({ userId: id }) }); 
-            if (res?.ok) { 
-                showMessage('تم تحديث حالة المستخدم'); 
-                loadAdminUsers(); 
-            } 
-        };
-        
-        window.editBalance = async (id, bal) => { 
-            const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); 
-            if (val && val !== '0') { 
-                const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val) }) }); 
-                if (res?.ok) { 
-                    showMessage('تم تحديث الرصيد'); 
-                    loadAdminUsers(); 
-                    loadAdminDashboard(); 
-                } 
-            } 
-        };
-
-        function showAdminInterface() { 
-            document.getElementById('userApp').classList.add('hidden'); 
-            document.getElementById('adminApp').classList.remove('hidden'); 
-            loadAdminDashboard(); 
-            loadAdminWithdraws(); 
-            loadAdminDeposits(); 
-            loadAdminUsers(); 
-            loadAdminSettings(); 
-        }
-        
-        function showUserInterface() { 
-            document.getElementById('adminApp').classList.add('hidden'); 
-            document.getElementById('userApp').classList.remove('hidden'); 
-        }
-
-        async function handleGoogleSignIn() { 
-            const btn = document.getElementById('loginBtn'); 
-            setButtonLoading(btn, true); 
-            try { 
-                await auth.signOut().catch(() => {}); 
-                const result = await signInWithPopup(auth, provider); 
-                currentUser = result.user; 
-                const params = new URLSearchParams(window.location.search); 
-                await registerUser(params.get('ref')); 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadDeposits(); 
-                await loadWithdrawals(); 
-                await loadDepositSettings(); 
-                await loadEarnPageInfo(); 
-                await loadThemeFromServer(); 
-                document.getElementById('loader').style.display = 'none'; 
-                if (isAdmin) showAdminInterface(); 
-                else showUserInterface(); 
-                initWheel();
-            } catch (err) { 
-                console.error(err); 
-                showMessage('فشل تسجيل الدخول', true); 
-            } finally { 
-                setButtonLoading(btn, false); 
-            } 
-        }
-
-        function initWheel() {
-            wheelCanvas = document.getElementById('wheelCanvas');
-            if (wheelCanvas) {
-                const size = Math.min(400, window.innerWidth - 80);
-                wheelCanvas.width = size;
-                wheelCanvas.height = size;
-                ctx = wheelCanvas.getContext('2d');
-                drawWheel();
-                checkWheelStatus();
-            }
-        }
-
-        // Event Listeners
-        onAuthStateChanged(auth, async (user) => { 
-            const loader = document.getElementById('loader'); 
-            const loginBtn = document.getElementById('loginBtn'); 
-            if (user) { 
-                currentUser = user; 
-                await registerUser(); 
-                await loadProfile(); 
-                await loadStats(); 
-                await loadDeposits(); 
-                await loadWithdrawals(); 
-                await loadDepositSettings(); 
-                await loadEarnPageInfo(); 
-                await loadThemeFromServer(); 
-                loader.style.display = 'none'; 
-                if (isAdmin) showAdminInterface(); 
-                else showUserInterface(); 
-                initWheel();
-            } else { 
-                loader.innerHTML = '<div class="spinner"></div><div style="font-size:22px;font-weight:bold;">BOOMB</div>'; 
-                loginBtn.style.display = 'block'; 
-                loader.appendChild(loginBtn); 
-                loader.style.display = 'flex'; 
-                document.getElementById('loginBtn')?.addEventListener('click', handleGoogleSignIn); 
-            } 
-        });
-
-        // Fan Menu
-        document.getElementById('fanToggleBtn')?.addEventListener('click', toggleFanMenu);
-        document.querySelectorAll('.fan-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const action = item.dataset.action;
-                if (action && fanActions[action]) {
-                    createRipple(e, item);
-                    fanActions[action]();
-                }
-            });
-        });
-
-        // Close fan menu when clicking outside (optional)
-        document.addEventListener('click', (e) => {
-            if (isFanOpen && !e.target.closest('.fan-menu-container')) {
-                closeFanMenu();
-            }
-        });
-
-        // Other Event Listeners
-        document.getElementById('openProfileBtn')?.addEventListener('click', () => { closeFanMenu(); fanActions.profile(); });
-        document.getElementById('backHomeBtn')?.addEventListener('click', () => { 
-            document.getElementById('profileScreen').classList.add('hidden'); 
-            document.getElementById('homeScreen').classList.remove('hidden'); 
-        });
-        document.getElementById('depositAction')?.addEventListener('click', fanActions.deposit);
-        document.getElementById('withdrawAction')?.addEventListener('click', fanActions.withdraw);
-        document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
-        document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
-        document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
-        document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
-        document.getElementById('refreshWithdrawsBtn')?.addEventListener('click', loadAdminWithdraws);
-        document.getElementById('saveSettingsBtn')?.addEventListener('click', saveAdminSettings);
-        document.getElementById('saveWheelCostBtn')?.addEventListener('click', saveWheelCost);
-        document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
-        document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
-        document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
-        document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; });
-        document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
-        document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
-        document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
-        document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
-        document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
-        
-        // Modal close buttons
-        document.querySelectorAll('.close-modal').forEach(btn => { 
-            btn.addEventListener('click', function() { 
-                this.closest('.modal').style.display = 'none'; 
-            }); 
-        });
-        
-        document.querySelectorAll('.modal').forEach(modal => { 
-            modal.addEventListener('click', function(e) { 
-                if (e.target === this) this.style.display = 'none'; 
-            }); 
-        });
-
-        // Admin Tabs
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const target = tab.dataset.tab;
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
-                if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
-                if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
-                if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
-                if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
-                if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
-                if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
-                if (target === 'reset') document.getElementById('adminResetPanel').classList.remove('hidden');
-            });
-        });
-
-        // History Tabs
-        document.querySelectorAll('[data-history-tab]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const target = btn.dataset.historyTab;
-                document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('depositsHistoryList').style.display = target === 'deposits' ? 'block' : 'none';
-                document.getElementById('withdrawsHistoryList').style.display = target === 'withdraws' ? 'block' : 'none';
-                document.getElementById('wheelHistoryList').style.display = target === 'wheel' ? 'block' : 'none';
-                if (target === 'deposits') await loadDeposits();
-                if (target === 'withdraws') await loadWithdrawals();
-                if (target === 'wheel') await loadWheelHistoryForModal();
-            });
-        });
-
-        // Theme Selector
-        document.querySelectorAll('.theme-color').forEach(el => { 
-            el.addEventListener('click', async () => { 
-                const theme = el.dataset.theme; 
-                const success = await saveThemeToServer(theme); 
-                if (success) setTheme(theme); 
-            }); 
-        });
-
-        // Search Users
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { 
-            const term = e.target.value.toLowerCase(); 
-            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
-            const container = document.getElementById('usersTable'); 
-            if (!filtered.length) { 
-                container.innerHTML = '<p style="text-align:center;padding:30px">🔍 لا يوجد نتائج</p>'; 
-                return; 
-            } 
-            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>رصيد الإحالات</th><th>الإجراءات</th></tr></thead><tbody>
-                ${filtered.map(u => `
-                    <tr>
-                        <td><small>${u.email || '-'}</small></td>
-                        <td><strong>${u.name || '-'}</strong></td>
-                        <td><code>${u.uniqueId || '-'}</code></td>
-                        <td>${(u.balance || 0).toLocaleString()}</td>
-                        <td>${(u.referralBalance || 0).toLocaleString()}</td>
-                        <td>
-                            <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
-                            <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody></tr>`; 
-        });
-
-        // Filter withdraws
-        document.getElementById('filterWithdrawStatus')?.addEventListener('change', loadAdminWithdraws);
-
-        window.addEventListener('resize', () => {
-            if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex') {
-                const size = Math.min(400, window.innerWidth - 80);
-                wheelCanvas.width = size;
-                wheelCanvas.height = size;
-                drawWheel();
-            }
-        });
-
-        // Copy ref code from profile
-        const refCodeBlock = document.getElementById('refCodeBlock');
-        if (refCodeBlock) {
-            refCodeBlock.addEventListener('click', () => {
-                const codeElement = document.getElementById('profileRefCode');
-                if (codeElement) {
-                    const code = codeElement.innerText;
-                    if (code && code !== '---') { 
-                        navigator.clipboard.writeText(code); 
-                        showMessage('تم نسخ كود الإحالة: ' + code); 
-                    }
-                }
-            });
-        }
-
-        console.log('✅ BOOMB App initialized - Fan Menu Ready!');
-    </script>
+    console.log('✅ BOOMB App initialized successfully');
+  </script>
 </body>
 </html>
