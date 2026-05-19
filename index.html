@@ -1799,7 +1799,7 @@
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<tr>
+                container.innerHTML = `<table>
                     <thead>
                         <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th>
                     </tr>
@@ -1860,7 +1860,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `<table>
+                    container.innerHTML = `</td>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🎁 إحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 تدوير</th><th>⚙️</th>
                             </tr>
@@ -2221,7 +2221,7 @@
                 container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
                 return; 
             } 
-            container.innerHTML = `</table>
+            container.innerHTML = `<table>
                 <thead>
                     <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🎁 إحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 تدوير</th><th>⚙️</th>
                 </tr>
@@ -2240,7 +2240,7 @@
                             <td>
                                 <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
                                 <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
-                             </td>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -2333,6 +2333,7 @@
         console.log('🎰 Golden and Blue shiny wheel ready!');
         console.log('🪄 Floating fan menu with labels added!');
         console.log('✨ Buttons have shine effect!');
+        console.log('🎮 Game system ready!');
     </script>
 </body>
 </html>
