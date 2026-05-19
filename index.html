@@ -2,13 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="referrer" content="origin">
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
+    <meta name="theme-color" content="#ff0000">
     <title>BOOMB - منصة الألعاب</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         :root {
             --primary: #ff0000;
@@ -29,130 +28,305 @@
             --info: #2196f3;
             --gold: #FFD700;
             --gold-dark: #B8860B;
-            --blue-shiny: #1E90FF;
-            --blue-shiny-dark: #0066CC;
-            --radius: 12px;
-            --radius-lg: 20px;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-            --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
-            --transition: all 0.3s ease;
+            --radius: 10px;
+            --radius-lg: 16px;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; --primary-bg: rgba(255,0,0,0.1); }
-        body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; --primary-bg: rgba(33,150,243,0.1); }
-        body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; --primary-bg: rgba(76,175,80,0.1); }
-        body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; --primary-bg: rgba(156,39,176,0.1); }
-        body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; --primary-bg: rgba(255,152,0,0.1); }
-        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; --primary-bg: rgba(233,30,99,0.1); }
-        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; --primary-bg: rgba(0,150,136,0.1); }
-        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; --primary-bg: rgba(63,81,181,0.1); }
-        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; --primary-bg: rgba(0,188,212,0.1); }
-        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; --primary-bg: rgba(255,193,7,0.1); }
+        body.theme-red { --primary: #ff0000; --primary-dark: #cc0000; --primary-light: #ff3333; }
+        body.theme-blue { --primary: #2196f3; --primary-dark: #1976d2; --primary-light: #42a5f5; }
+        body.theme-green { --primary: #4caf50; --primary-dark: #388e3c; --primary-light: #66bb6a; }
+        body.theme-purple { --primary: #9c27b0; --primary-dark: #7b1fa2; --primary-light: #ab47bc; }
+        body.theme-orange { --primary: #ff9800; --primary-dark: #f57c00; --primary-light: #ffb74d; }
+        body.theme-pink { --primary: #e91e63; --primary-dark: #c2185b; --primary-light: #f06292; }
+        body.theme-teal { --primary: #009688; --primary-dark: #00796b; --primary-light: #26a69a; }
+        body.theme-indigo { --primary: #3f51b5; --primary-dark: #303f9f; --primary-light: #5c6bc0; }
+        body.theme-cyan { --primary: #00bcd4; --primary-dark: #0097a7; --primary-light: #26c6da; }
+        body.theme-amber { --primary: #ffc107; --primary-dark: #ffa000; --primary-light: #ffd54f; }
 
         body {
             font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
             background: var(--background);
             color: var(--text);
             min-height: 100vh;
-            padding: 12px;
+            padding: 8px;
             transition: var(--transition);
         }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes goldenGlow { 0%, 100% { opacity: 0.5; filter: blur(10px); } 50% { opacity: 0.8; filter: blur(15px); } }
-        @keyframes centerPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); } 50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 1); } }
+        @keyframes goldenGlow { 0%, 100% { opacity: 0.5; filter: blur(8px); } 50% { opacity: 0.8; filter: blur(12px); } }
+        @keyframes centerPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); } 50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 25px rgba(255, 215, 0, 1); } }
+        @keyframes ripple { 0% { transform: scale(0); opacity: 0.5; } 100% { transform: scale(4); opacity: 0; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes rotateIn { from { transform: rotate(-180deg) scale(0); opacity: 0; } to { transform: rotate(0) scale(1); opacity: 1; } }
+        @keyframes fanOpen { from { transform: rotate(0deg) translateX(0) scale(0); opacity: 0; } to { transform: rotate(var(--angle)) translateX(70px) scale(1); opacity: 1; } }
+        @keyframes fanClose { from { transform: rotate(var(--angle)) translateX(70px) scale(1); opacity: 1; } to { transform: rotate(0deg) translateX(0) scale(0); opacity: 0; } }
         
-        .animate-fade { animation: fadeIn 0.5s ease; }
+        .animate-fade { animation: fadeIn 0.4s ease; }
         .animate-pulse { animation: pulse 2s infinite; }
         .loading-shimmer { background: linear-gradient(90deg, var(--surface) 25%, var(--surface-light) 50%, var(--surface) 75%); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+        .float { animation: float 3s ease-in-out infinite; }
 
+        /* Loading Overlay */
         .loading-overlay {
             position: fixed; inset: 0;
             background: var(--background);
             display: flex; justify-content: center; align-items: center;
-            z-index: 10000; flex-direction: column; gap: 20px;
+            z-index: 10000; flex-direction: column; gap: 15px;
         }
-        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,51,51,0.2);
-            border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,51,51,0.2);
+            border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
         
         .btn-loading { pointer-events: none; opacity: 0.7; position: relative; }
         .btn-loading .btn-text { visibility: hidden; }
         .btn-loading::after {
-            content: ""; position: absolute; width: 18px; height: 18px;
+            content: ""; position: absolute; width: 16px; height: 16px;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
             border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white;
-            border-radius: 50%; animation: spin 0.6s linear infinite;
+            border-radius: 50%; animation: spin 0.5s linear infinite;
         }
 
-        .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 16px; }
-        .admin-container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+        /* Main Container */
+        .app-container { max-width: 500px; margin: 0 auto; min-height: 95vh; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .admin-container { max-width: 1400px; margin: 0 auto; padding: 12px; }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; gap: 12px; flex-wrap: wrap; }
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; gap: 10px; flex-wrap: wrap; }
         .avatar-btn {
-            width: 48px; height: 48px; background: linear-gradient(145deg, var(--surface-light), var(--surface));
+            width: 42px; height: 42px; background: linear-gradient(145deg, var(--surface-light), var(--surface));
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: var(--transition); border: 1px solid var(--primary);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow); font-size: 20px;
         }
         .avatar-btn:hover { transform: scale(1.05); border-color: var(--primary-light); }
+        .avatar-btn:active { transform: scale(0.95); }
         
-        .balance-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        /* Balance Cards */
+        .balance-container { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .balance-card {
-            background: rgba(20,20,20,0.8); backdrop-filter: blur(12px);
-            padding: 8px 16px; border-radius: 40px; text-align: center;
+            background: rgba(20,20,20,0.8); backdrop-filter: blur(10px);
+            padding: 6px 12px; border-radius: 30px; text-align: center;
             border: 1px solid var(--primary);
-            min-width: 120px;
+            min-width: 100px;
         }
-        .balance-card-small { padding: 6px 12px; }
-        .balance-label { font-size: 10px; color: var(--primary-light); }
-        .balance-value { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .balance-value-large { font-size: 26px; }
+        .balance-card-small { padding: 4px 10px; min-width: 80px; }
+        .balance-label { font-size: 9px; color: var(--primary-light); }
+        .balance-value { font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary-light)); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .balance-value-large { font-size: 20px; }
 
-        .action-grid { display: flex; gap: 12px; margin: 8px 0; }
+        /* Action Buttons */
+        .action-grid { display: flex; gap: 10px; margin: 6px 0; }
         .btn {
-            flex: 1; padding: 12px 8px; border: none; border-radius: 50px;
-            font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            flex: 1; padding: 10px 8px; border: none; border-radius: 40px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 4px 15px var(--primary-glow); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px var(--primary-glow); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 2px 10px var(--primary-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px var(--primary-glow); }
+        .btn-primary:active { transform: translateY(0); }
         .btn-secondary { background: var(--surface-light); border: 1px solid var(--primary); color: var(--primary-light); }
         .btn-secondary:hover { background: var(--primary-bg); transform: translateY(-1px); }
         .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
 
+        /* Game Sphere */
+        .play-zone { text-align: center; margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .game-sphere {
+            width: 100px; height: 100px; margin: 0 auto 15px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--transition);
+            box-shadow: 0 0 20px var(--primary-glow);
+            background-size: cover; background-position: center;
+            position: relative;
+        }
+        .game-sphere::before {
+            content: ''; position: absolute; inset: -3px;
+            border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
+            opacity: 0.5; z-index: -1;
+        }
+        .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--primary-glow); }
+        .game-sphere:active { transform: scale(0.98); }
+        .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 45px; }
+        #playNowBtn { margin-top: 6px; width: 60%; padding: 8px; font-size: 12px; }
+
+        /* Fan Menu - Main Button */
+        .fan-menu-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+        
+        .fan-toggle-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--primary-glow);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .fan-toggle-btn::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+        }
+        
+        .fan-toggle-btn:hover::before {
+            opacity: 0.5;
+        }
+        
+        .fan-toggle-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .fan-toggle-btn.open {
+            transform: rotate(45deg) scale(1.1);
+        }
+        
+        /* Fan Menu Items */
+        .fan-menu-items {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            pointer-events: none;
+        }
+        
+        .fan-item {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, var(--surface-light), var(--surface));
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+            font-size: 24px;
+            color: var(--primary-light);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0);
+            backdrop-filter: blur(10px);
+        }
+        
+        .fan-item.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+        
+        .fan-item:hover {
+            transform: scale(1.15) rotate(360deg);
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        
+        .fan-item:active {
+            transform: scale(0.95) rotate(360deg);
+        }
+        
+        /* Positions for fan items (semi-circle 180 degrees) */
+        .fan-item[data-pos="0"] { --angle: -90deg; transform: rotate(var(--angle)) translateX(75px) rotate(90deg); }
+        .fan-item[data-pos="1"] { --angle: -60deg; transform: rotate(var(--angle)) translateX(75px) rotate(60deg); }
+        .fan-item[data-pos="2"] { --angle: -30deg; transform: rotate(var(--angle)) translateX(75px) rotate(30deg); }
+        .fan-item[data-pos="3"] { --angle: 0deg; transform: rotate(var(--angle)) translateX(75px) rotate(0deg); }
+        .fan-item[data-pos="4"] { --angle: 30deg; transform: rotate(var(--angle)) translateX(75px) rotate(-30deg); }
+        .fan-item[data-pos="5"] { --angle: 60deg; transform: rotate(var(--angle)) translateX(75px) rotate(-60deg); }
+        .fan-item[data-pos="6"] { --angle: 90deg; transform: rotate(var(--angle)) translateX(75px) rotate(-90deg); }
+        
+        .fan-item.active[data-pos] {
+            animation: fanOpen 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+        
+        .fan-item.closing[data-pos] {
+            animation: fanClose 0.3s ease forwards;
+        }
+        
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.5);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        /* Info Panels */
+        .info-panel {
+            background: rgba(18,18,18,0.95); backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg); padding: 16px;
+            border: 1px solid var(--primary);
+        }
+        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .ref-code-block {
+            background: var(--surface); padding: 10px; border-radius: 30px;
+            text-align: center; font-family: monospace; font-size: 16px;
+            margin: 12px 0 6px; border: 1px solid var(--primary);
+            cursor: pointer; transition: var(--transition);
+        }
+        .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); }
+
+        /* Wheel */
         .wheel-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin: 20px 0;
+            margin: 15px 0;
             position: relative;
         }
         
         .wheel-wrapper {
             position: relative;
-            width: 280px;
-            height: 280px;
+            width: 220px;
+            height: 220px;
             margin: 0 auto;
         }
         
         .wheel-wrapper::before {
             content: '';
             position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
             border-radius: 50%;
             background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
             z-index: -1;
@@ -166,32 +340,30 @@
             width: 100% !important;
             height: 100% !important;
             border-radius: 50%;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         }
         
         .wheel-pointer {
             position: absolute;
-            top: -25px;
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 25px solid transparent;
-            border-right: 25px solid transparent;
-            border-top: 50px solid #FFD700;
-            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 38px solid #FFD700;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
             z-index: 10;
         }
         
         .wheel-pointer::before {
             content: '▼';
             position: absolute;
-            top: -48px;
-            left: -12px;
+            top: -38px;
+            left: -10px;
             color: #FFD700;
-            font-size: 24px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            font-size: 20px;
         }
         
         .wheel-center {
@@ -199,328 +371,223 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 55px;
-            height: 55px;
+            width: 45px;
+            height: 45px;
             background: radial-gradient(circle, #FFD700, #B8860B);
             border-radius: 50%;
-            border: 3px solid #FFF8DC;
+            border: 2px solid #FFF8DC;
             z-index: 5;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
             animation: centerPulse 1.5s ease-in-out infinite;
         }
         
         .spin-button {
-            margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 20px;
+            margin-top: 20px;
+            padding: 10px 30px;
+            font-size: 16px;
             font-weight: bold;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             color: #1a1a2e;
             border: none;
-            border-radius: 50px;
+            border-radius: 40px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
-            text-shadow: 1px 1px 0 rgba(255,255,255,0.3);
+            box-shadow: 0 3px 15px rgba(255, 215, 0, 0.4);
         }
         
         .spin-button:hover:not(:disabled) {
-            transform: scale(1.05);
-            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.8);
-            background: linear-gradient(135deg, #FFE44D, #FFB347);
+            transform: scale(1.03);
+            box-shadow: 0 5px 25px rgba(255, 215, 0, 0.6);
         }
         
         .spin-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
         
         .wheel-info {
             text-align: center;
-            margin-top: 20px;
-            padding: 15px;
+            margin-top: 15px;
+            padding: 10px;
             background: var(--surface-light);
             border-radius: var(--radius);
         }
         
-        .wheel-cost {
-            font-size: 18px;
-            color: var(--warning);
-            margin-bottom: 10px;
-        }
-        
-        .timer-text {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
+        .wheel-cost { font-size: 14px; color: var(--warning); margin-bottom: 8px; }
+        .timer-text { font-size: 12px; color: var(--text-secondary); }
 
-        .play-zone { text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
-        .game-sphere {
-            width: 130px; height: 130px; margin: 0 auto 20px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition);
-            box-shadow: 0 0 30px var(--primary-glow);
-            background-size: cover; background-position: center;
-            position: relative;
-        }
-        .game-sphere::before {
-            content: ''; position: absolute; inset: -5px;
-            border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
-            opacity: 0.5; z-index: -1;
-        }
-        .game-sphere:hover { transform: scale(1.05); box-shadow: 0 0 40px var(--primary-glow); }
-        .game-sphere:active { transform: scale(0.98); }
-        .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 58px; }
-        #playNowBtn { margin-top: 8px; width: 70%; }
-
-        .bottom-nav {
-            display: flex; justify-content: space-around;
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(14px);
-            padding: 8px 6px; border-radius: 60px; margin-top: auto; gap: 4px;
-            border: 1px solid var(--primary);
-        }
-        .nav-tab {
-            flex: 1; text-align: center; padding: 10px 4px; cursor: pointer;
-            border-radius: 50px; transition: var(--transition); color: var(--text-secondary);
-            font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-        }
-        .nav-tab:hover { background: var(--primary-bg); color: var(--primary-light); transform: translateY(-2px); }
-        .nav-tab.active { background: var(--primary-bg); color: var(--primary-light); }
-
-        .info-panel {
-            background: rgba(18,18,18,0.95); backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg); padding: 20px;
-            border: 1px solid var(--primary);
-        }
-        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        .ref-code-block {
-            background: var(--surface); padding: 12px; border-radius: 40px;
-            text-align: center; font-family: monospace; font-size: 18px;
-            margin: 16px 0 8px; border: 1px solid var(--primary);
-            cursor: pointer; transition: var(--transition);
-        }
-        .ref-code-block:hover { background: var(--primary-bg); transform: scale(1.02); }
-
+        /* Modals */
         .modal {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.96); backdrop-filter: blur(12px);
-            z-index: 1100; justify-content: center; align-items: center; padding: 16px;
+            z-index: 2000; justify-content: center; align-items: center; padding: 12px;
             animation: fadeIn 0.3s ease;
         }
         .modal-content {
             background: var(--surface); border-radius: var(--radius-lg);
-            max-width: 520px; width: 100%; padding: 24px 20px;
-            border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;
+            max-width: 500px; width: 100%; padding: 20px 16px;
+            border: 1px solid var(--primary); max-height: 85vh; overflow-y: auto;
             animation: slideIn 0.3s ease;
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--primary); padding-bottom: 12px;
-            margin-bottom: 20px; font-size: 20px; font-weight: 600; color: var(--primary-light);
+            border-bottom: 1px solid var(--primary); padding-bottom: 10px;
+            margin-bottom: 16px; font-size: 18px; font-weight: 600; color: var(--primary-light);
         }
-        .close-modal { font-size: 28px; cursor: pointer; transition: var(--transition); }
+        .close-modal { font-size: 26px; cursor: pointer; transition: var(--transition); width: 32px; text-align: center; }
         .close-modal:hover { transform: scale(1.1); color: var(--error); }
 
-        .methods-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        /* Methods & Forms */
+        .methods-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
         .method-card {
             background: var(--surface-light); border: 2px solid var(--border);
-            border-radius: var(--radius); padding: 16px; cursor: pointer; transition: var(--transition);
+            border-radius: var(--radius); padding: 12px; cursor: pointer; transition: var(--transition);
             display: flex; align-items: center; gap: 12px;
         }
-        .method-card:hover { border-color: var(--primary); transform: translateX(-5px); }
+        .method-card:hover { border-color: var(--primary); transform: translateX(-3px); }
         .method-card.selected { border-color: var(--primary); background: var(--primary-bg); }
-        .method-icon { font-size: 28px; }
-        .method-name { font-size: 16px; font-weight: bold; }
-        .method-currency { font-size: 12px; color: var(--primary-light); margin-top: 4px; }
+        .method-icon { font-size: 24px; }
+        .method-name { font-size: 14px; font-weight: bold; }
+        .method-currency { font-size: 11px; color: var(--primary-light); margin-top: 2px; }
+        
         .address-box {
-            background: var(--surface); padding: 12px; border-radius: var(--radius);
-            margin: 12px 0; display: flex; justify-content: space-between;
-            align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--surface); padding: 10px; border-radius: var(--radius);
+            margin: 10px 0; display: flex; justify-content: space-between;
+            align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .address-box span { font-family: monospace; font-size: 14px; word-break: break-all; flex: 1; }
-        .copy-btn { background: var(--primary); border: none; color: white; padding: 6px 14px; border-radius: 25px; cursor: pointer; transition: var(--transition); }
-        .copy-btn:hover { transform: scale(1.05); }
-
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; color: var(--primary-light); font-size: 13px; font-weight: 500; }
+        .address-box span { font-family: monospace; font-size: 12px; word-break: break-all; flex: 1; }
+        .copy-btn { background: var(--primary); border: none; color: white; padding: 5px 12px; border-radius: 25px; cursor: pointer; font-size: 12px; }
+        
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--primary-light); font-size: 12px; font-weight: 500; }
         input, select, textarea {
             background: var(--surface-light); border: 1px solid var(--border);
-            color: var(--text); padding: 12px 14px; border-radius: var(--radius);
-            width: 100%; font-size: 14px; transition: var(--transition);
+            color: var(--text); padding: 10px 12px; border-radius: var(--radius);
+            width: 100%; font-size: 13px; transition: var(--transition);
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+        .hint { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
+        /* Request Cards */
         .request-card {
-            background: var(--surface-light); margin-bottom: 12px; padding: 12px;
-            border-radius: var(--radius); border-right: 4px solid var(--primary);
-            transition: var(--transition);
+            background: var(--surface-light); margin-bottom: 10px; padding: 10px;
+            border-radius: var(--radius); border-right: 3px solid var(--primary);
+            transition: var(--transition); font-size: 12px;
         }
-        .request-card:hover { transform: translateX(-5px); background: var(--surface-lighter); }
+        .request-card:hover { transform: translateX(-3px); background: var(--surface-lighter); }
         .request-card.pending { border-right-color: var(--warning); }
         .request-card.approved { border-right-color: var(--success); }
         .request-card.rejected { border-right-color: var(--error); }
 
+        /* Toast */
         .toast {
-            position: fixed; bottom: 90px; left: 16px; right: 16px;
+            position: fixed; bottom: 100px; left: 12px; right: 12px;
             background: var(--primary-dark); backdrop-filter: blur(8px);
-            padding: 14px; border-radius: 50px; text-align: center;
-            z-index: 1200; animation: slideIn 0.3s ease;
+            padding: 10px; border-radius: 40px; text-align: center;
+            z-index: 3000; animation: slideIn 0.3s ease; font-size: 13px;
             font-weight: 500;
         }
 
+        /* Admin Panel */
         .admin-header {
-            background: var(--surface); padding: 16px 20px; border-radius: var(--radius-lg);
-            margin-bottom: 20px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--primary);
+            background: var(--surface); padding: 12px 16px; border-radius: var(--radius-lg);
+            margin-bottom: 16px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 10px;
         }
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px; margin-bottom: 25px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px; margin-bottom: 20px;
         }
         .stat-card {
-            background: var(--surface); padding: 20px; border-radius: var(--radius);
-            text-align: center; border: 1px solid var(--border); transition: var(--transition);
+            background: var(--surface); padding: 12px; border-radius: var(--radius);
+            text-align: center; border: 1px solid var(--border);
         }
-        .stat-card:hover { transform: translateY(-3px); border-color: var(--primary); }
-        .stat-number { font-size: 32px; font-weight: bold; color: var(--primary); }
-        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
-        .admin-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: var(--transition); }
-        .admin-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
-        .admin-btn-small { padding: 6px 12px; font-size: 12px; margin: 2px; }
+        .stat-number { font-size: 22px; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
+        .stat-icon { font-size: 22px; margin-bottom: 6px; }
+        
         .admin-table {
             background: var(--surface);
             border-radius: var(--radius-lg);
             overflow-x: auto;
-            padding: 0;
         }
         .admin-table-header {
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
             background: var(--surface-light);
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         }
-        .admin-table-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--primary-light);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 14px 12px;
-            text-align: right;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-        }
-        th {
-            background: var(--primary-bg);
-            color: var(--primary-light);
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-        }
-        tr:hover {
-            background: var(--surface-light);
-        }
+        .admin-table-title { font-size: 16px; font-weight: bold; color: var(--primary-light); }
+        
         .tabs-bar {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 25px;
+            gap: 8px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
-            background: var(--surface);
-            padding: 10px;
-            border-radius: var(--radius-lg);
         }
         .tab {
             cursor: pointer;
-            padding: 10px 24px;
+            padding: 8px 18px;
             background: var(--surface-light);
             border-radius: var(--radius);
             transition: var(--transition);
+            font-size: 12px;
             font-weight: 500;
         }
-        .tab:hover {
-            background: var(--primary-bg);
-            transform: translateY(-2px);
-            color: var(--primary-light);
-        }
-        .tab.active {
-            background: var(--primary);
-            color: white;
-        }
-        .section-title {
-            color: var(--primary-light);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-            font-size: 18px;
-        }
+        .tab:hover { background: var(--primary-bg); transform: translateY(-2px); }
+        .tab.active { background: var(--primary); color: white; }
+        
+        .section-title { color: var(--primary-light); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 16px; }
         .hidden { display: none; }
+        
         .badge {
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 10px;
             font-weight: 600;
         }
         .badge-success { background: var(--success); color: white; }
         .badge-warning { background: var(--warning); color: #1a1a2e; }
         .badge-danger { background: var(--error); color: white; }
         .badge-info { background: var(--info); color: white; }
-
-        .commission-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        .theme-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
-        .theme-color { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
-        .theme-color:hover { transform: scale(1.1); }
-        .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 10px white; }
-        .stat-icon { font-size: 28px; margin-bottom: 10px; }
         
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .filter-bar select {
-            width: auto;
-            min-width: 150px;
-            background: var(--surface-light);
-        }
-        .search-input {
-            flex: 1;
-            min-width: 200px;
-        }
+        .theme-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; justify-content: center; }
+        .theme-color { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .theme-color:hover { transform: scale(1.1); }
+        .theme-color.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 8px white; }
+        
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; padding: 12px; }
+        .search-input { flex: 1; min-width: 150px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--border); }
+        th { background: var(--primary-bg); color: var(--primary-light); font-weight: 600; }
+        .admin-btn { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+        .admin-btn-small { padding: 4px 8px; font-size: 10px; margin: 2px; }
         
         @media (max-width: 768px) {
-            .btn { padding: 10px 6px; font-size: 13px; }
-            .balance-value { font-size: 18px; }
-            .balance-value-large { font-size: 22px; }
-            .balance-card { padding: 6px 12px; min-width: 100px; }
-            .stat-number { font-size: 22px; }
-            th, td { padding: 10px 8px; font-size: 11px; }
-            .game-sphere { width: 100px; height: 100px; font-size: 48px; }
-            .theme-color { width: 30px; height: 30px; }
-            .wheel-wrapper { width: 250px; height: 250px; }
-            .spin-button { padding: 12px 30px; font-size: 18px; }
-            .tab { padding: 8px 16px; font-size: 12px; }
-            .stats-grid { gap: 10px; }
-            .stat-card { padding: 12px; }
-            .stat-number { font-size: 20px; }
-            .stat-icon { font-size: 22px; }
+            body { padding: 6px; }
+            .balance-card { padding: 4px 8px; min-width: 80px; }
+            .balance-value { font-size: 12px; }
+            .balance-value-large { font-size: 16px; }
+            .game-sphere { width: 80px; height: 80px; font-size: 35px; }
+            .wheel-wrapper { width: 180px; height: 180px; }
+            .spin-button { padding: 8px 25px; font-size: 14px; }
+            .fan-toggle-btn { width: 50px; height: 50px; font-size: 24px; }
+            .fan-item { width: 42px; height: 42px; font-size: 20px; }
+            .fan-item[data-pos] { --translate: 65px; transform: rotate(var(--angle)) translateX(65px) rotate(calc(var(--angle) * -1)); }
+            .stat-number { font-size: 18px; }
+            .tab { padding: 6px 14px; font-size: 11px; }
         }
     </style>
 </head>
 <body>
     <div id="loader" class="loading-overlay">
         <div class="spinner"></div>
-        <div style="font-size: 28px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
-        <button id="loginBtn" class="btn btn-primary" style="margin-top:20px;width:220px;display:none">🔐 تسجيل دخول Google</button>
+        <div style="font-size: 24px; font-weight: bold; background: linear-gradient(135deg, var(--primary), white); background-clip: text; -webkit-background-clip: text; color: transparent;">BOOMB</div>
+        <button id="loginBtn" class="btn btn-primary" style="margin-top:15px;width:200px;display:none">🔐 تسجيل دخول Google</button>
     </div>
 
     <div id="userApp" class="app-container hidden">
@@ -569,17 +636,26 @@
                 <div class="info-row"><span>🏅 إجمالي أرباح العجلة</span><span id="profileTotalWinnings">0 SYP</span></div>
                 <div id="referrerInfoProfile" class="info-row hidden"><span>🎁 تمت الدعوة بواسطة</span><span id="referrerNameProfile">-</span></div>
                 <div class="ref-code-block" id="refCodeBlock">📋 اضغط لنسخ الكود</div>
-                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:16px">🚪 تسجيل خروج</button>
+                <button class="btn btn-secondary" id="logoutMainBtn" style="margin-top:12px">🚪 تسجيل خروج</button>
             </div>
         </div>
 
-        <div class="bottom-nav">
-            <div class="nav-tab" data-tab="stats">📊<span>إحصائياتي</span></div>
-            <div class="nav-tab" data-tab="wheel">🎡<span>عجلة الحظ</span></div>
-            <div class="nav-tab" data-tab="earn">🎁<span>اكسب مجانا</span></div>
+        <!-- Fan Menu (Floating Action Button) -->
+        <div class="fan-menu-container">
+            <button class="fan-toggle-btn" id="fanToggleBtn">🎮</button>
+            <div class="fan-menu-items" id="fanMenuItems">
+                <div class="fan-item" data-pos="0" data-action="profile">👤</div>
+                <div class="fan-item" data-pos="1" data-action="stats">📊</div>
+                <div class="fan-item" data-pos="2" data-action="wheel">🎡</div>
+                <div class="fan-item" data-pos="3" data-action="history">📋</div>
+                <div class="fan-item" data-pos="4" data-action="earn">🎁</div>
+                <div class="fan-item" data-pos="5" data-action="deposit">💰</div>
+                <div class="fan-item" data-pos="6" data-action="withdraw">💸</div>
+            </div>
         </div>
     </div>
 
+    <!-- Modals -->
     <div id="wheelModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -588,7 +664,7 @@
             </div>
             <div class="wheel-container">
                 <div class="wheel-wrapper">
-                    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                    <canvas id="wheelCanvas" width="400" height="400"></canvas>
                     <div class="wheel-pointer"></div>
                     <div class="wheel-center"></div>
                 </div>
@@ -603,48 +679,48 @@
 
     <div id="statsModal" class="modal"><div class="modal-content"><div class="modal-header"><span>📊 الإحصائيات</span><span class="close-modal">&times;</span></div><div id="statsInner"></div></div></div>
     
-    <div id="earnModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><span>🎁 اكسب مجانا</span><span class="close-modal">&times;</span></div>
-            <div style="padding: 20px;">
-                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; text-align: center;">
-                    <h4 style="color: var(--primary-light); margin-bottom: 12px;">🏆 كود الإحالة الخاص بك</h4>
-                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 8px 0; font-size: 22px; font-weight: bold;"></div>
-                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 8px;">📋 نسخ الكود</button>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;">
-                        🎁 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
-                        💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع (تضاف إلى رصيد الإحالات)
-                    </p>
-                </div>
-                
-                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
-                    <h4 style="color: var(--warning); margin-bottom: 12px;">👥 هل لديك كود إحالة؟</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
-                    <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 18px; margin-bottom: 12px;">
-                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%">🎁 تفعيل الكود</button>
-                </div>
-                
-                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 16px; display: none;">
-                    <h4 style="color: var(--success); margin-bottom: 12px;">✅ تم التفعيل بنجاح</h4>
-                    <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
-                    <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="historyModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><span>📋 سجل المعاملات</span><span class="close-modal">&times;</span></div>
             <div style="padding: 10px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border);">
                     <button class="tab active" data-history-tab="deposits" style="flex:1;">💰 الإيداعات</button>
                     <button class="tab" data-history-tab="withdraws" style="flex:1;">💸 السحوبات</button>
                     <button class="tab" data-history-tab="wheel" style="flex:1;">🎡 العجلة</button>
                 </div>
-                <div id="depositsHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
-                <div id="withdrawsHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
-                <div id="wheelHistoryList" style="max-height: 500px; overflow-y: auto; display: none;"></div>
+                <div id="depositsHistoryList" style="max-height: 400px; overflow-y: auto;"></div>
+                <div id="withdrawsHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
+                <div id="wheelHistoryList" style="max-height: 400px; overflow-y: auto; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="earnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><span>🎁 اكسب مجانا</span><span class="close-modal">&times;</span></div>
+            <div style="padding: 15px;">
+                <div style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; margin-bottom: 15px; text-align: center;">
+                    <h4 style="color: var(--primary-light); margin-bottom: 10px; font-size: 14px;">🏆 كود الإحالة الخاص بك</h4>
+                    <div class="ref-code-block" id="earnCodeDisplay" style="margin: 0 0 6px 0; font-size: 18px; font-weight: bold;"></div>
+                    <button class="btn btn-secondary" id="copyReferralCodeBtn" style="width: 100%; margin-top: 6px; padding: 8px;">📋 نسخ الكود</button>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 10px;">
+                        🎁 كل مستخدم يسجل بكودك يحصل على 5 SYP مكافأة<br>
+                        💰 وتحصل أنت على <span id="commissionPercentDisplay">5</span>% عمولة دائمة من كل إيداع
+                    </p>
+                </div>
+                
+                <div id="addReferrerSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; margin-bottom: 15px;">
+                    <h4 style="color: var(--warning); margin-bottom: 10px; font-size: 14px;">👥 هل لديك كود إحالة؟</h4>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">أدخل كود الإحالة الخاص بالشخص الذي دعاك</p>
+                    <input type="text" id="referrerCodeInput" placeholder="أدخل كود الإحالة" style="text-align: center; font-size: 16px; margin-bottom: 10px;">
+                    <button class="btn btn-primary" id="submitReferrerCodeBtn" style="width: 100%; padding: 8px;">🎁 تفعيل الكود</button>
+                </div>
+                
+                <div id="referrerInfoSection" style="background: var(--surface-light); border-radius: var(--radius); padding: 12px; display: none;">
+                    <h4 style="color: var(--success); margin-bottom: 10px; font-size: 14px;">✅ تم التفعيل بنجاح</h4>
+                    <div class="info-row"><span>تمت الدعوة بواسطة:</span><span id="referrerNameDisplay">-</span></div>
+                    <div class="info-row"><span>كود المحيل:</span><span id="referrerCodeDisplay">-</span></div>
+                </div>
             </div>
         </div>
     </div>
@@ -655,7 +731,7 @@
             <div class="form-group"><label>📱 اختر طريقة الدفع</label><div id="methodsList" class="methods-list"></div></div>
             <div id="addressInfo"></div>
             <div class="form-group"><label>💵 المبلغ</label><input type="number" id="depositAmount" placeholder="أدخل المبلغ"><div id="minDepositHint" class="hint"></div><div id="exchangeRateHint" class="hint" style="color: var(--warning);"></div></div>
-            <div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"><div class="hint" style="color:#ff8888">⚠️ يجب إدخال رقم العملية الصحيح للتحقق التلقائي</div></div>
+            <div class="form-group"><label>🔢 رقم العملية (Transaction ID)</label><input type="text" id="transactionId" placeholder="أدخل رقم العملية"></div>
             <button class="btn btn-primary" id="submitDepositBtn" style="width:100%"><span class="btn-text">تأكيد الإيداع</span></button>
         </div>
     </div>
@@ -666,7 +742,6 @@
             <div class="form-group"><label>💵 المبلغ (SYP)</label><input type="number" id="withdrawAmount" placeholder="أدخل المبلغ"><div id="minWithdrawHint" class="hint"></div></div>
             <div class="form-group"><label>📍 عنوان المحفظة / رقم الجوال</label><input type="text" id="withdrawAddress" placeholder="أدخل عنوان السحب"></div>
             <div class="form-group"><label>📱 طريقة السحب</label><select id="withdrawMethod"><option value="sham_cash">شام كاش</option><option value="syriatel_cash">سيرياتيل كاش</option></select></div>
-            <div class="hint" style="margin-bottom:10px;color:#ffaa00">⚠️ سيتم خصم المبلغ فوراً وإرسال الطلب للمراجعة</div>
             <button class="btn btn-primary" id="submitWithdrawBtn" style="width:100%"><span class="btn-text">تأكيد السحب</span></button>
         </div>
     </div>
@@ -674,7 +749,7 @@
     <div id="resetModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><span>⚠️ تهيئة قاعدة البيانات</span><span class="close-modal" id="closeResetModal">&times;</span></div>
-            <div style="text-align:center; margin-bottom:20px"><p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء نهائي!</p><p>سيتم حذف جميع البيانات</p></div>
+            <div style="text-align:center; margin-bottom:15px"><p style="color:var(--error); margin-bottom:12px">⚠️ تحذير: هذا الإجراء نهائي!</p><p>سيتم حذف جميع البيانات</p></div>
             <div class="form-group"><label>🔑 كلمة المرور</label><input type="password" id="resetPassword" placeholder="أدخل كلمة المرور"></div>
             <button class="btn btn-danger" id="confirmResetBtn" style="width:100%"><span class="btn-text">تأكيد التهيئة</span></button>
         </div>
@@ -683,9 +758,9 @@
     <div id="adminApp" class="hidden">
         <div class="admin-container">
             <div class="admin-header">
-                <h2>🔧 لوحة التحكم</h2>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <span style="background:var(--primary);padding:4px 12px;border-radius:20px">sam55nam@gmail.com</span>
+                <h2 style="font-size: 18px;">🔧 لوحة التحكم</h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <span style="background:var(--primary);padding:3px 10px;border-radius:20px;font-size:11px">sam55nam@gmail.com</span>
                     <button class="admin-btn" id="switchToUserView">🌐 الموقع</button>
                     <button class="admin-btn" id="adminLogoutBtn">🚪 تسجيل خروج</button>
                 </div>
@@ -706,18 +781,15 @@
                 <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
                 <div class="tab" data-tab="deposits">💰 الإيداعات</div>
                 <div class="tab" data-tab="users">👥 المستخدمين</div>
-                <div class="tab" data-tab="settings">⚙️ إعدادات الدفع</div>
-                <div class="tab" data-tab="wheel-settings">🎡 إعدادات العجلة</div>
+                <div class="tab" data-tab="settings">⚙️ الإعدادات</div>
+                <div class="tab" data-tab="wheel-settings">🎡 العجلة</div>
                 <div class="tab" data-tab="themes">🎨 الألوان</div>
                 <div class="tab" data-tab="reset" style="background:#8b0000;">🗑️ تهيئة</div>
             </div>
 
-            <!-- طلبات السحب -->
             <div id="adminWithdrawsPanel" class="admin-table">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">💸 طلبات السحب</div>
-                </div>
-                <div class="filter-bar" style="padding: 15px;">
+                <div class="admin-table-header"><div class="admin-table-title">💸 طلبات السحب</div></div>
+                <div class="filter-bar">
                     <select id="filterWithdrawStatus">
                         <option value="all">جميع الطلبات</option>
                         <option value="pending">⏳ قيد المراجعة</option>
@@ -726,103 +798,43 @@
                     </select>
                     <button class="admin-btn" id="refreshWithdrawsBtn">🔄 تحديث</button>
                 </div>
-                <div id="withdrawsTable" style="padding: 0 15px 15px 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
-                </div>
+                <div id="withdrawsTable" style="padding: 0 12px 12px 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
             </div>
             
-            <!-- الإيداعات -->
             <div id="adminDepositsPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">💰 الإيداعات (مؤكدة تلقائياً)</div>
-                </div>
-                <div id="depositsTable" style="padding: 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
-                </div>
+                <div class="admin-table-header"><div class="admin-table-title">💰 الإيداعات</div></div>
+                <div id="depositsTable" style="padding: 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
             </div>
             
-            <!-- المستخدمين -->
             <div id="adminUsersPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">👥 إدارة المستخدمين</div>
-                </div>
-                <div style="padding: 15px;">
-                    <input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%; margin-bottom:15px;">
-                </div>
-                <div id="usersTable" style="padding: 0 15px 15px 15px;">
-                    <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
-                </div>
+                <div class="admin-table-header"><div class="admin-table-title">👥 إدارة المستخدمين</div></div>
+                <div style="padding: 12px;"><input type="text" id="searchUsers" class="search-input" placeholder="🔍 بحث بالبريد أو الاسم أو كود الإحالة" style="width:100%;"></div>
+                <div id="usersTable" style="padding: 0 12px 12px 12px;"><p style="text-align:center;padding:30px">⏳ جاري التحميل...</p></div>
             </div>
             
-            <!-- إعدادات الدفع -->
             <div id="adminSettingsPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">⚙️ إعدادات النظام</div>
-                </div>
-                <div style="padding: 20px;">
+                <div class="admin-table-header"><div class="admin-table-title">⚙️ إعدادات النظام</div></div>
+                <div style="padding: 16px;">
                     <h3 class="section-title">الحدود العامة</h3>
                     <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
                     <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
-                    <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
+                    <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="رابط مباشر للصورة"></div>
                     <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
-                    
-                    <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
-                    <div class="form-group"><label>🔘 تفعيل شام كاش</label><input type="checkbox" id="settingShamCashEnabled"></div>
-                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashApiKey"></div>
-                    <div class="form-group"><label>🏦 العنوان الخاص (للـ API)</label><input type="text" id="settingShamCashPrivateAddress"></div>
-                    <div class="form-group"><label>🌐 العنوان العام (للمستخدم)</label><input type="text" id="settingShamCashPublicAddress"></div>
-                    
-                    <h3 class="section-title">💵 شام كاش (دولار)</h3>
-                    <div class="form-group"><label>🔘 تفعيل شام كاش دولار</label><input type="checkbox" id="settingShamCashUsdEnabled"></div>
-                    <div class="form-group"><label>💱 سعر صرف الدولار إلى ليرة</label><input type="number" id="settingUsdToSypRate"></div>
-                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingShamCashUsdApiKey"></div>
-                    <div class="form-group"><label>🏦 العنوان الخاص</label><input type="text" id="settingShamCashUsdPrivateAddress"></div>
-                    <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingShamCashUsdPublicAddress"></div>
-                    
-                    <h3 class="section-title">📱 سيرياتيل كاش</h3>
-                    <div class="form-group"><label>🔘 تفعيل سيرياتيل كاش</label><input type="checkbox" id="settingSyriatelEnabled"></div>
-                    <div class="form-group"><label>🔑 API Key</label><input type="password" id="settingSyriatelApiKey"></div>
-                    <div class="form-group"><label>📱 العنوان الخاص</label><input type="text" id="settingSyriatelPrivateAddress"></div>
-                    <div class="form-group"><label>🌐 العنوان العام</label><input type="text" id="settingSyriatelPublicAddress"></div>
-                    
-                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:20px">💾 حفظ جميع الإعدادات</button>
+                    <button class="admin-btn" id="saveSettingsBtn" style="width:100%; margin-top:10px">💾 حفظ الإعدادات</button>
                 </div>
             </div>
 
-            <!-- إعدادات العجلة -->
             <div id="adminWheelSettingsPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">🎡 إعدادات عجلة الحظ</div>
-                </div>
-                <div style="padding: 20px;">
+                <div class="admin-table-header"><div class="admin-table-title">🎡 إعدادات العجلة</div></div>
+                <div style="padding: 16px;">
                     <div class="form-group"><label>💰 سعر التدويرة (من رصيد الإحالات)</label><input type="number" id="settingWheelSpinCost" min="10" max="10000"></div>
                     <button class="admin-btn" id="saveWheelCostBtn">💾 حفظ سعر التدويرة</button>
-                    
-                    <h3 class="section-title" style="margin-top: 30px;">🎁 جوائز العجلة</h3>
-                    <div class="admin-table" style="background: var(--surface-light);">
-                        <table style="width: 100%;">
-                            <thead><tr><th>القسم</th><th>الجائزة</th><th>النسبة</th><th>اللون</th></tr></thead>
-                            <tbody>
-                                <tr><td style="text-align:center;">1</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
-                                <tr><td style="text-align:center;">2</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">3</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">4</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">5</td><td>حظ أوفر</td><td>40%</td><td style="background:#FFD700;color:#000;text-align:center;">ذهبي</td></tr>
-                                <tr><td style="text-align:center;">6</td><td>10 رصيد أساسي</td><td>10%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">7</td><td>20 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                                <tr><td style="text-align:center;">8</td><td>30 رصيد أساسي</td><td>5%</td><td style="background:#1E90FF;color:#fff;text-align:center;">أزرق لامع</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
-            <!-- الألوان -->
             <div id="adminThemesPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title">🎨 اختيار لون الموقع</div>
-                </div>
-                <div style="padding: 20px; text-align: center;">
+                <div class="admin-table-header"><div class="admin-table-title">🎨 اختيار لون الموقع</div></div>
+                <div style="padding: 16px; text-align: center;">
                     <div class="theme-selector">
                         <div class="theme-color" style="background: #ff0000;" data-theme="red" title="أحمر"></div>
                         <div class="theme-color" style="background: #2196f3;" data-theme="blue" title="أزرق"></div>
@@ -835,18 +847,14 @@
                         <div class="theme-color" style="background: #00bcd4;" data-theme="cyan" title="سماوي"></div>
                         <div class="theme-color" style="background: #ffc107;" data-theme="amber" title="كهرماني"></div>
                     </div>
-                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:20px">💾 حفظ اللون</button>
+                    <button class="admin-btn" id="saveThemeBtn" style="width:100%; margin-top:15px">💾 حفظ اللون</button>
                 </div>
             </div>
 
-            <!-- تهيئة -->
             <div id="adminResetPanel" class="admin-table hidden">
-                <div class="admin-table-header">
-                    <div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div>
-                </div>
-                <div style="padding: 20px; text-align: center;">
-                    <p style="color:var(--error); margin-bottom:16px">⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</p>
-                    <p style="margin-bottom:20px">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات</p>
+                <div class="admin-table-header"><div class="admin-table-title" style="color:var(--error);">⚠️ مسح قاعدة البيانات</div></div>
+                <div style="padding: 16px; text-align: center;">
+                    <p style="color:var(--error); margin-bottom:12px">⚠️ تحذير: هذا الإجراء نهائي!</p>
                     <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
                 </div>
             </div>
@@ -874,7 +882,7 @@
         auth.useDeviceLanguage();
         
         const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account', display: 'popup' });
+        provider.setCustomParameters({ prompt: 'select_account' });
 
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
@@ -885,6 +893,9 @@
         let spinning = false;
         let currentRotation = 0;
         let animationFrame = null;
+        
+        // Fan menu state
+        let isFanOpen = false;
         
         const SECTORS = [
             { name: "حظ أوفر", value: 0, gradientFrom: "#FFD700", gradientTo: "#FFA500" },
@@ -897,6 +908,7 @@
             { name: "30 SYP", value: 30, gradientFrom: "#1E90FF", gradientTo: "#0066CC" }
         ];
 
+        // Helper Functions
         function showMessage(msg, isErr = false) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -911,6 +923,20 @@
             else { btn.classList.remove('btn-loading'); btn.disabled = false; }
         }
 
+        function createRipple(event, element) {
+            const rect = element.getBoundingClientRect();
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (event.clientX - rect.left - size/2) + 'px';
+            ripple.style.top = (event.clientY - rect.top - size/2) + 'px';
+            element.style.position = 'relative';
+            element.style.overflow = 'hidden';
+            element.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
         async function apiCall(endpoint, options = {}) {
             const token = await auth.currentUser?.getIdToken();
             try {
@@ -920,10 +946,114 @@
                 });
                 if (response.status === 401) { showMessage('انتهت الجلسة، سجل دخول مجدداً', true); await signOut(auth); return null; }
                 if (response.status === 403) { showMessage('غير مصرح بهذه العملية', true); return null; }
+                if (response.status === 429) { showMessage('طلبات كثيرة جداً، انتظر قليلاً', true); return null; }
                 return response;
             } catch (error) { console.error('API error:', error); showMessage('خطأ في الاتصال بالخادم', true); return null; }
         }
 
+        // Fan Menu Functions
+        function openFanMenu() {
+            if (isFanOpen) return;
+            isFanOpen = true;
+            const toggleBtn = document.getElementById('fanToggleBtn');
+            const items = document.querySelectorAll('.fan-item');
+            
+            toggleBtn.classList.add('open');
+            
+            items.forEach((item, index) => {
+                item.classList.remove('closing');
+                item.classList.add('active');
+                // Staggered animation
+                setTimeout(() => {
+                    item.style.animation = `fanOpen 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards`;
+                }, index * 30);
+            });
+        }
+
+        function closeFanMenu() {
+            if (!isFanOpen) return;
+            isFanOpen = false;
+            const toggleBtn = document.getElementById('fanToggleBtn');
+            const items = document.querySelectorAll('.fan-item');
+            
+            toggleBtn.classList.remove('open');
+            
+            items.forEach((item, index) => {
+                item.classList.add('closing');
+                item.classList.remove('active');
+                setTimeout(() => {
+                    item.style.animation = '';
+                }, 300);
+            });
+        }
+
+        function toggleFanMenu() {
+            if (isFanOpen) {
+                closeFanMenu();
+            } else {
+                openFanMenu();
+            }
+        }
+
+        // Fan menu actions
+        const fanActions = {
+            profile: () => {
+                closeFanMenu();
+                document.getElementById('homeScreen').classList.add('hidden');
+                document.getElementById('profileScreen').classList.remove('hidden');
+                if (isAdmin) {
+                    const container = document.getElementById('adminSwitchContainer');
+                    if (container && !container.querySelector('.admin-btn')) {
+                        const btn = document.createElement('button');
+                        btn.className = 'admin-btn';
+                        btn.innerText = '🔧 لوحة الأدمن';
+                        btn.onclick = () => { closeFanMenu(); showAdminInterface(); };
+                        container.innerHTML = '';
+                        container.appendChild(btn);
+                    }
+                }
+            },
+            stats: () => {
+                closeFanMenu();
+                document.getElementById('statsModal').style.display = 'flex';
+                loadStats();
+            },
+            wheel: async () => {
+                closeFanMenu();
+                await checkWheelStatus();
+                if (wheelCanvas && ctx) {
+                    const size = Math.min(400, window.innerWidth - 80);
+                    wheelCanvas.width = size;
+                    wheelCanvas.height = size;
+                    drawWheel();
+                }
+                document.getElementById('wheelModal').style.display = 'flex';
+            },
+            history: () => {
+                closeFanMenu();
+                document.getElementById('historyModal').style.display = 'flex';
+                loadDeposits();
+                loadWithdrawals();
+                loadWheelHistoryForModal();
+            },
+            earn: () => {
+                closeFanMenu();
+                loadEarnPageInfo();
+                document.getElementById('earnModal').style.display = 'flex';
+            },
+            deposit: async () => {
+                closeFanMenu();
+                await loadDepositSettings();
+                document.getElementById('depositModal').style.display = 'flex';
+            },
+            withdraw: async () => {
+                closeFanMenu();
+                await loadDepositSettings();
+                document.getElementById('withdrawModal').style.display = 'flex';
+            }
+        };
+
+        // Wheel Functions
         function drawWheel() {
             if (!ctx || !wheelCanvas) return;
             const size = wheelCanvas.width;
@@ -954,8 +1084,8 @@
                 
                 ctx.fillStyle = gradient;
                 ctx.fill();
-                ctx.strokeStyle = "rgba(255, 215, 0, 0.5)";
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = "rgba(255, 215, 0, 0.4)";
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
                 
                 ctx.save();
@@ -965,19 +1095,15 @@
                 ctx.textBaseline = "middle";
                 ctx.fillStyle = "#ffffff";
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.shadowBlur = 4;
-                ctx.font = `bold ${size / 22}px "Segoe UI"`;
+                ctx.shadowBlur = 3;
+                ctx.font = `bold ${size / 24}px "Segoe UI"`;
                 
                 let text = SECTORS[i].name;
                 if (text === "حظ أوفر") {
                     text = "😅";
-                    ctx.font = `${size / 16}px "Segoe UI"`;
-                } else if (text === "10 SYP") {
-                    text = "🎁 10";
-                } else if (text === "20 SYP") {
-                    text = "🎁 20";
-                } else if (text === "30 SYP") {
-                    text = "🎁 30";
+                    ctx.font = `${size / 18}px "Segoe UI"`;
+                } else {
+                    text = text.replace(" SYP", "");
                 }
                 
                 ctx.fillText(text, radius * 0.7, 0);
@@ -985,28 +1111,15 @@
             }
             
             ctx.beginPath();
-            ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
-            const centerGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 5, centerX, centerY, 20);
+            ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
+            const centerGradient = ctx.createRadialGradient(centerX - 3, centerY - 3, 3, centerX, centerY, 18);
             centerGradient.addColorStop(0, "#FFD700");
             centerGradient.addColorStop(1, "#B8860B");
             ctx.fillStyle = centerGradient;
             ctx.fill();
             ctx.strokeStyle = "#FFD700";
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2;
             ctx.stroke();
-            
-            for (let i = 0; i < 8; i++) {
-                const angle = (i * Math.PI * 2) / 8;
-                const x = centerX + Math.cos(angle) * 12;
-                const y = centerY + Math.sin(angle) * 12;
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = "#FFD700";
-                ctx.fill();
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = "#FFD700";
-            }
-            ctx.shadowBlur = 0;
         }
 
         async function checkWheelStatus() {
@@ -1021,18 +1134,18 @@
                         spinBtn.disabled = true;
                         const minutes = Math.floor(data.remainingSeconds / 60);
                         const seconds = data.remainingSeconds % 60;
-                        timerDiv.innerHTML = `⏰ يتبقى ${minutes}:${seconds.toString().padStart(2, '0')} للتدوير مرة أخرى`;
+                        timerDiv.innerHTML = `⏰ يتبقى ${minutes}:${seconds.toString().padStart(2, '0')}`;
                     } else {
                         spinBtn.disabled = false;
                         timerDiv.innerHTML = '';
                     }
                     
-                    document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${data.spinCost} SYP من رصيد الإحالات`;
+                    document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${data.spinCost} SYP`;
                     currentWheelSpinCost = data.spinCost;
                     
                     if (!data.hasEnoughBalance) {
                         spinBtn.disabled = true;
-                        timerDiv.innerHTML = `⚠️ رصيد الإحالات غير كافٍ! تحتاج ${data.spinCost} SYP`;
+                        timerDiv.innerHTML = `⚠️ رصيد الإحالات غير كافٍ!`;
                     }
                 }
             }
@@ -1047,13 +1160,13 @@
             if (statusRes?.ok) {
                 const statusData = await statusRes.json();
                 if (!statusData.hasEnoughBalance) {
-                    showMessage(`رصيد الإحالات غير كافٍ! تحتاج ${statusData.spinCost} SYP`, true);
+                    showMessage(`رصيد الإحالات غير كافٍ!`, true);
                     return;
                 }
                 if (!statusData.canSpin) {
                     const minutes = Math.floor(statusData.remainingSeconds / 60);
                     const seconds = statusData.remainingSeconds % 60;
-                    showMessage(`يجب الانتظار ${minutes}:${seconds.toString().padStart(2, '0')} قبل التدوير مرة أخرى`, true);
+                    showMessage(`يجب الانتظار ${minutes}:${seconds.toString().padStart(2, '0')}`, true);
                     return;
                 }
             }
@@ -1090,12 +1203,12 @@
             const targetSectorStartAngle = targetSectorMidAngle - (angleStep / 2);
             let targetRotation = targetSectorStartAngle - (winningSectorIndex * angleStep);
             targetRotation = ((targetRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const fullRotations = 10 + Math.floor(Math.random() * 6);
+            const fullRotations = 8 + Math.floor(Math.random() * 6);
             const finalTargetRotation = targetRotation + (fullRotations * Math.PI * 2);
             
             const startRotation = currentRotation;
             const startTime = performance.now();
-            const duration = 3000;
+            const duration = 2800;
             
             function animateSpin(currentTime) {
                 const elapsed = currentTime - startTime;
@@ -1128,38 +1241,7 @@
             animationFrame = requestAnimationFrame(animateSpin);
         }
 
-        async function loadThemeFromServer() {
-            try {
-                const response = await fetch(`${API_URL}/api/site-theme`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.theme) {
-                        setTheme(data.theme);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading theme from server:', error);
-            }
-        }
-        
-        function setTheme(theme) {
-            document.body.className = `theme-${theme}`;
-            localStorage.setItem('site_theme', theme);
-            document.querySelectorAll('.theme-color').forEach(el => {
-                if (el.dataset.theme === theme) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-        }
-        
-        async function saveThemeToServer(theme) {
-            const res = await apiCall('/api/admin/update-theme', { method: 'POST', body: JSON.stringify({ theme }) });
-            if (res?.ok) {
-                showMessage('تم حفظ اللون وتحديثه لجميع المستخدمين');
-                return true;
-            }
-            return false;
-        }
-
+        // Profile & Data Functions
         async function loadProfile() {
             const res = await apiCall('/api/user/profile');
             if (res?.ok) { 
@@ -1197,7 +1279,7 @@
                     } else { 
                         refInfo.classList.add('hidden'); 
                     } 
-                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 عمولة الإحالة</span><span><span class="badge badge-success">${currentReferralCommission}%</span></span></div>`; 
+                    document.getElementById('statsInner').innerHTML = `<div class="info-row"><span>📅 تاريخ التسجيل</span><span>${s.joinDate ? new Date(s.joinDate).toLocaleDateString('ar') : '-'}</span></div><div class="info-row"><span>👥 عدد الإحالات</span><span>${s.referralCount}</span></div><div class="info-row"><span>🏆 إجمالي أرباح الإحالات</span><span>${(s.referralEarnings || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎁 رصيد الإحالات الحالي</span><span>${(s.referralBalance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💰 إجمالي الإيداع</span><span>${(s.totalDeposited || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💸 إجمالي السحب</span><span>${(s.totalWithdrawn || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>💎 الرصيد الأساسي الحالي</span><span>${(s.balance || 0).toLocaleString()} SYP</span></div><div class="info-row"><span>🎡 عدد التدويرات</span><span>${s.totalSpins || 0}</span></div><div class="info-row"><span>🏅 أرباح العجلة</span><span>${(s.totalWinnings || 0).toLocaleString()} SYP</span></div>`; 
                 } 
             }
         }
@@ -1208,7 +1290,7 @@
                 const data = await res.json(); 
                 const container = document.getElementById('depositsHistoryList'); 
                 if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد إيداعات سابقة</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد إيداعات سابقة</p>'; 
                     return; 
                 } 
                 container.innerHTML = data.deposits.map(d => { 
@@ -1219,9 +1301,7 @@
                             if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar'); 
                         } catch(e) {} 
                     } 
-                    let amountDisplay = `${d.amount.toLocaleString()} SYP`; 
-                    if (d.originalAmount && d.originalCurrency === 'USD') amountDisplay = `${d.originalAmount} USD (${d.amount.toLocaleString()} SYP)`; 
-                    return `<div class="request-card"><div><strong>💰 ${amountDisplay}</strong></div><div>📱 طريقة الدفع: ${d.method}</div><div>🔢 رقم العملية: ${d.transactionId}</div><div>📅 التاريخ: ${dateStr}</div><div><span class="badge badge-success">✅ مكتمل</span></div></div>`; 
+                    return `<div class="request-card"><div><strong>💰 ${d.amount.toLocaleString()} SYP</strong></div><div>📱 ${d.method}</div><div>📅 ${dateStr}</div><div><span class="badge badge-success">✅ مكتمل</span></div></div>`; 
                 }).join(''); 
             }
         }
@@ -1232,22 +1312,12 @@
                 const data = await res.json(); 
                 const container = document.getElementById('withdrawsHistoryList'); 
                 if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:20px">📭 لا توجد سحوبات سابقة</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:15px">📭 لا توجد سحوبات سابقة</p>'; 
                     return; 
                 } 
                 container.innerHTML = data.requests.map(r => { 
-                    let dateStr = '-'; 
-                    if (r.createdAt) { 
-                        try { 
-                            const date = new Date(r.createdAt); 
-                            if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar'); 
-                        } catch(e) {} 
-                    } 
-                    let statusHtml = ''; 
-                    if (r.status === 'pending') statusHtml = '<span class="badge badge-warning">⏳ قيد المراجعة</span>'; 
-                    else if (r.status === 'approved') statusHtml = '<span class="badge badge-success">✅ مقبول</span>'; 
-                    else statusHtml = '<span class="badge badge-danger">❌ مرفوض</span>'; 
-                    return `<div class="request-card"><div><strong>💸 ${r.amount.toLocaleString()} SYP</strong></div><div>📍 العنوان: ${r.address}</div><div>📱 الطريقة: ${r.method === 'sham_cash' ? 'شام كاش' : 'سيرياتيل كاش'}</div><div>الحالة: ${statusHtml}</div><div>📅 التاريخ: ${dateStr}</div></div>`; 
+                    let statusHtml = r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>'); 
+                    return `<div class="request-card ${r.status}"><div><strong>💸 ${r.amount.toLocaleString()} SYP</strong></div><div>الحالة: ${statusHtml}</div></div>`; 
                 }).join(''); 
             }
         }
@@ -1258,23 +1328,14 @@
                 const data = await res.json();
                 const container = document.getElementById('wheelHistoryList');
                 if (!data.spins?.length) {
-                    container.innerHTML = '<p style="text-align:center;padding:20px">🎡 لا توجد تدويرات سابقة</p>';
+                    container.innerHTML = '<p style="text-align:center;padding:15px">🎡 لا توجد تدويرات سابقة</p>';
                     return;
                 }
                 container.innerHTML = data.spins.map(spin => {
-                    let dateStr = '-';
-                    if (spin.timestamp) {
-                        try {
-                            const date = new Date(spin.timestamp);
-                            if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ar');
-                        } catch(e) {}
-                    }
                     const isWin = spin.prizeAmount > 0;
                     return `<div class="request-card">
                         <div><strong>🎡 ${spin.sectorName}</strong></div>
                         <div>💰 ${isWin ? `فزت بـ ${spin.prizeAmount} SYP` : 'حظ أوفر'}</div>
-                        <div>💸 التكلفة: ${spin.spinCost} SYP</div>
-                        <div>📅 التاريخ: ${dateStr}</div>
                         <div><span class="badge ${isWin ? 'badge-success' : 'badge-danger'}">${isWin ? 'فوز' : 'خسارة'}</span></div>
                     </div>`;
                 }).join('');
@@ -1348,7 +1409,7 @@
                             
                             let exchangeText = '';
                             if (method.currency === 'USD') {
-                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 8px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
+                                exchangeText = `<div class="hint" style="color: var(--warning); margin-top: 6px;">💵 سيتم تحويل المبلغ: دولار × ${currentUsdToSypRate.toLocaleString()} = ليرة سورية</div>`;
                             }
                             
                             document.getElementById('addressInfo').innerHTML = `
@@ -1502,6 +1563,39 @@
             } 
         }
 
+        async function loadThemeFromServer() {
+            try {
+                const response = await fetch(`${API_URL}/api/site-theme`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.theme) {
+                        setTheme(data.theme);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading theme:', error);
+            }
+        }
+        
+        function setTheme(theme) {
+            document.body.className = `theme-${theme}`;
+            localStorage.setItem('site_theme', theme);
+            document.querySelectorAll('.theme-color').forEach(el => {
+                if (el.dataset.theme === theme) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+        
+        async function saveThemeToServer(theme) {
+            const res = await apiCall('/api/admin/update-theme', { method: 'POST', body: JSON.stringify({ theme }) });
+            if (res?.ok) {
+                showMessage('تم حفظ اللون وتحديثه');
+                return true;
+            }
+            return false;
+        }
+
+        // Admin Functions
         let allUsers = [];
 
         async function loadAdminDashboard() { 
@@ -1528,26 +1622,20 @@
                 const data = await res.json(); 
                 const container = document.getElementById('withdrawsTable'); 
                 if (!data.requests?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<tr>
-                    <thead>
-                        <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th> </tr>
-                    </thead>
-                    <tbody>
-                        ${data.requests.map(r => `
-                            <tr>
-                                <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
-                                <td><span class="badge badge-info">${r.amount.toLocaleString()} SYP</span></td>
-                                <td style="direction:ltr; text-align:left;">${r.address}</td>
-                                <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td>
-                                <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
-                                <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>`; 
+                container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>العنوان</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>
+                    ${data.requests.map(r => `
+                        <tr>
+                            <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
+                            <td>${r.amount.toLocaleString()} SYP</td>
+                            <td style="direction:ltr; text-align:left; font-size:10px;">${r.address}</td>
+                            <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅</span>' : '<span class="badge badge-danger">❌</span>')}</td>
+                            <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">رفض</button>` : '✓'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody></table>`; 
             } 
         }
 
@@ -1557,25 +1645,19 @@
                 const data = await res.json(); 
                 const container = document.getElementById('depositsTable'); 
                 if (!data.deposits?.length) { 
-                    container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد إيداعات</p>'; 
+                    container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا توجد إيداعات</p>'; 
                     return; 
                 } 
-                container.innerHTML = `<table>
-                    <thead>
-                        <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📱 الطريقة</th><th>🔢 رقم العملية</th><th>📅 التاريخ</th> </tr>
-                    </thead>
-                    <tbody>
-                        ${data.deposits.map(d => `
-                            <tr>
-                                <td><strong>${d.userName || d.userEmail || d.userId}</strong></td>
-                                <td><span class="badge badge-success">${d.amount.toLocaleString()} SYP</span>${d.originalAmount ? `<br><small>(${d.originalAmount} ${d.originalCurrency})</small>` : ''}</td>
-                                <td>${d.method === 'sham_cash' ? '🏦 شام كاش' : d.method === 'sham_cash_usd' ? '💵 شام كاش دولار' : '📱 سيرياتيل كاش'}</td>
-                                <td><code style="direction:ltr; font-size:11px;">${d.transactionId}</code></td>
-                                <td>${d.verifiedAt ? new Date(d.verifiedAt).toLocaleString('ar') : '-'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>`; 
+                container.innerHTML = `<table><thead><tr><th>المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>رقم العملية</th></tr></thead><tbody>
+                    ${data.deposits.map(d => `
+                        <tr>
+                            <td>${d.userName || d.userEmail || d.userId}</td>
+                            <td>${d.amount.toLocaleString()} SYP</td>
+                            <td>${d.method}</td>
+                            <td><code style="font-size:9px;">${d.transactionId}</code></td>
+                        </tr>
+                    `).join('')}
+                </tbody></table>`; 
             } 
         }
 
@@ -1587,32 +1669,24 @@
                     allUsers = data.users; 
                     const container = document.getElementById('usersTable'); 
                     if (!allUsers.length) { 
-                        container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
+                        container.innerHTML = '<p style="text-align:center;padding:30px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `</table>
-                        <thead>
-                            <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
-                        </thead>
-                        <tbody>
-                            ${allUsers.map(u => `
-                                <tr>
-                                    <td><small>${u.email || '-'}</small></td>
-                                    <td><strong>${u.name || '-'}</strong></td>
-                                    <td><code>${u.uniqueId || '-'}</code></td>
-                                    <td><span class="badge badge-info">${(u.balance || 0).toLocaleString()} SYP</span></td>
-                                    <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span></td>
-                                    <td>${u.referralsCount || 0}</td>
-                                    <td>${u.referredByName || '-'}</td>
-                                    <td>${u.totalSpins || 0}</td>
-                                    <td>
-                                        <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
-                                        <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
-                                     </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>`; 
+                    container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>رصيد الإحالات</th><th>الإجراءات</th></tr></thead><tbody>
+                        ${allUsers.map(u => `
+                            <tr>
+                                <td><small>${u.email || '-'}</small></td>
+                                <td><strong>${u.name || '-'}</strong></td>
+                                <td><code>${u.uniqueId || '-'}</code></td>
+                                <td>${(u.balance || 0).toLocaleString()}</td>
+                                <td>${(u.referralBalance || 0).toLocaleString()}</td>
+                                <td>
+                                    <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
+                                    <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody></table>`; 
                 } 
             } 
         }
@@ -1626,19 +1700,6 @@
                     document.getElementById('settingMinWithdraw').value = data.settings.minWithdraw; 
                     document.getElementById('settingGameImageUrl').value = data.settings.gameImageUrl || ''; 
                     document.getElementById('settingReferralCommission').value = data.settings.referralCommission || 5; 
-                    document.getElementById('settingShamCashEnabled').checked = data.settings.shamCashEnabled; 
-                    document.getElementById('settingShamCashApiKey').value = data.settings.shamCashApiKey || ''; 
-                    document.getElementById('settingShamCashPrivateAddress').value = data.settings.shamCashPrivateAddress || ''; 
-                    document.getElementById('settingShamCashPublicAddress').value = data.settings.shamCashPublicAddress || ''; 
-                    document.getElementById('settingShamCashUsdEnabled').checked = data.settings.shamCashUsdEnabled || false; 
-                    document.getElementById('settingUsdToSypRate').value = data.settings.usdToSypRate || 13000; 
-                    document.getElementById('settingShamCashUsdApiKey').value = data.settings.shamCashUsdApiKey || ''; 
-                    document.getElementById('settingShamCashUsdPrivateAddress').value = data.settings.shamCashUsdPrivateAddress || ''; 
-                    document.getElementById('settingShamCashUsdPublicAddress').value = data.settings.shamCashUsdPublicAddress || ''; 
-                    document.getElementById('settingSyriatelEnabled').checked = data.settings.syriatelEnabled; 
-                    document.getElementById('settingSyriatelApiKey').value = data.settings.syriatelApiKey || ''; 
-                    document.getElementById('settingSyriatelPrivateAddress').value = data.settings.syriatelPrivateAddress || ''; 
-                    document.getElementById('settingSyriatelPublicAddress').value = data.settings.syriatelPublicAddress || ''; 
                     document.getElementById('settingWheelSpinCost').value = data.settings.wheelSpinCost || 50;
                 } 
             } 
@@ -1649,24 +1710,11 @@
                 minDeposit: Number(document.getElementById('settingMinDeposit').value), 
                 minWithdraw: Number(document.getElementById('settingMinWithdraw').value), 
                 gameImageUrl: document.getElementById('settingGameImageUrl').value, 
-                referralCommission: Number(document.getElementById('settingReferralCommission').value), 
-                shamCashEnabled: document.getElementById('settingShamCashEnabled').checked, 
-                shamCashApiKey: document.getElementById('settingShamCashApiKey').value, 
-                shamCashPrivateAddress: document.getElementById('settingShamCashPrivateAddress').value, 
-                shamCashPublicAddress: document.getElementById('settingShamCashPublicAddress').value, 
-                shamCashUsdEnabled: document.getElementById('settingShamCashUsdEnabled').checked, 
-                usdToSypRate: Number(document.getElementById('settingUsdToSypRate').value), 
-                shamCashUsdApiKey: document.getElementById('settingShamCashUsdApiKey').value, 
-                shamCashUsdPrivateAddress: document.getElementById('settingShamCashUsdPrivateAddress').value, 
-                shamCashUsdPublicAddress: document.getElementById('settingShamCashUsdPublicAddress').value, 
-                syriatelEnabled: document.getElementById('settingSyriatelEnabled').checked, 
-                syriatelApiKey: document.getElementById('settingSyriatelApiKey').value, 
-                syriatelPrivateAddress: document.getElementById('settingSyriatelPrivateAddress').value, 
-                syriatelPublicAddress: document.getElementById('settingSyriatelPublicAddress').value 
+                referralCommission: Number(document.getElementById('settingReferralCommission').value)
             }; 
             const res = await apiCall('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) }); 
             if (res?.ok) { 
-                showMessage('تم حفظ الإعدادات بنجاح'); 
+                showMessage('تم حفظ الإعدادات'); 
                 await loadAdminSettings(); 
                 await loadDepositSettings(); 
             } else { 
@@ -1677,14 +1725,12 @@
         async function saveWheelCost() {
             const cost = Number(document.getElementById('settingWheelSpinCost').value);
             if (!cost || cost < 10 || cost > 10000) {
-                showMessage('السعر غير صالح (يجب أن يكون بين 10 و 10000)', true);
+                showMessage('السعر غير صالح', true);
                 return;
             }
             const res = await apiCall('/api/admin/update-wheel-cost', { method: 'POST', body: JSON.stringify({ cost }) });
             if (res?.ok) {
-                showMessage('تم تحديث سعر التدويرة بنجاح');
-                currentWheelSpinCost = cost;
-                document.getElementById('wheelCostDisplay').innerHTML = `💰 تكلفة التدويرة: ${cost} SYP من رصيد الإحالات`;
+                showMessage('تم تحديث سعر التدويرة');
             } else {
                 showMessage('فشل تحديث السعر', true);
             }
@@ -1692,10 +1738,7 @@
 
         async function saveTheme() { 
             const currentTheme = document.body.className.replace('theme-', ''); 
-            const success = await saveThemeToServer(currentTheme); 
-            if (success) { 
-                await loadAdminSettings(); 
-            } 
+            await saveThemeToServer(currentTheme); 
         }
 
         async function resetDatabase() { 
@@ -1726,7 +1769,6 @@
                 showMessage('تم قبول الطلب'); 
                 loadAdminWithdraws(); 
                 loadAdminDashboard(); 
-                loadAdminUsers(); 
             } 
         };
         
@@ -1736,7 +1778,6 @@
                 showMessage('تم رفض الطلب'); 
                 loadAdminWithdraws(); 
                 loadAdminDashboard(); 
-                loadAdminUsers(); 
             } 
         };
         
@@ -1749,7 +1790,7 @@
         };
         
         window.editBalance = async (id, bal) => { 
-            const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)\nمثال: 1000 لإضافة 1000، أو -500 لخصم 500`, "0"); 
+            const val = prompt(`الرصيد الحالي: ${bal.toLocaleString()} SYP\nأدخل المبلغ (+ للإضافة، - للخصم)`, "0"); 
             if (val && val !== '0') { 
                 const res = await apiCall('/api/admin/update-balance', { method: 'POST', body: JSON.stringify({ userId: id, amount: Number(val) }) }); 
                 if (res?.ok) { 
@@ -1794,13 +1835,10 @@
                 document.getElementById('loader').style.display = 'none'; 
                 if (isAdmin) showAdminInterface(); 
                 else showUserInterface(); 
+                initWheel();
             } catch (err) { 
                 console.error(err); 
-                let msg = 'فشل تسجيل الدخول'; 
-                if (err.code === 'auth/popup-blocked') msg = 'الرجاء السماح للنوافذ المنبثقة'; 
-                else if (err.code === 'auth/network-request-failed') msg = 'خطأ في الشبكة، تأكد من اتصالك بالإنترنت'; 
-                else if (err.code === 'auth/internal-error') msg = 'خطأ داخلي، حاول مرة أخرى'; 
-                showMessage(msg, true); 
+                showMessage('فشل تسجيل الدخول', true); 
             } finally { 
                 setButtonLoading(btn, false); 
             } 
@@ -1809,7 +1847,7 @@
         function initWheel() {
             wheelCanvas = document.getElementById('wheelCanvas');
             if (wheelCanvas) {
-                const size = Math.min(500, window.innerWidth - 100);
+                const size = Math.min(400, window.innerWidth - 80);
                 wheelCanvas.width = size;
                 wheelCanvas.height = size;
                 ctx = wheelCanvas.getContext('2d');
@@ -1818,6 +1856,7 @@
             }
         }
 
+        // Event Listeners
         onAuthStateChanged(auth, async (user) => { 
             const loader = document.getElementById('loader'); 
             const loginBtn = document.getElementById('loginBtn'); 
@@ -1836,7 +1875,7 @@
                 else showUserInterface(); 
                 initWheel();
             } else { 
-                loader.innerHTML = '<div class="spinner"></div><div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg, var(--primary), white);background-clip:text;-webkit-background-clip:text;color:transparent;">BOOMB</div>'; 
+                loader.innerHTML = '<div class="spinner"></div><div style="font-size:22px;font-weight:bold;">BOOMB</div>'; 
                 loginBtn.style.display = 'block'; 
                 loader.appendChild(loginBtn); 
                 loader.style.display = 'flex'; 
@@ -1844,39 +1883,34 @@
             } 
         });
 
-        document.getElementById('openProfileBtn')?.addEventListener('click', () => { 
-            document.getElementById('homeScreen').classList.add('hidden'); 
-            document.getElementById('profileScreen').classList.remove('hidden'); 
-            if (isAdmin) { 
-                const container = document.getElementById('adminSwitchContainer'); 
-                if (container && !container.querySelector('.admin-btn')) { 
-                    const btn = document.createElement('button'); 
-                    btn.className = 'admin-btn'; 
-                    btn.innerText = '🔧 لوحة الأدمن'; 
-                    btn.onclick = showAdminInterface; 
-                    container.innerHTML = ''; 
-                    container.appendChild(btn); 
-                } 
-            } 
+        // Fan Menu
+        document.getElementById('fanToggleBtn')?.addEventListener('click', toggleFanMenu);
+        document.querySelectorAll('.fan-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = item.dataset.action;
+                if (action && fanActions[action]) {
+                    createRipple(e, item);
+                    fanActions[action]();
+                }
+            });
         });
-        
+
+        // Close fan menu when clicking outside (optional)
+        document.addEventListener('click', (e) => {
+            if (isFanOpen && !e.target.closest('.fan-menu-container')) {
+                closeFanMenu();
+            }
+        });
+
+        // Other Event Listeners
+        document.getElementById('openProfileBtn')?.addEventListener('click', () => { closeFanMenu(); fanActions.profile(); });
         document.getElementById('backHomeBtn')?.addEventListener('click', () => { 
             document.getElementById('profileScreen').classList.add('hidden'); 
             document.getElementById('homeScreen').classList.remove('hidden'); 
         });
-        
-        document.getElementById('depositAction')?.addEventListener('click', async () => { 
-            await loadDepositSettings(); 
-            document.getElementById('depositModal').style.display = 'flex'; 
-        });
-        
-        document.getElementById('withdrawAction')?.addEventListener('click', async () => { 
-            await loadDepositSettings(); 
-            document.getElementById('withdrawModal').style.display = 'flex'; 
-        });
-        
-        document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
-        document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
+        document.getElementById('depositAction')?.addEventListener('click', fanActions.deposit);
+        document.getElementById('withdrawAction')?.addEventListener('click', fanActions.withdraw);
         document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
@@ -1887,54 +1921,14 @@
         document.getElementById('saveThemeBtn')?.addEventListener('click', saveTheme);
         document.getElementById('openResetModalBtn')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'flex'; });
         document.getElementById('confirmResetBtn')?.addEventListener('click', resetDatabase);
-        document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; document.getElementById('resetPassword').value = ''; });
+        document.getElementById('closeResetModal')?.addEventListener('click', () => { document.getElementById('resetModal').style.display = 'none'; });
         document.getElementById('copyReferralCodeBtn')?.addEventListener('click', copyReferralCode);
         document.getElementById('submitReferrerCodeBtn')?.addEventListener('click', addReferrerCode);
+        document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
+        document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
         document.getElementById('spinWheelBtn')?.addEventListener('click', performSpin);
         
-        document.querySelectorAll('.theme-color').forEach(el => { 
-            el.addEventListener('click', async () => { 
-                const theme = el.dataset.theme; 
-                const success = await saveThemeToServer(theme); 
-                if (success) { 
-                    setTheme(theme); 
-                } 
-            }); 
-        });
-        
-        document.getElementById('searchUsers')?.addEventListener('input', (e) => { 
-            const term = e.target.value.toLowerCase(); 
-            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
-            const container = document.getElementById('usersTable'); 
-            if (!filtered.length) { 
-                container.innerHTML = '<p style="text-align:center;padding:40px">🔍 لا يوجد نتائج</p>'; 
-                return; 
-            } 
-            container.innerHTML = `<table>
-                <thead>
-                    <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد الأساسي</th><th>🎁 رصيد الإحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 التدويرات</th><th>⚙️ الإجراءات</th> </tr>
-                </thead>
-                <tbody>
-                    ${filtered.map(u => `
-                        <tr>
-                            <td><small>${u.email || '-'}</small></td>
-                            <td><strong>${u.name || '-'}</strong></td>
-                            <td><code>${u.uniqueId || '-'}</code></td>
-                            <td><span class="badge badge-info">${(u.balance || 0).toLocaleString()} SYP</span></td>
-                            <td><span class="badge badge-warning">${(u.referralBalance || 0).toLocaleString()} SYP</span></td>
-                            <td>${u.referralsCount || 0}</td>
-                            <td>${u.referredByName || '-'}</td>
-                            <td>${u.totalSpins || 0}</td>
-                            <td>
-                                <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️ تعديل</button>
-                                <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓 إلغاء الحظر' : '🔒 حظر'}</button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>`;
-        });
-
+        // Modal close buttons
         document.querySelectorAll('.close-modal').forEach(btn => { 
             btn.addEventListener('click', function() { 
                 this.closest('.modal').style.display = 'none'; 
@@ -1947,6 +1941,7 @@
             }); 
         });
 
+        // Admin Tabs
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const target = tab.dataset.tab;
@@ -1963,54 +1958,69 @@
             });
         });
 
+        // History Tabs
         document.querySelectorAll('[data-history-tab]').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const target = btn.dataset.historyTab;
                 document.querySelectorAll('[data-history-tab]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                if (target === 'deposits') {
-                    document.getElementById('depositsHistoryList').style.display = 'block';
-                    document.getElementById('withdrawsHistoryList').style.display = 'none';
-                    document.getElementById('wheelHistoryList').style.display = 'none';
-                    await loadDeposits();
-                } else if (target === 'withdraws') {
-                    document.getElementById('depositsHistoryList').style.display = 'none';
-                    document.getElementById('withdrawsHistoryList').style.display = 'block';
-                    document.getElementById('wheelHistoryList').style.display = 'none';
-                    await loadWithdrawals();
-                } else if (target === 'wheel') {
-                    document.getElementById('depositsHistoryList').style.display = 'none';
-                    document.getElementById('withdrawsHistoryList').style.display = 'none';
-                    document.getElementById('wheelHistoryList').style.display = 'block';
-                    await loadWheelHistoryForModal();
-                }
+                document.getElementById('depositsHistoryList').style.display = target === 'deposits' ? 'block' : 'none';
+                document.getElementById('withdrawsHistoryList').style.display = target === 'withdraws' ? 'block' : 'none';
+                document.getElementById('wheelHistoryList').style.display = target === 'wheel' ? 'block' : 'none';
+                if (target === 'deposits') await loadDeposits();
+                if (target === 'withdraws') await loadWithdrawals();
+                if (target === 'wheel') await loadWheelHistoryForModal();
             });
         });
 
-        document.querySelectorAll('.nav-tab[data-tab]').forEach(tab => {
-            tab.addEventListener('click', async () => {
-                const target = tab.dataset.tab;
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                if (target === 'stats') { 
-                    document.getElementById('statsModal').style.display = 'flex'; 
-                } else if (target === 'wheel') { 
-                    await checkWheelStatus();
-                    if (wheelCanvas && ctx) {
-                        const size = Math.min(500, window.innerWidth - 100);
-                        wheelCanvas.width = size;
-                        wheelCanvas.height = size;
-                        drawWheel();
-                    }
-                    document.getElementById('wheelModal').style.display = 'flex'; 
-                } else if (target === 'earn') { 
-                    await loadEarnPageInfo(); 
-                    document.getElementById('earnModal').style.display = 'flex'; 
-                }
-            });
+        // Theme Selector
+        document.querySelectorAll('.theme-color').forEach(el => { 
+            el.addEventListener('click', async () => { 
+                const theme = el.dataset.theme; 
+                const success = await saveThemeToServer(theme); 
+                if (success) setTheme(theme); 
+            }); 
         });
 
+        // Search Users
+        document.getElementById('searchUsers')?.addEventListener('input', (e) => { 
+            const term = e.target.value.toLowerCase(); 
+            const filtered = allUsers.filter(u => u.email?.toLowerCase().includes(term) || u.name?.toLowerCase().includes(term) || u.uniqueId?.toLowerCase().includes(term)); 
+            const container = document.getElementById('usersTable'); 
+            if (!filtered.length) { 
+                container.innerHTML = '<p style="text-align:center;padding:30px">🔍 لا يوجد نتائج</p>'; 
+                return; 
+            } 
+            container.innerHTML = `<table><thead><tr><th>البريد</th><th>الاسم</th><th>الكود</th><th>الرصيد</th><th>رصيد الإحالات</th><th>الإجراءات</th></tr></thead><tbody>
+                ${filtered.map(u => `
+                    <tr>
+                        <td><small>${u.email || '-'}</small></td>
+                        <td><strong>${u.name || '-'}</strong></td>
+                        <td><code>${u.uniqueId || '-'}</code></td>
+                        <td>${(u.balance || 0).toLocaleString()}</td>
+                        <td>${(u.referralBalance || 0).toLocaleString()}</td>
+                        <td>
+                            <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
+                            <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody></tr>`; 
+        });
+
+        // Filter withdraws
+        document.getElementById('filterWithdrawStatus')?.addEventListener('change', loadAdminWithdraws);
+
+        window.addEventListener('resize', () => {
+            if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex') {
+                const size = Math.min(400, window.innerWidth - 80);
+                wheelCanvas.width = size;
+                wheelCanvas.height = size;
+                drawWheel();
+            }
+        });
+
+        // Copy ref code from profile
         const refCodeBlock = document.getElementById('refCodeBlock');
         if (refCodeBlock) {
             refCodeBlock.addEventListener('click', () => {
@@ -2020,33 +2030,12 @@
                     if (code && code !== '---') { 
                         navigator.clipboard.writeText(code); 
                         showMessage('تم نسخ كود الإحالة: ' + code); 
-                    } else { 
-                        showMessage('لا يوجد كود إحالة لعرضه', true); 
                     }
                 }
             });
         }
 
-        const filterWithdrawStatus = document.getElementById('filterWithdrawStatus');
-        if (filterWithdrawStatus) {
-            filterWithdrawStatus.addEventListener('change', loadAdminWithdraws);
-        }
-
-        const activeNavTab = document.querySelector('.nav-tab[data-tab="stats"]');
-        if (activeNavTab) activeNavTab.classList.add('active');
-
-        window.addEventListener('resize', () => {
-            if (wheelCanvas && ctx && document.getElementById('wheelModal').style.display === 'flex') {
-                const size = Math.min(500, window.innerWidth - 100);
-                wheelCanvas.width = size;
-                wheelCanvas.height = size;
-                drawWheel();
-            }
-        });
-
-        console.log('✅ BOOMB App initialized successfully');
-        console.log('🎰 Golden and Blue shiny wheel ready!');
-        console.log('⏱️ Perfect alignment between pointer and prize!');
+        console.log('✅ BOOMB App initialized - Fan Menu Ready!');
     </script>
 </body>
 </html>
