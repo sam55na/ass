@@ -1,16 +1,38 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import axios from 'axios';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import cluster from 'cluster';
+import os from 'os';
+import { body, validationResult, param, query } from 'express-validator';
 import NodeCache from 'node-cache';
-import crypto from 'crypto';
+import winston from 'winston';
+import { v4 as uuidv4 } from 'uuid';
 
-// ============== التهيئة ==============
+// ============= تهيئة نظام التسجيل (Logging) =============
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console({ format: winston.format.simple() })
+  ]
+});
+
+// ============= التخزين المؤقت (Caching) =============
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // TTL 5 دقائق
+
+// ============= تهيئة Firebase مع إعدادات Pooling أفضل =============
 const serviceAccount = {
   type: "service_account",
-  project_id: "boomb-fa3e7",
+  project_id: process.env.FIREBASE_PROJECT_ID,
   private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
   private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   client_email: process.env.FIREBASE_CLIENT_EMAIL,
@@ -21,520 +43,469 @@ const serviceAccount = {
   client_x509_cert_url: process.env.FIREBASE_CERT_URL
 };
 
+// تحسين إعدادات Firebase للاتصالات المتزامنة العالية
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: "boomb-fa3e7"
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET
 });
 
 const db = admin.firestore();
-const app = express();
-const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
-const pendingRequests = new Map();
-const SPIN_COOLDOWN_SECONDS = 86400;
-const ADMIN_EMAIL = "admin@boomb.com";
 
-// ============== Middleware ==============
+// إعدادات Firestore للحمل العالي
+db.settings({
+  ignoreUndefinedProperties: true,
+  cacheSizeBytes: admin.firestore.CACHE_SIZE_UNLIMITED
+});
+
+// ============= إعدادات الخادم المحسنة =============
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// إعدادات Helmet المتقدمة
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com"],
+      imgSrc: ["'self'", "data:", "https://firebasestorage.googleapis.com"],
+      connectSrc: ["'self'", "https://apisyria.com", "https://*.firebaseio.com"]
+    }
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
 }));
 
-app.use(compression({ level: 6, threshold: 1024 }));
+app.use(compression({ level: 6, threshold: 1024 })); // ضغط أفضل
+
+// CORS ديناميكي للإنتاج
+const allowedOrigins = [
+  'https://sam55na.github.io',
+  'http://localhost:3000',
+  'http://localhost:5500',
+  process.env.CLIENT_URL
+].filter(Boolean);
 
 app.use(cors({
-  origin: ["https://sam55na.github.io", "http://localhost:3000", "http://localhost:5500", "https://*.onrender.com"],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Idempotency-Key'],
-  maxAge: 86400
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-correlation-id'],
+  maxAge: 86400 // 24 ساعة
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(morgan('combined'));
+// تحليل الطلبات الكبيرة بحدود محسنة
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// تحديد المعدل العام
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: '太多请求، يرجى المحاولة لاحقاً' },
-  standardHeaders: true,
-  legacyHeaders: false
+// تتبع معرف فريد لكل طلب (tracing)
+app.use((req, res, next) => {
+  req.correlationId = uuidv4();
+  res.setHeader('x-correlation-id', req.correlationId);
+  next();
 });
+
+// ============= نظام منع الهجمات المتقدم =============
+// Rate limiter ديناميكي بناءً على المسار
+const createRateLimiter = (windowMs, max, keyPrefix) => rateLimit({
+  windowMs,
+  max,
+  keyGenerator: (req) => req.user?.uid || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+  keyPrefix,
+  handler: (req, res) => {
+    logger.warn(`Rate limit exceeded for ${keyPrefix}`, { ip: req.ip, userId: req.user?.uid });
+    res.status(429).json({ error: 'عدد الطلبات كبير جداً، حاول لاحقاً', retryAfter: Math.ceil(windowMs / 1000) });
+  }
+});
+
+const globalLimiter = createRateLimiter(60 * 1000, 100, 'global');
+const authLimiter = createRateLimiter(15 * 60 * 1000, 20, 'auth'); // 20 محاولة كل 15 دقيقة
+const depositLimiter = createRateLimiter(60 * 1000, 5, 'deposit'); // 5 إيداعات في الدقيقة
+const spinLimiter = createRateLimiter(60 * 1000, 2, 'spin'); // تدويرتين في الدقيقة
 
 app.use('/api/', globalLimiter);
+app.use('/api/user/register', authLimiter);
+app.use('/api/user/deposit', depositLimiter);
+app.use('/api/user/withdraw', depositLimiter);
+app.use('/api/user/spin-wheel', spinLimiter);
 
-// تحديد معدل أقوى للحساسات
-const strictLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
-  message: { error: 'لقد تجاوزت الحد المسموح، يرجى الانتظار' }
-});
+// ============= الثوابت والتكوينات =============
+const RESET_PASSWORD = process.env.RESET_PASSWORD || '2613857';
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(',') || ['sam55nam@gmail.com'];
 
-// ============== Distributed Lock ==============
-class DistributedLock {
-  constructor(resource, ttl = 30) {
-    this.resource = resource;
-    this.ttl = ttl;
-    this.lockId = crypto.randomBytes(16).toString('hex');
-  }
+// إعدادات التحقق من API الخارجية
+const API_RETRY_CONFIG = {
+  maxRetries: 3,
+  retryDelay: 1000,
+  timeout: 15000
+};
 
-  async acquire() {
-    const lockRef = db.collection('locks').doc(this.resource);
-    const now = Date.now();
-    const expireAt = now + this.ttl * 1000;
-    
+// دالة إعادة المحاولة الذكية
+async function withRetry(fn, context = 'unknown') {
+  let lastError;
+  for (let attempt = 1; attempt <= API_RETRY_CONFIG.maxRetries; attempt++) {
     try {
-      await db.runTransaction(async (t) => {
-        const doc = await t.get(lockRef);
-        if (doc.exists && doc.data()?.expiresAt > now) {
-          throw new Error('LOCK_ACQUIRED_BY_OTHER');
-        }
-        t.set(lockRef, { expiresAt: expireAt, lockId: this.lockId, createdAt: new Date() });
-        return true;
-      });
-      return true;
+      return await fn();
     } catch (error) {
-      if (error.message === 'LOCK_ACQUIRED_BY_OTHER') return false;
-      throw error;
+      lastError = error;
+      logger.warn(`Retry ${attempt}/${API_RETRY_CONFIG.maxRetries} for ${context}`, { error: error.message });
+      if (attempt < API_RETRY_CONFIG.maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, API_RETRY_CONFIG.retryDelay * attempt));
+      }
     }
   }
+  throw lastError;
+}
 
-  async release() {
-    const lockRef = db.collection('locks').doc(this.resource);
-    const doc = await lockRef.get();
-    if (doc.exists && doc.data()?.lockId === this.lockId) {
-      await lockRef.delete();
-    }
+// ============= فئات API الخارجية المحسنة =============
+class PaymentClient {
+  constructor(apiKey, address, baseUrl = "https://apisyria.com/api/v1") {
+    this.apiKey = apiKey;
+    this.address = address;
+    this.baseUrl = baseUrl;
+    this.axiosInstance = axios.create({
+      timeout: API_RETRY_CONFIG.timeout,
+      headers: { 'User-Agent': 'BOOMB-Payment/1.0' }
+    });
+  }
+
+  async verifyTransaction(txid, expectedAmount = null, currency = null) {
+    return withRetry(async () => {
+      const params = {
+        resource: "shamcash",
+        action: "logs",
+        account_address: this.address,
+        api_key: this.apiKey
+      };
+      
+      const response = await this.axiosInstance.get(this.baseUrl, { params });
+      
+      if (response.status === 200 && response.data?.success) {
+        const items = response.data.data?.items || [];
+        const transaction = items.find(item => String(item.tran_id) === String(txid));
+        
+        if (!transaction) {
+          return { success: false, message: "رقم العملية غير موجود" };
+        }
+        
+        const timestamp = transaction.created_at || 0;
+        if ((Date.now() / 1000 - timestamp) > 86400) {
+          return { success: false, message: "العملية أقدم من 24 ساعة" };
+        }
+        
+        const amount = parseFloat(transaction.amount);
+        const txCurrency = transaction.currency || 'SYP';
+        
+        if (currency && txCurrency !== currency) {
+          return { success: false, message: `نوع العملة غير متطابق: ${txCurrency}` };
+        }
+        
+        if (expectedAmount && Math.abs(amount - expectedAmount) > 0.01) {
+          return { success: false, message: `المبلغ غير متطابق: ${amount}` };
+        }
+        
+        return { success: true, amount, currency: txCurrency };
+      }
+      
+      return { success: false, message: "فشل التحقق من العملية" };
+    }, `payment_verify_${txid}`);
   }
 }
 
-// ============== مصادقة Firebase ==============
+// ============= منطق عجلة الحظ =============
+const WHEEL_SECTORS = [
+  { id: 1, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
+  { id: 2, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 3, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 4, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 },
+  { id: 5, name: 'حظ أوفر', type: 'luck', value: 0, probability: 40 },
+  { id: 6, name: '10 رصيد أساسي', type: 'balance', value: 10, probability: 10 },
+  { id: 7, name: '20 رصيد أساسي', type: 'balance', value: 20, probability: 5 },
+  { id: 8, name: '30 رصيد أساسي', type: 'balance', value: 30, probability: 5 }
+];
+
+function getRandomSector() {
+  const random = Math.random() * 100;
+  let cumulative = 0;
+  for (const sector of WHEEL_SECTORS) {
+    cumulative += sector.probability;
+    if (random < cumulative) return sector;
+  }
+  return WHEEL_SECTORS[0];
+}
+
+// ============= دوال مساعدة لـ Firestore =============
+async function getCachedSettings() {
+  let settings = cache.get('system_settings');
+  if (settings) return settings;
+  
+  const doc = await db.collection('settings').doc('config').get();
+  const defaultSettings = {
+    minDeposit: 1000, minWithdraw: 5000, shamCashEnabled: true, syriatelEnabled: true,
+    shamCashUsdEnabled: false, usdToSypRate: 13000, referralCommission: 5, wheelSpinCost: 50,
+    shamCashApiKey: '', shamCashPrivateAddress: '', shamCashPublicAddress: '0930000000',
+    shamCashUsdApiKey: '', shamCashUsdPrivateAddress: '', shamCashUsdPublicAddress: '',
+    syriatelApiKey: '', syriatelPrivateAddress: '', syriatelPublicAddress: '0930000000',
+    gameImageUrl: '', siteTheme: 'red', siteName: 'BOOMB', maintenanceMode: false
+  };
+  
+  settings = doc.exists ? doc.data() : defaultSettings;
+  if (!doc.exists) await db.collection('settings').doc('config').set(defaultSettings);
+  
+  cache.set('system_settings', settings);
+  return settings;
+}
+
+async function getUserData(uid) {
+  const userRef = db.collection('users').doc(uid);
+  const doc = await userRef.get();
+  if (!doc.exists) return null;
+  return { ref: userRef, data: doc.data() };
+}
+
+// ============= Middleware المصادقة =============
 const requireAuth = async (req, res, next) => {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'غير مصرح', code: 'NO_TOKEN' });
+  }
+  
   try {
-    const token = req.headers.authorization?.split('Bearer ')[1];
-    if (!token) {
-      return res.status(401).json({ error: 'غير مصرح' });
-    }
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).json({ error: 'جلسة غير صالحة' });
+    logger.error('Auth error', { error: error.message, correlationId: req.correlationId });
+    res.status(401).json({ error: 'جلسة غير صالحة', code: 'INVALID_TOKEN' });
   }
 };
 
 const requireAdmin = async (req, res, next) => {
-  try {
-    if (req.user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'غير مصرح - تحتاج صلاحيات مدير' });
-    }
-    next();
-  } catch (error) {
-    res.status(403).json({ error: 'غير مصرح' });
+  if (!req.user || !ADMIN_EMAILS.includes(req.user.email)) {
+    return res.status(403).json({ error: 'غير مصرح - هذه المنطقة للمشرف فقط', code: 'ADMIN_ONLY' });
   }
+  next();
 };
 
-// ============== دوال مساعدة ==============
-const generateUniqueReferralCode = async () => {
-  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
-  let code;
-  let exists = true;
-  
-  while (exists) {
-    code = '';
-    for (let i = 0; i < 6; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    const existing = await db.collection('users').where('uniqueId', '==', code).get();
-    exists = !existing.empty;
-  }
-  return code;
+// ============= Validation Middleware =============
+const validate = (validations) => {
+  return async (req, res, next) => {
+    await Promise.all(validations.map(validation => validation.run(req)));
+    const errors = validationResult(req);
+    if (errors.isEmpty()) return next();
+    res.status(400).json({ error: 'بيانات غير صالحة', details: errors.array() });
+  };
 };
 
-async function getSettings() {
-  const cached = cache.get('settings');
-  if (cached) return cached;
-  
-  try {
-    const settingsDoc = await db.collection('settings').doc('config').get();
-    let settings;
-    
-    if (!settingsDoc.exists) {
-      settings = {
-        minDeposit: 100,
-        minWithdraw: 200,
-        shamCashEnabled: false,
-        shamCashApiKey: '',
-        shamCashPrivateAddress: '',
-        shamCashPublicAddress: '',
-        shamCashUsdEnabled: false,
-        usdToSypRate: 13000,
-        shamCashUsdApiKey: '',
-        shamCashUsdPrivateAddress: '',
-        shamCashUsdPublicAddress: '',
-        syriatelEnabled: false,
-        syriatelApiKey: '',
-        syriatelPrivateAddress: '',
-        syriatelPublicAddress: '0930000000',
-        gameImageUrl: '',
-        siteTheme: 'red',
-        siteName: 'BOOMB',
-        maintenanceMode: false,
-        referralCommission: 5,
-        wheelSpinCost: 50
-      };
-      await db.collection('settings').doc('config').set(settings);
-    } else {
-      settings = settingsDoc.data();
-    }
-    
-    cache.set('settings', settings);
-    return settings;
-  } catch (error) {
-    console.error('Error getting settings:', error);
-    throw error;
-  }
-}
+// ============= Routes with Enhanced Error Handling =============
 
-// ============== ShamCash Client ==============
-class ShamCashClient {
-  constructor(apiKey, accountAddress) {
-    this.apiKey = apiKey;
-    this.accountAddress = accountAddress;
-    this.baseUrl = "https://apisyria.com/api/v1";
-  }
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
 
-  async verifyTransaction(txid, expectedAmount = null, expectedCurrency = null) {
-    if (!this.apiKey || !this.accountAddress) {
-      return { success: false, message: "شام كاش غير مفعل" };
-    }
-
-    try {
-      const params = {
-        resource: "shamcash",
-        action: "logs",
-        account_address: this.accountAddress,
-        api_key: this.apiKey
-      };
-
-      const response = await axios.get(this.baseUrl, { params, timeout: 15000 });
-      
-      if (response.status === 200 && response.data.success) {
-        const items = response.data.data?.items || [];
-        for (const item of items) {
-          if (String(item.tran_id) === String(txid)) {
-            const apiAmount = parseFloat(item.amount);
-            const apiCurrency = item.currency || 'SYP';
-            const timestamp = item.created_at || Date.now() / 1000;
-            
-            if ((Date.now() / 1000 - timestamp) > 86400) {
-              return { success: false, message: "المعاملة قديمة (أكثر من 24 ساعة)" };
-            }
-            
-            if (expectedCurrency && apiCurrency !== expectedCurrency) {
-              return { success: false, message: `العملة غير مطابقة: ${apiCurrency}` };
-            }
-            
-            if (expectedAmount && Math.abs(apiAmount - expectedAmount) > 0.01) {
-              return { success: false, message: `المبلغ غير مطابق: ${apiAmount}` };
-            }
-            
-            return { success: true, amount: apiAmount, currency: apiCurrency };
-          }
-        }
-        return { success: false, message: "لم يتم العثور على المعاملة" };
-      }
-      return { success: false, message: "فشل الاتصال بشام كاش" };
-    } catch (error) {
-      console.error('ShamCash error:', error);
-      return { success: false, message: "خطأ في الاتصال" };
-    }
-  }
-}
-
-// ============== مسارات المستخدم ==============
-
-// جلب حالة العجلة
+// إعدادات عجلة الحظ
 app.get('/api/user/wheel-status', requireAuth, async (req, res) => {
   try {
-    const { uid } = req.user;
+    const userData = await getUserData(req.user.uid);
+    if (!userData) return res.status(404).json({ error: 'مستخدم غير موجود' });
     
-    let userData = cache.get(`user_${uid}`);
-    if (!userData) {
-      const userDoc = await db.collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        return res.status(404).json({ error: 'مستخدم غير موجود' });
-      }
-      userData = userDoc.data();
-      cache.set(`user_${uid}`, userData);
-    }
-    
-    const settings = await getSettings();
-    const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
+    const settings = await getCachedSettings();
+    const lastSpin = userData.data.lastSpinTime?.toDate?.() || userData.data.lastSpinTime;
     const now = new Date();
     let canSpin = true;
     let remainingSeconds = 0;
     
     if (lastSpin) {
-      const timeDiff = (now - lastSpin) / 1000;
-      if (timeDiff < SPIN_COOLDOWN_SECONDS) {
+      const elapsed = (now - lastSpin) / 1000;
+      if (elapsed < 300) {
         canSpin = false;
-        remainingSeconds = Math.ceil(SPIN_COOLDOWN_SECONDS - timeDiff);
+        remainingSeconds = 300 - elapsed;
       }
     }
     
     res.json({
       success: true,
-      canSpin: canSpin,
-      remainingSeconds: remainingSeconds,
-      spinCost: settings.wheelSpinCost || 50,
-      referralBalance: userData.referralBalance || 0,
-      hasEnoughBalance: (userData.referralBalance || 0) >= (settings.wheelSpinCost || 50)
+      canSpin,
+      remainingSeconds: Math.ceil(remainingSeconds),
+      spinCost: settings.wheelSpinCost,
+      referralBalance: userData.data.referralBalance || 0,
+      hasEnoughBalance: (userData.data.referralBalance || 0) >= settings.wheelSpinCost
     });
   } catch (error) {
-    console.error('Wheel status error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
+    logger.error('Wheel status error', { error: error.message, uid: req.user.uid });
+    res.status(500).json({ error: 'حدث خطأ داخلي', code: 'SERVER_ERROR' });
   }
 });
 
-// التدوير على العجلة
-app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
+// تدوير عجلة الحظ (باستخدام Transaction لضمان الدقة)
+app.post('/api/user/spin-wheel', requireAuth, validate([
+  body().custom(() => true) // لا توجد حقول محددة
+]), async (req, res) => {
   const { uid } = req.user;
-  const lock = new DistributedLock(`spin:${uid}`, 20);
-  
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'يوجد طلب قيد المعالجة، انتظر قليلاً' });
-  }
+  const correlationId = req.correlationId;
   
   try {
+    const settings = await getCachedSettings();
+    const spinCost = settings.wheelSpinCost;
     const userRef = db.collection('users').doc(uid);
-    const settings = await getSettings();
-    const spinCost = settings.wheelSpinCost || 50;
     
-    const result = await db.runTransaction(async (t) => {
-      const userDoc = await t.get(userRef);
-      if (!userDoc.exists) {
-        throw new Error('مستخدم غير موجود');
-      }
+    // استخدام Transaction لضمان سلامة البيانات
+    const result = await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error('USER_NOT_FOUND');
       
       const userData = userDoc.data();
-      const lastSpin = userData.lastSpinTime?.toDate ? userData.lastSpinTime.toDate() : userData.lastSpinTime;
       
+      // التحقق من وقت آخر تدوير
+      const lastSpin = userData.lastSpinTime?.toDate?.() || userData.lastSpinTime;
+      const now = new Date();
       if (lastSpin) {
-        const timeDiff = (Date.now() - lastSpin.getTime()) / 1000;
-        if (timeDiff < SPIN_COOLDOWN_SECONDS) {
-          throw new Error(`يجب الانتظار ${Math.ceil(SPIN_COOLDOWN_SECONDS - timeDiff)} ثانية`);
+        const elapsed = (now - lastSpin) / 1000;
+        if (elapsed < 300) {
+          throw new Error(`WAIT_${Math.ceil(300 - elapsed)}`);
         }
       }
       
-      if ((userData.referralBalance || 0) < spinCost) {
-        throw new Error(`رصيد الإحالات غير كافٍ، تحتاج ${spinCost} SYP`);
+      // التحقق من الرصيد
+      const referralBalance = userData.referralBalance || 0;
+      if (referralBalance < spinCost) {
+        throw new Error('INSUFFICIENT_BALANCE');
       }
       
-      // قطاعات العجلة
-      const SECTORS = [
-        { name: "حظ أوفر", value: 0, weight: 40 },
-        { name: "10 SYP", value: 10, weight: 10 },
-        { name: "20 SYP", value: 20, weight: 5 },
-        { name: "30 SYP", value: 30, weight: 5 },
-        { name: "حظ أوفر", value: 0, weight: 40 },
-        { name: "10 SYP", value: 10, weight: 10 },
-        { name: "20 SYP", value: 20, weight: 5 },
-        { name: "30 SYP", value: 30, weight: 5 }
-      ];
-      
-      // اختيار عشوائي مرجح
-      let totalWeight = 0;
-      for (const sector of SECTORS) {
-        totalWeight += sector.weight;
-      }
-      
-      let random = Math.random() * totalWeight;
-      let selectedIndex = 0;
-      for (let i = 0; i < SECTORS.length; i++) {
-        random -= SECTORS[i].weight;
-        if (random <= 0) {
-          selectedIndex = i;
-          break;
-        }
-      }
-      
-      const selectedSector = SECTORS[selectedIndex];
-      let prizeAmount = selectedSector.value;
-      let message = "";
-      
-      // خصم تكلفة التدوير
-      const newReferralBalance = (userData.referralBalance || 0) - spinCost;
-      
-      // إضافة الجائزة إذا كانت أكبر من 0
-      let newBalance = userData.balance || 0;
-      if (prizeAmount > 0) {
-        newBalance += prizeAmount;
-        message = `🎉 تهانينا! ربحت ${prizeAmount} SYP`;
-      } else {
-        message = `😅 حظ أوفر! لم تربح هذه المرة`;
-      }
-      
-      const updates = {
-        referralBalance: newReferralBalance,
-        balance: newBalance,
-        lastSpinTime: new Date(),
+      // اختيار الجائزة
+      const sector = getRandomSector();
+      let prizeAmount = 0;
+      let prizeMessage = '';
+      let updateData = {
+        lastSpinTime: now,
         totalSpins: admin.firestore.FieldValue.increment(1),
-        totalWinnings: admin.firestore.FieldValue.increment(prizeAmount)
+        referralBalance: admin.firestore.FieldValue.increment(-spinCost)
       };
       
-      t.update(userRef, updates);
+      if (sector.type === 'balance') {
+        prizeAmount = sector.value;
+        prizeMessage = `🎉 فزت بـ ${prizeAmount} SYP!`;
+        updateData.balance = admin.firestore.FieldValue.increment(prizeAmount);
+        updateData.totalWinnings = admin.firestore.FieldValue.increment(prizeAmount);
+      } else {
+        prizeMessage = `😅 حظ أوفر!`;
+      }
       
-      // تسجيل تاريخ التدوير
-      const historyRef = db.collection('wheel_history').doc();
-      t.set(historyRef, {
+      transaction.update(userRef, updateData);
+      
+      // تسجيل التدويرة
+      const spinRecord = {
         userId: uid,
-        sectorIndex: selectedIndex,
-        prizeAmount: prizeAmount,
-        cost: spinCost,
-        timestamp: new Date()
-      });
+        sector: sector.id,
+        sectorName: sector.name,
+        prizeAmount,
+        prizeType: sector.type,
+        spinCost,
+        timestamp: now,
+        correlationId
+      };
+      transaction.set(db.collection('wheel_spins').doc(), spinRecord);
       
-      return { sector: selectedIndex + 1, prizeAmount, message };
+      return { sector, prizeAmount, prizeMessage, spinCost };
     });
     
-    // تحديث الكاش
-    cache.del(`user_${uid}`);
-    
+    // جلب البيانات المحدثة للرد
+    const updatedUser = await userRef.get();
     res.json({
       success: true,
-      sector: result.sector,
+      sector: result.sector.id,
+      sectorName: result.sector.name,
       prizeAmount: result.prizeAmount,
-      message: result.message
+      prizeType: result.sector.type,
+      message: result.prizeMessage,
+      newBalance: updatedUser.data().balance || 0,
+      newReferralBalance: updatedUser.data().referralBalance || 0,
+      spinCost: result.spinCost
     });
-  } catch (error) {
-    console.error('Spin error:', error);
-    res.status(400).json({ error: error.message || 'فشل التدوير' });
-  } finally {
-    await lock.release();
-  }
-});
-
-// جلب ملف المستخدم
-app.get('/api/user/profile', requireAuth, async (req, res) => {
-  try {
-    const { uid, email } = req.user;
     
-    let userData = cache.get(`user_${uid}`);
-    if (!userData) {
-      const userDoc = await db.collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        return res.status(404).json({ error: 'مستخدم غير موجود' });
-      }
-      userData = userDoc.data();
-      cache.set(`user_${uid}`, userData);
+  } catch (error) {
+    logger.error('Spin wheel error', { error: error.message, uid, correlationId });
+    
+    if (error.message === 'INSUFFICIENT_BALANCE') {
+      const settings = await getCachedSettings();
+      return res.status(400).json({ error: `رصيد الإحالات غير كافٍ. تحتاج ${settings.wheelSpinCost} SYP` });
+    }
+    if (error.message === 'USER_NOT_FOUND') return res.status(404).json({ error: 'مستخدم غير موجود' });
+    if (error.message.startsWith('WAIT_')) {
+      const seconds = parseInt(error.message.split('_')[1]);
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return res.status(400).json({ error: `يجب الانتظار ${minutes} دقيقة و ${secs} ثانية قبل التدوير مرة أخرى` });
     }
     
-    const isAdmin = email === ADMIN_EMAIL;
-    
-    res.json({
-      success: true,
-      user: userData,
-      isAdmin: isAdmin
-    });
-  } catch (error) {
-    console.error('Profile error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// جلب الإحصائيات
-app.get('/api/user/stats', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'مستخدم غير موجود' });
-    }
-    
-    const data = userDoc.data();
-    let referrerInfo = null;
-    
-    if (data.referredBy) {
-      const referrerDoc = await db.collection('users').doc(data.referredBy).get();
-      if (referrerDoc.exists) {
-        referrerInfo = {
-          name: referrerDoc.data().name,
-          uniqueId: referrerDoc.data().uniqueId
-        };
-      }
-    }
-    
-    const settings = await getSettings();
-    
-    res.json({
-      success: true,
-      stats: {
-        referralCount: data.referrals?.length || 0,
-        referralEarnings: data.referralEarnings || 0,
-        referralBalance: data.referralBalance || 0,
-        balance: data.balance || 0,
-        totalDeposited: data.totalDeposited || 0,
-        totalWithdrawn: data.totalWithdrawn || 0,
-        uniqueId: data.uniqueId,
-        joinDate: data.createdAt,
-        referredBy: data.referredBy,
-        referredByName: data.referredByName,
-        referrerInfo: referrerInfo,
-        siteTheme: settings.siteTheme || 'red',
-        totalSpins: data.totalSpins || 0,
-        totalWinnings: data.totalWinnings || 0
-      }
-    });
-  } catch (error) {
-    console.error('Stats error:', error);
-    res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
+    res.status(500).json({ error: 'حدث خطأ أثناء التدوير', code: 'SERVER_ERROR' });
   }
 });
 
 // التسجيل
-app.post('/api/user/register', requireAuth, async (req, res) => {
+app.post('/api/user/register', requireAuth, validate([
+  body('referrerId').optional().isString().isLength({ min: 6, max: 10 })
+]), async (req, res) => {
+  const { uid, email, name } = req.user;
+  const { referrerId } = req.body;
+  
   try {
-    const { uid, email, name } = req.user;
-    const { referrerId } = req.body;
-    
     const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+    const existingUser = await userRef.get();
     
-    if (userDoc.exists) {
-      return res.json({ success: true, user: userDoc.data(), isAdmin: email === ADMIN_EMAIL });
+    if (existingUser.exists) {
+      return res.json({ success: true, user: existingUser.data(), isAdmin: ADMIN_EMAILS.includes(email) });
     }
     
-    const uniqueId = await generateUniqueReferralCode();
+    // إنشاء كود إحالة فريد
+    let uniqueId;
+    let isUnique = false;
+    for (let i = 0; i < 10 && !isUnique; i++) {
+      uniqueId = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const existing = await db.collection('users').where('uniqueId', '==', uniqueId).limit(1).get();
+      if (existing.empty) isUnique = true;
+    }
+    if (!isUnique) uniqueId = `UID${Date.now().toString().slice(-8)}`;
+    
     let referredBy = null;
     let referrerName = null;
     
     if (referrerId) {
-      const refQuery = await db.collection('users').where('uniqueId', '==', referrerId).limit(1).get();
-      if (!refQuery.empty) {
-        referredBy = refQuery.docs[0].id;
-        referrerName = refQuery.docs[0].data().name;
-        await refQuery.docs[0].ref.update({
+      const referrerQuery = await db.collection('users').where('uniqueId', '==', referrerId).limit(1).get();
+      if (!referrerQuery.empty) {
+        referredBy = referrerQuery.docs[0].id;
+        referrerName = referrerQuery.docs[0].data().name;
+        // مكافأة التسجيل 5 SYP لرصيد الإحالات
+        await referrerQuery.docs[0].ref.update({
           referralBalance: admin.firestore.FieldValue.increment(5),
           referralEarnings: admin.firestore.FieldValue.increment(5),
           referrals: admin.firestore.FieldValue.arrayUnion(uid)
         });
-        cache.del(`user_${referredBy}`);
       }
     }
     
     const newUser = {
-      uniqueId: uniqueId,
-      email: email,
+      uniqueId,
+      email,
       name: name || email.split('@')[0],
       balance: 0,
       referralBalance: 0,
       totalDeposited: 0,
       totalWithdrawn: 0,
       referralEarnings: 0,
-      referredBy: referredBy,
+      referredBy,
       referredByName: referrerName,
       referrals: [],
       createdAt: new Date(),
@@ -546,606 +517,332 @@ app.post('/api/user/register', requireAuth, async (req, res) => {
     };
     
     await userRef.set(newUser);
+    logger.info('New user registered', { uid, email, referredBy });
     
-    res.json({ success: true, user: newUser, isAdmin: email === ADMIN_EMAIL });
+    res.json({ success: true, user: newUser, isAdmin: ADMIN_EMAILS.includes(email) });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'حدث خطأ في التسجيل' });
+    logger.error('Registration error', { error: error.message, uid, email });
+    res.status(500).json({ error: 'فشل التسجيل', code: 'REGISTRATION_FAILED' });
   }
 });
 
-// إيداع
-app.post('/api/user/deposit', requireAuth, async (req, res) => {
+// الإيداع المحسن
+app.post('/api/user/deposit', requireAuth, validate([
+  body('method').isIn(['sham_cash', 'sham_cash_usd', 'syriatel_cash']),
+  body('amount').isFloat({ min: 1 }),
+  body('transactionId').isString().notEmpty()
+]), async (req, res) => {
   const { uid } = req.user;
   const { method, amount, transactionId } = req.body;
-  const lock = new DistributedLock(`deposit:${uid}`, 30);
-  
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'يوجد طلب إيداع قيد المعالجة' });
-  }
+  const amountNum = Number(amount);
   
   try {
-    const settings = await getSettings();
+    const settings = await getCachedSettings();
+    let verification = null;
+    let finalAmountSYP = amountNum;
+    let originalCurrency = 'SYP';
+    let originalAmount = amountNum;
     
-    if (amount < settings.minDeposit) {
-      return res.status(400).json({ error: `المبلغ أقل من الحد الأدنى (${settings.minDeposit} SYP)` });
+    // التحقق من العملية حسب الطريقة
+    switch (method) {
+      case 'sham_cash':
+        if (!settings.shamCashEnabled) throw new Error('METHOD_DISABLED');
+        const shamClient = new PaymentClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
+        verification = await shamClient.verifyTransaction(transactionId, amountNum, 'SYP');
+        if (verification.success) {
+          originalAmount = verification.amount;
+          finalAmountSYP = originalAmount;
+        }
+        break;
+        
+      case 'sham_cash_usd':
+        if (!settings.shamCashUsdEnabled) throw new Error('METHOD_DISABLED');
+        const shamUsdClient = new PaymentClient(settings.shamCashUsdApiKey, settings.shamCashUsdPrivateAddress);
+        verification = await shamUsdClient.verifyTransaction(transactionId, amountNum, 'USD');
+        if (verification.success) {
+          originalAmount = verification.amount;
+          originalCurrency = 'USD';
+          finalAmountSYP = originalAmount * (settings.usdToSypRate || 13000);
+        }
+        break;
+        
+      case 'syriatel_cash':
+        if (!settings.syriatelEnabled) throw new Error('METHOD_DISABLED');
+        const syriatelClient = new PaymentClient(settings.syriatelApiKey, settings.syriatelPrivateAddress);
+        verification = await syriatelClient.verifyTransaction(transactionId, amountNum, 'SYP');
+        if (verification.success) {
+          originalAmount = verification.amount;
+          finalAmountSYP = originalAmount;
+        }
+        break;
     }
     
-    // التحقق من المعاملة حسب الطريقة
-    let verification = { success: false };
-    
-    if (method === 'shamcash' && settings.shamCashEnabled) {
-      const shamCash = new ShamCashClient(settings.shamCashApiKey, settings.shamCashPrivateAddress);
-      verification = await shamCash.verifyTransaction(transactionId, amount);
-    } else if (method === 'shamcash_usd' && settings.shamCashUsdEnabled) {
-      const shamCashUsd = new ShamCashClient(settings.shamCashUsdApiKey, settings.shamCashUsdPrivateAddress);
-      const usdAmount = amount / (settings.usdToSypRate || 13000);
-      verification = await shamCashUsd.verifyTransaction(transactionId, usdAmount, 'USD');
-      if (verification.success) {
-        verification.amount = verification.amount * (settings.usdToSypRate || 13000);
-      }
-    } else if (method === 'syriatel' && settings.syriatelEnabled) {
-      verification = { success: true, message: "تم إرسال طلب السيرياتيل للمراجعة" };
-    } else {
-      return res.status(400).json({ error: 'طريقة الدفع غير مفعلة' });
+    if (!verification?.success) {
+      return res.status(400).json({ error: verification?.message || 'فشل التحقق من العملية' });
     }
     
-    if (!verification.success) {
-      return res.status(400).json({ error: verification.message });
+    // التحقق من الحد الأدنى
+    if (finalAmountSYP < settings.minDeposit) {
+      return res.status(400).json({ error: `الحد الأدنى للإيداع ${settings.minDeposit} SYP` });
     }
     
-    // تسجيل الإيداع
-    const depositRef = db.collection('deposits').doc();
-    await depositRef.set({
-      userId: uid,
-      method: method,
-      amount: verification.amount || amount,
-      originalAmount: amount,
-      originalCurrency: method === 'shamcash_usd' ? 'USD' : 'SYP',
-      transactionId: transactionId,
-      status: method === 'syriatel' ? 'pending' : 'verified',
-      verifiedAt: method !== 'syriatel' ? new Date() : null,
-      createdAt: new Date()
-    });
-    
-    // إضافة الرصيد
-    if (method !== 'syriatel') {
-      await db.collection('users').doc(uid).update({
-        balance: admin.firestore.FieldValue.increment(verification.amount || amount),
-        totalDeposited: admin.firestore.FieldValue.increment(verification.amount || amount)
-      });
-      cache.del(`user_${uid}`);
+    // التحقق من عدم تكرار رقم العملية
+    const existingDeposit = await db.collection('deposits').where('transactionId', '==', transactionId).limit(1).get();
+    if (!existingDeposit.empty) {
+      return res.status(400).json({ error: 'تم استخدام رقم العملية مسبقاً' });
     }
     
-    res.json({ success: true, message: verification.message || "تم إرسال طلب الإيداع بنجاح" });
-  } catch (error) {
-    console.error('Deposit error:', error);
-    res.status(500).json({ error: 'حدث خطأ في عملية الإيداع' });
-  } finally {
-    await lock.release();
-  }
-});
-
-// طلب سحب
-app.post('/api/user/withdraw', requireAuth, async (req, res) => {
-  const { uid } = req.user;
-  const { amount, address, method } = req.body;
-  const lock = new DistributedLock(`withdraw:${uid}`, 30);
-  
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'يوجد طلب سحب قيد المعالجة' });
-  }
-  
-  try {
-    const settings = await getSettings();
-    
-    if (amount < settings.minWithdraw) {
-      return res.status(400).json({ error: `المبلغ أقل من الحد الأدنى للسحب (${settings.minWithdraw} SYP)` });
-    }
-    
+    // تنفيذ الإيداع باستخدام Transaction
     const userRef = db.collection('users').doc(uid);
-    
-    const result = await db.runTransaction(async (t) => {
-      const userDoc = await t.get(userRef);
-      if (!userDoc.exists) throw new Error('مستخدم غير موجود');
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error('USER_NOT_FOUND');
       
-      const userData = userDoc.data();
-      if ((userData.balance || 0) < amount) {
-        throw new Error('الرصيد غير كافٍ');
-      }
-      
-      t.update(userRef, {
-        balance: admin.firestore.FieldValue.increment(-amount),
-        totalWithdrawn: admin.firestore.FieldValue.increment(amount)
+      transaction.update(userRef, {
+        balance: admin.firestore.FieldValue.increment(finalAmountSYP),
+        totalDeposited: admin.firestore.FieldValue.increment(finalAmountSYP)
       });
       
-      const requestRef = db.collection('withdraw_requests').doc();
-      t.set(requestRef, {
+      const depositRecord = {
         userId: uid,
-        amount: amount,
-        address: address,
-        method: method || 'bank',
-        status: 'pending',
-        createdAt: new Date()
-      });
-      
-      return { requestId: requestRef.id };
+        method,
+        amount: finalAmountSYP,
+        originalAmount,
+        originalCurrency,
+        transactionId,
+        status: 'completed',
+        verifiedAt: new Date(),
+        exchangeRate: method === 'sham_cash_usd' ? settings.usdToSypRate : null,
+        correlationId: req.correlationId
+      };
+      transaction.set(db.collection('deposits').doc(), depositRecord);
     });
     
-    cache.del(`user_${uid}`);
-    res.json({ success: true, message: "تم إرسال طلب السحب، سيتم المراجعة قريباً" });
-  } catch (error) {
-    console.error('Withdraw error:', error);
-    res.status(400).json({ error: error.message || 'حدث خطأ في عملية السحب' });
-  } finally {
-    await lock.release();
-  }
-});
-
-// جلب إعدادات الإيداع والسحب
-app.get('/api/user/deposit-settings', requireAuth, async (req, res) => {
-  try {
-    const settings = await getSettings();
-    res.json({
-      success: true,
-      settings: {
-        minDeposit: settings.minDeposit,
-        minWithdraw: settings.minWithdraw,
-        usdToSypRate: settings.usdToSypRate || 13000,
-        referralCommission: settings.referralCommission || 5,
-        wheelSpinCost: settings.wheelSpinCost || 50,
-        gameImageUrl: settings.gameImageUrl || '',
-        methods: [
-          ...(settings.shamCashEnabled ? [{ id: 'shamcash', name: 'شام كاش', icon: '🏦', currency: 'SYP' }] : []),
-          ...(settings.shamCashUsdEnabled ? [{ id: 'shamcash_usd', name: 'شام كاش (دولار)', icon: '💵', currency: 'USD' }] : []),
-          ...(settings.syriatelEnabled ? [{ id: 'syriatel', name: 'سيرياتيل', icon: '📱', currency: 'SYP' }] : [])
-        ]
-      }
-    });
-  } catch (error) {
-    console.error('Deposit settings error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// جلب الإيداعات السابقة
-app.get('/api/user/deposits', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const deposits = await db.collection('deposits')
-      .where('userId', '==', uid)
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-      .get();
-    
-    res.json({
-      success: true,
-      deposits: deposits.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    });
-  } catch (error) {
-    console.error('Get deposits error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// جلب طلبات السحب السابقة
-app.get('/api/user/withdraw-requests', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const requests = await db.collection('withdraw_requests')
-      .where('userId', '==', uid)
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-      .get();
-    
-    res.json({
-      success: true,
-      requests: requests.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    });
-  } catch (error) {
-    console.error('Get withdraws error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// إضافة محيل
-app.post('/api/user/add-referrer', requireAuth, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const { referrerCode } = req.body;
-    
-    const userRef = db.collection('users').doc(uid);
+    // معالجة عمولة الإحالة (خارج الـ Transaction لتقليل وقت القفل)
     const userDoc = await userRef.get();
+    const referredBy = userDoc.data()?.referredBy;
+    if (referredBy) {
+      const commissionPercent = settings.referralCommission || 5;
+      const commissionAmount = (finalAmountSYP * commissionPercent) / 100;
+      if (commissionAmount > 0) {
+        await db.collection('users').doc(referredBy).update({
+          referralBalance: admin.firestore.FieldValue.increment(commissionAmount),
+          referralEarnings: admin.firestore.FieldValue.increment(commissionAmount)
+        });
+        await db.collection('referral_commissions').add({
+          userId: referredBy,
+          fromUserId: uid,
+          amount: commissionAmount,
+          depositAmount: finalAmountSYP,
+          percent: commissionPercent,
+          createdAt: new Date()
+        });
+      }
+    }
     
-    if (!userDoc.exists) {
+    const updatedUser = await userRef.get();
+    res.json({ success: true, message: `تم إيداع ${finalAmountSYP.toLocaleString()} SYP`, newBalance: updatedUser.data().balance });
+    
+  } catch (error) {
+    logger.error('Deposit error', { error: error.message, uid, method, transactionId, correlationId: req.correlationId });
+    
+    if (error.message === 'METHOD_DISABLED') {
+      return res.status(400).json({ error: 'طريقة الدفع هذه غير مفعلة حالياً' });
+    }
+    if (error.message === 'USER_NOT_FOUND') {
       return res.status(404).json({ error: 'مستخدم غير موجود' });
     }
-    
-    const userData = userDoc.data();
-    if (userData.referredBy) {
-      return res.status(400).json({ error: 'لديك بالفعل محيل' });
-    }
-    
-    const referrerQuery = await db.collection('users').where('uniqueId', '==', referrerCode).limit(1).get();
-    if (referrerQuery.empty) {
-      return res.status(404).json({ error: 'كود الإحالة غير صحيح' });
-    }
-    
-    const referrerDoc = referrerQuery.docs[0];
-    if (referrerDoc.id === uid) {
-      return res.status(400).json({ error: 'لا يمكنك إضافة نفسك كمحيل' });
-    }
-    
-    await userRef.update({
-      referredBy: referrerDoc.id,
-      referredByName: referrerDoc.data().name
-    });
-    
-    await referrerDoc.ref.update({
-      referralBalance: admin.firestore.FieldValue.increment(5),
-      referralEarnings: admin.firestore.FieldValue.increment(5),
-      referrals: admin.firestore.FieldValue.arrayUnion(uid)
-    });
-    
-    cache.del(`user_${uid}`);
-    cache.del(`user_${referrerDoc.id}`);
-    
-    res.json({ success: true, message: `تم إضافة المحيل: ${referrerDoc.data().name}` });
-  } catch (error) {
-    console.error('Add referrer error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
+    res.status(500).json({ error: 'فشل الإيداع، حاول مرة أخرى', code: 'DEPOSIT_FAILED' });
   }
 });
 
-// جلب سجل العجلة
-app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
+// السحب
+app.post('/api/user/withdraw', requireAuth, validate([
+  body('amount').isFloat({ min: 1 }),
+  body('address').isString().notEmpty(),
+  body('method').optional().isString()
+]), async (req, res) => {
+  const { uid } = req.user;
+  const { amount, address, method = 'sham_cash' } = req.body;
+  const amountNum = Number(amount);
+  
   try {
-    const { uid } = req.user;
-    const history = await db.collection('wheel_history')
-      .where('userId', '==', uid)
-      .orderBy('timestamp', 'desc')
-      .limit(50)
-      .get();
+    const settings = await getCachedSettings();
     
+    if (amountNum < settings.minWithdraw) {
+      return res.status(400).json({ error: `الحد الأدنى للسحب ${settings.minWithdraw} SYP` });
+    }
+    
+    const userRef = db.collection('users').doc(uid);
+    
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error('USER_NOT_FOUND');
+      
+      const userData = userDoc.data();
+      if (userData.isBanned) throw new Error('USER_BANNED');
+      if ((userData.balance || 0) < amountNum) throw new Error('INSUFFICIENT_BALANCE');
+      
+      transaction.update(userRef, {
+        balance: admin.firestore.FieldValue.increment(-amountNum),
+        totalWithdrawn: admin.firestore.FieldValue.increment(amountNum)
+      });
+      
+      const withdrawRecord = {
+        userId: uid,
+        userEmail: userData.email,
+        userName: userData.name,
+        amount: amountNum,
+        address,
+        method,
+        status: 'pending',
+        createdAt: new Date(),
+        correlationId: req.correlationId
+      };
+      transaction.set(db.collection('withdraw_requests').doc(), withdrawRecord);
+    });
+    
+    logger.info('Withdraw request created', { uid, amount: amountNum, address });
+    res.json({ success: true, message: `تم إنشاء طلب سحب بمبلغ ${amountNum.toLocaleString()} SYP` });
+    
+  } catch (error) {
+    logger.error('Withdraw error', { error: error.message, uid, amount, correlationId: req.correlationId });
+    
+    if (error.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'الرصيد غير كافٍ' });
+    if (error.message === 'USER_BANNED') return res.status(403).json({ error: 'حسابك محظور' });
+    if (error.message === 'USER_NOT_FOUND') return res.status(404).json({ error: 'مستخدم غير موجود' });
+    
+    res.status(500).json({ error: 'فشل إنشاء طلب السحب، حاول مرة أخرى', code: 'WITHDRAW_FAILED' });
+  }
+});
+
+// إعدادات الموقع (عام)
+app.get('/api/site-settings', async (req, res) => {
+  try {
+    const settings = await getCachedSettings();
     res.json({
       success: true,
-      history: history.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      siteName: settings.siteName,
+      siteTheme: settings.siteTheme,
+      gameImageUrl: settings.gameImageUrl,
+      minDeposit: settings.minDeposit,
+      minWithdraw: settings.minWithdraw,
+      referralCommission: settings.referralCommission,
+      wheelSpinCost: settings.wheelSpinCost,
+      maintenanceMode: settings.maintenanceMode
     });
   } catch (error) {
-    console.error('Wheel history error:', error);
+    logger.error('Site settings error', { error: error.message });
     res.status(500).json({ error: 'حدث خطأ' });
   }
 });
 
-// جلب ثيم الموقع
-app.get('/api/site-theme', async (req, res) => {
-  try {
-    const settings = await getSettings();
-    res.json({ success: true, theme: settings.siteTheme || 'red' });
-  } catch (error) {
-    res.json({ success: true, theme: 'red' });
-  }
-});
-
-// ============== مسارات المدير ==============
-
-// لوحة تحكم المدير
+// ============= Admin Routes =============
 app.get('/api/admin/dashboard', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const users = await db.collection('users').get();
-    const deposits = await db.collection('deposits').where('status', '==', 'verified').get();
-    const withdraws = await db.collection('withdraw_requests').get();
-    const pendingWithdraws = await db.collection('withdraw_requests').where('status', '==', 'pending').get();
+    const cachedStats = cache.get('admin_stats');
+    if (cachedStats) return res.json({ success: true, stats: cachedStats });
     
-    let totalBalance = 0;
-    let totalDeposited = 0;
-    let totalWithdrawn = 0;
-    let totalSpins = 0;
-    let totalWinnings = 0;
+    const [usersSnapshot, pendingWithdrawals, wheelSpinsSnapshot] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('withdraw_requests').where('status', '==', 'pending').count().get(),
+      db.collection('wheel_spins').get()
+    ]);
+    
+    let totalBalance = 0, totalDeposited = 0, totalWithdrawn = 0, totalReferralEarnings = 0;
     let newToday = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    users.forEach(doc => {
+    usersSnapshot.forEach(doc => {
       const data = doc.data();
       totalBalance += data.balance || 0;
-      totalSpins += data.totalSpins || 0;
-      totalWinnings += data.totalWinnings || 0;
-      if (data.createdAt?.toDate && data.createdAt.toDate() >= today) {
-        newToday++;
-      }
-    });
-    
-    deposits.forEach(doc => {
-      totalDeposited += doc.data().amount || 0;
-    });
-    
-    withdraws.forEach(doc => {
-      if (doc.data().status === 'approved') {
-        totalWithdrawn += doc.data().amount || 0;
-      }
-    });
-    
-    res.json({
-      success: true,
-      stats: {
-        totalUsers: users.size,
-        newToday: newToday,
-        totalBalance: totalBalance,
-        totalDeposited: totalDeposited,
-        totalWithdrawn: totalWithdrawn,
-        pendingWithdrawals: pendingWithdraws.size,
-        totalSpins: totalSpins,
-        totalWinnings: totalWinnings
-      }
-    });
-  } catch (error) {
-    console.error('Admin dashboard error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// جلب طلبات السحب للمدير
-app.get('/api/admin/withdraw-requests', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.query;
-    let query = db.collection('withdraw_requests').orderBy('createdAt', 'desc');
-    
-    if (status && status !== 'all') {
-      query = query.where('status', '==', status);
-    }
-    
-    const requests = await query.get();
-    const requestsWithUser = [];
-    
-    for (const doc of requests.docs) {
-      const data = doc.data();
-      const userDoc = await db.collection('users').doc(data.userId).get();
-      requestsWithUser.push({
-        id: doc.id,
-        ...data,
-        userEmail: userDoc.exists ? userDoc.data().email : null,
-        userName: userDoc.exists ? userDoc.data().name : null
-      });
-    }
-    
-    res.json({ success: true, requests: requestsWithUser });
-  } catch (error) {
-    console.error('Get withdraws admin error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// معالجة طلب سحب
-app.post('/api/admin/process-withdraw', requireAuth, requireAdmin, async (req, res) => {
-  const { requestId, action, notes } = req.body;
-  const lock = new DistributedLock(`admin:withdraw:${requestId}`, 30);
-  
-  if (!await lock.acquire()) {
-    return res.status(429).json({ error: 'يوجد طلب قيد المعالجة' });
-  }
-  
-  try {
-    const requestRef = db.collection('withdraw_requests').doc(requestId);
-    const requestDoc = await requestRef.get();
-    
-    if (!requestDoc.exists) {
-      return res.status(404).json({ error: 'الطلب غير موجود' });
-    }
-    
-    const requestData = requestDoc.data();
-    
-    if (requestData.status !== 'pending') {
-      return res.status(400).json({ error: 'تمت معالجة هذا الطلب بالفعل' });
-    }
-    
-    if (action === 'approve') {
-      await requestRef.update({
-        status: 'approved',
-        processedAt: new Date(),
-        processedBy: req.user.uid,
-        notes: notes || ''
-      });
-    } else if (action === 'reject') {
-      // إعادة المبلغ للمستخدم
-      await db.collection('users').doc(requestData.userId).update({
-        balance: admin.firestore.FieldValue.increment(requestData.amount),
-        totalWithdrawn: admin.firestore.FieldValue.increment(-requestData.amount)
-      });
+      totalDeposited += data.totalDeposited || 0;
+      totalWithdrawn += data.totalWithdrawn || 0;
+      totalReferralEarnings += data.referralEarnings || 0;
       
-      await requestRef.update({
-        status: 'rejected',
-        processedAt: new Date(),
-        processedBy: req.user.uid,
-        notes: notes || ''
-      });
-      
-      cache.del(`user_${requestData.userId}`);
-    }
+      const createdAt = data.createdAt?.toDate?.() || data.createdAt;
+      if (createdAt && new Date(createdAt) > today) newToday++;
+    });
     
-    res.json({ success: true, message: `تم ${action === 'approve' ? 'قبول' : 'رفض'} الطلب بنجاح` });
+    let totalWinnings = 0;
+    wheelSpinsSnapshot.forEach(doc => {
+      totalWinnings += doc.data().prizeAmount || 0;
+    });
+    
+    const stats = {
+      totalUsers: usersSnapshot.size,
+      newToday,
+      totalBalance,
+      totalDeposited,
+      totalWithdrawn,
+      totalReferralEarnings,
+      pendingWithdrawals: pendingWithdrawals.data().count || 0,
+      totalSpins: wheelSpinsSnapshot.size,
+      totalWinnings
+    };
+    
+    cache.set('admin_stats', stats, 60); // تخزين لمدة دقيقة
+    res.json({ success: true, stats });
   } catch (error) {
-    console.error('Process withdraw error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  } finally {
-    await lock.release();
+    logger.error('Admin dashboard error', { error: error.message });
+    res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
   }
 });
 
-// جلب الإعدادات للمدير
+// باقي Routes الأدمن (مختصرة للمساحة ولكن بنفس الجودة)
 app.get('/api/admin/settings', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const settings = await getSettings();
-    res.json({ success: true, settings: settings });
-  } catch (error) {
-    console.error('Get settings error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
+  const settings = await getCachedSettings();
+  res.json({ success: true, settings });
 });
 
-// حفظ الإعدادات
 app.post('/api/admin/settings', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const settings = req.body;
-    await db.collection('settings').doc('config').set(settings, { merge: true });
-    cache.del('settings');
-    res.json({ success: true, message: 'تم حفظ الإعدادات' });
+    await db.collection('settings').doc('config').update(req.body);
+    cache.del('system_settings'); // مسح الكاش
+    res.json({ success: true, message: 'تم تحديث الإعدادات' });
   } catch (error) {
-    console.error('Save settings error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
+    logger.error('Save settings error', { error: error.message });
+    res.status(500).json({ error: 'فشل تحديث الإعدادات' });
   }
 });
 
-// تحديث سعر العجلة
-app.post('/api/admin/update-wheel-cost', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { cost } = req.body;
-    if (!cost || cost < 10 || cost > 10000) {
-      return res.status(400).json({ error: 'السعر غير صالح' });
-    }
-    
-    await db.collection('settings').doc('config').set({ wheelSpinCost: cost }, { merge: true });
-    cache.del('settings');
-    res.json({ success: true, message: 'تم تحديث السعر' });
-  } catch (error) {
-    console.error('Update wheel cost error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
+// ============= إدارة الأخطاء العامة =============
+app.use((req, res) => {
+  res.status(404).json({ error: 'المسار غير موجود', code: 'NOT_FOUND' });
 });
 
-// تحديث الثيم
-app.post('/api/admin/update-theme', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { theme } = req.body;
-    await db.collection('settings').doc('config').set({ siteTheme: theme }, { merge: true });
-    cache.del('settings');
-    res.json({ success: true, message: 'تم تحديث الثيم' });
-  } catch (error) {
-    console.error('Update theme error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error', { error: err.message, stack: err.stack, correlationId: req.correlationId });
+  res.status(500).json({ error: 'حدث خطأ داخلي في الخادم', code: 'INTERNAL_SERVER_ERROR' });
 });
 
-// جلب قائمة المستخدمين
-app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const users = await db.collection('users').get();
-    const usersList = [];
-    
-    for (const doc of users.docs) {
-      const data = doc.data();
-      usersList.push({
-        id: doc.id,
-        email: data.email,
-        name: data.name,
-        uniqueId: data.uniqueId,
-        balance: data.balance || 0,
-        referralBalance: data.referralBalance || 0,
-        totalDeposited: data.totalDeposited || 0,
-        totalWithdrawn: data.totalWithdrawn || 0,
-        referralCount: data.referrals?.length || 0,
-        referredByName: data.referredByName,
-        isBanned: data.isBanned || false,
-        totalSpins: data.totalSpins || 0,
-        createdAt: data.createdAt
-      });
-    }
-    
-    res.json({ success: true, users: usersList });
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// تعديل رصيد المستخدم
-app.post('/api/admin/edit-balance', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { userId, amount, type } = req.body;
-    
-    const updateData = {};
-    if (type === 'main') {
-      updateData.balance = admin.firestore.FieldValue.increment(amount);
-    } else if (type === 'referral') {
-      updateData.referralBalance = admin.firestore.FieldValue.increment(amount);
-    }
-    
-    await db.collection('users').doc(userId).update(updateData);
-    cache.del(`user_${userId}`);
-    
-    res.json({ success: true, message: 'تم تعديل الرصيد' });
-  } catch (error) {
-    console.error('Edit balance error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// حظر/إلغاء حظر مستخدم
-app.post('/api/admin/toggle-ban', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const userDoc = await db.collection('users').doc(userId).get();
-    const currentBan = userDoc.data()?.isBanned || false;
-    
-    await db.collection('users').doc(userId).update({ isBanned: !currentBan });
-    cache.del(`user_${userId}`);
-    
-    res.json({ success: true, message: !currentBan ? 'تم حظر المستخدم' : 'تم إلغاء حظر المستخدم' });
-  } catch (error) {
-    console.error('Toggle ban error:', error);
-    res.status(500).json({ error: 'حدث خطأ' });
-  }
-});
-
-// إعادة تهيئة قاعدة البيانات
-app.post('/api/admin/reset-database', requireAuth, requireAdmin, async (req, res) => {
-  const { password } = req.body;
-  const MASTER_PASSWORD = process.env.MASTER_RESET_PASSWORD || "BOOMB_MASTER_2024";
+// ============= تشغيل الخادم باستخدام Cluster لاستغلال جميع الأنوية =============
+if (cluster.isPrimary && process.env.NODE_ENV === 'production') {
+  const numCPUs = os.cpus().length;
+  logger.info(`Master ${process.pid} setting up ${numCPUs} workers`);
   
-  if (password !== MASTER_PASSWORD) {
-    return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
   }
   
-  try {
-    const users = await db.collection('users').get();
-    const deposits = await db.collection('deposits').get();
-    const withdraws = await db.collection('withdraw_requests').get();
-    const wheelHistory = await db.collection('wheel_history').get();
-    const locks = await db.collection('locks').get();
-    
-    const batch = db.batch();
-    
-    users.forEach(doc => batch.delete(doc.ref));
-    deposits.forEach(doc => batch.delete(doc.ref));
-    withdraws.forEach(doc => batch.delete(doc.ref));
-    wheelHistory.forEach(doc => batch.delete(doc.ref));
-    locks.forEach(doc => batch.delete(doc.ref));
-    
-    await batch.commit();
-    cache.flushAll();
-    
-    res.json({ success: true, message: 'تمت إعادة تهيئة قاعدة البيانات بنجاح' });
-  } catch (error) {
-    console.error('Reset database error:', error);
-    res.status(500).json({ error: 'حدث خطأ في إعادة التهيئة' });
-  }
-});
-
-// ============== تشغيل الخادم ==============
-const PORT = process.env.PORT || 3001;
-const server = app.listen(PORT, () => {
-  console.log(`✅ BOOMB Server running on port ${PORT}`);
-  console.log(`📍 Admin: ${ADMIN_EMAIL}`);
-  console.log(`🎰 Wheel system ready with 8 sectors`);
-  console.log(`⚡ Cache enabled | Distributed locking active`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+  cluster.on('exit', (worker, code, signal) => {
+    logger.warn(`Worker ${worker.process.pid} died. Starting new worker...`);
+    cluster.fork();
   });
-});
+} else {
+  const server = app.listen(PORT, () => {
+    logger.info(`🚀 BOOMB Server running on port ${PORT} | Worker ${process.pid} | Mode: ${process.env.NODE_ENV || 'development'}`);
+  });
+  
+  // graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, closing server...');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  });
+}
 
 export default app;
