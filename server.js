@@ -81,6 +81,7 @@ app.use('/api/admin/', generalLimiter);
 // ============= الثوابت =============
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
+const GAMES_COLLECTION = 'games';
 
 // ============= Cache =============
 let cachedSettings = null;
@@ -90,6 +91,10 @@ const CACHE_TTL = 30000;
 let cachedDashboard = null;
 let dashboardCacheTime = 0;
 const DASHBOARD_CACHE_TTL = 15000;
+
+let cachedGames = null;
+let gamesCacheTime = 0;
+const GAMES_CACHE_TTL = 30000;
 
 async function getSettings() {
   const now = Date.now();
@@ -141,6 +146,56 @@ async function getSettings() {
       wheelSpinCost: 50,
       siteTheme: 'red'
     };
+  }
+}
+
+// ============= دوال الألعاب =============
+async function getGames(includeAll = false) {
+  const now = Date.now();
+  if (cachedGames && (now - gamesCacheTime) < GAMES_CACHE_TTL) {
+    return includeAll ? cachedGames : cachedGames.filter(game => game.enabled === true && game.visible !== false);
+  }
+  
+  try {
+    const snapshot = await db.collection(GAMES_COLLECTION).orderBy('order', 'asc').get();
+    const games = [];
+    snapshot.forEach(doc => {
+      games.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // إذا كانت المجموعة فارغة، أنشئ 50 لعبة افتراضية
+    if (games.length === 0) {
+      const defaultGames = [];
+      for (let i = 1; i <= 50; i++) {
+        defaultGames.push({
+          name: `لعبة ${i}`,
+          iconUrl: '',
+          gameUrl: '',
+          enabled: true,
+          visible: true,
+          order: i,
+          createdAt: new Date()
+        });
+      }
+      
+      const batch = db.batch();
+      for (const game of defaultGames) {
+        const docRef = db.collection(GAMES_COLLECTION).doc();
+        batch.set(docRef, game);
+      }
+      await batch.commit();
+      
+      cachedGames = defaultGames;
+      gamesCacheTime = now;
+      return includeAll ? defaultGames : defaultGames.filter(game => game.enabled === true && game.visible !== false);
+    }
+    
+    cachedGames = games;
+    gamesCacheTime = now;
+    return includeAll ? games : games.filter(game => game.enabled === true && game.visible !== false);
+  } catch (error) {
+    console.error('Error getting games:', error);
+    return [];
   }
 }
 
@@ -568,6 +623,125 @@ app.get('/api/user/wheel-history', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Wheel history error:', error);
     res.json({ success: true, spins: [] });
+  }
+});
+
+// ============= API الألعاب =============
+// جلب الألعاب للمستخدمين العاديين (المفعلة والظاهرة فقط)
+app.get('/api/games', async (req, res) => {
+  try {
+    const games = await getGames(false);
+    res.json({ success: true, games });
+  } catch (error) {
+    console.error('Get games error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الألعاب' });
+  }
+});
+
+// جلب جميع الألعاب للأدمن
+app.get('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const games = await getGames(true);
+    res.json({ success: true, games });
+  } catch (error) {
+    console.error('Admin get games error:', error);
+    res.status(500).json({ error: 'خطأ في جلب الألعاب' });
+  }
+});
+
+// تحديث لعبة
+app.put('/api/admin/games/:gameId', requireAdmin, async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { name, iconUrl, gameUrl, enabled, visible, order } = req.body;
+    
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (iconUrl !== undefined) updateData.iconUrl = iconUrl;
+    if (gameUrl !== undefined) updateData.gameUrl = gameUrl;
+    if (enabled !== undefined) updateData.enabled = enabled;
+    if (visible !== undefined) updateData.visible = visible;
+    if (order !== undefined) updateData.order = order;
+    updateData.updatedAt = new Date();
+    
+    await db.collection(GAMES_COLLECTION).doc(gameId).update(updateData);
+    
+    // مسح الكاش
+    cachedGames = null;
+    gamesCacheTime = 0;
+    
+    res.json({ success: true, message: 'تم تحديث اللعبة بنجاح' });
+  } catch (error) {
+    console.error('Update game error:', error);
+    res.status(500).json({ error: 'فشل تحديث اللعبة' });
+  }
+});
+
+// إعادة ترتيب الألعاب
+app.post('/api/admin/games/reorder', requireAdmin, async (req, res) => {
+  try {
+    const { games } = req.body;
+    
+    const batch = db.batch();
+    for (const game of games) {
+      const gameRef = db.collection(GAMES_COLLECTION).doc(game.id);
+      batch.update(gameRef, { order: game.order });
+    }
+    await batch.commit();
+    
+    cachedGames = null;
+    gamesCacheTime = 0;
+    
+    res.json({ success: true, message: 'تم إعادة ترتيب الألعاب' });
+  } catch (error) {
+    console.error('Reorder games error:', error);
+    res.status(500).json({ error: 'فشل إعادة الترتيب' });
+  }
+});
+
+// إضافة لعبة جديدة
+app.post('/api/admin/games', requireAdmin, async (req, res) => {
+  try {
+    const { name, iconUrl, gameUrl, enabled, visible, order } = req.body;
+    
+    const games = await getGames(true);
+    const newOrder = order || games.length + 1;
+    
+    const newGame = {
+      name: name || 'لعبة جديدة',
+      iconUrl: iconUrl || '',
+      gameUrl: gameUrl || '',
+      enabled: enabled !== undefined ? enabled : true,
+      visible: visible !== undefined ? visible : true,
+      order: newOrder,
+      createdAt: new Date()
+    };
+    
+    const docRef = await db.collection(GAMES_COLLECTION).add(newGame);
+    
+    cachedGames = null;
+    gamesCacheTime = 0;
+    
+    res.json({ success: true, game: { id: docRef.id, ...newGame } });
+  } catch (error) {
+    console.error('Add game error:', error);
+    res.status(500).json({ error: 'فشل إضافة اللعبة' });
+  }
+});
+
+// حذف لعبة
+app.delete('/api/admin/games/:gameId', requireAdmin, async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    await db.collection(GAMES_COLLECTION).doc(gameId).delete();
+    
+    cachedGames = null;
+    gamesCacheTime = 0;
+    
+    res.json({ success: true, message: 'تم حذف اللعبة' });
+  } catch (error) {
+    console.error('Delete game error:', error);
+    res.status(500).json({ error: 'فشل حذف اللعبة' });
   }
 });
 
@@ -1069,21 +1243,18 @@ app.get('/api/site-theme', async (req, res) => {
 });
 
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
-  // التحقق من الكاش أولاً
   const now = Date.now();
   if (cachedDashboard && (now - dashboardCacheTime) < DASHBOARD_CACHE_TTL) {
     return res.json({ success: true, stats: cachedDashboard });
   }
   
   try {
-    // استخدام count() بدلاً من get() للحصول على الأعداد فقط
     const [totalUsersSnapshot, pendingSnapshot, wheelSpinsSnapshot] = await Promise.all([
       db.collection('users').count().get(),
       db.collection('withdraw_requests').where('status', '==', 'pending').count().get(),
       db.collection('wheel_spins').get()
     ]);
     
-    // الإحصائيات التي تحتاج إلى جمع أرقام - جلب فقط الحقول المطلوبة
     const balanceSnapshot = await db.collection('users').select('balance', 'totalDeposited', 'totalWithdrawn', 'referralEarnings', 'createdAt').get();
     
     let totalBalance = 0, totalDeposited = 0, totalWithdrawn = 0, totalReferralEarnings = 0;
@@ -1119,7 +1290,6 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       totalWinnings
     };
     
-    // تخزين في الكاش
     cachedDashboard = stats;
     dashboardCacheTime = now;
     
@@ -1235,9 +1405,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     
     let query = db.collection('users').orderBy('createdAt', 'desc');
     
-    // دعم البحث الأساسي
     if (search) {
-      // بحث بسيط - يمكن تحسينه لاحقاً
       const searchLower = search.toLowerCase();
       const snapshot = await query.get();
       const filtered = [];
@@ -1346,7 +1514,7 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'كلمة المرور غير صحيحة' });
     }
     
-    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins'];
+    const collections = ['users', 'withdraw_requests', 'deposits', 'referral_commissions', 'wheel_spins', 'games'];
     for (const col of collections) {
       const snapshot = await db.collection(col).get();
       const batch = db.batch();
@@ -1365,6 +1533,8 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
     await db.collection('settings').doc('config').set(defaultSettings);
     cachedSettings = null;
     settingsCacheTime = 0;
+    cachedGames = null;
+    gamesCacheTime = 0;
     
     res.json({ success: true, message: 'تم تهيئة قاعدة البيانات بنجاح' });
   } catch (error) {
@@ -1379,8 +1549,10 @@ const server = app.listen(PORT, () => {
   console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
+  console.log(`🎮 Games system ready - 50 default games available`);
   console.log(`⚡ Settings cache TTL: ${CACHE_TTL}ms`);
   console.log(`📊 Dashboard cache TTL: ${DASHBOARD_CACHE_TTL}ms`);
+  console.log(`🎲 Games cache TTL: ${GAMES_CACHE_TTL}ms`);
 });
 
 process.on('SIGTERM', () => {
