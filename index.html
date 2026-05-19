@@ -622,25 +622,6 @@
         .wheel-cost { font-size: 14px; color: var(--warning); margin-bottom: 6px; }
         .timer-text { font-size: 12px; color: var(--text-secondary); }
 
-        .play-zone { text-align: center; margin: 12px 0; display: flex; flex-direction: column; align-items: center; }
-        .game-sphere {
-            width: 100px; height: 100px; margin: 0 auto 12px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition);
-            box-shadow: 0 0 20px var(--primary-glow);
-            background-size: cover; background-position: center;
-            position: relative;
-        }
-        .game-sphere::before {
-            content: ''; position: absolute; inset: -4px;
-            border-radius: 50%; background: linear-gradient(135deg, var(--primary), transparent);
-            opacity: 0.5; z-index: -1;
-        }
-        .game-sphere:hover { transform: scale(1.03); box-shadow: 0 0 30px var(--primary-glow); }
-        .game-sphere:active { transform: scale(0.98); }
-        .game-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 48px; }
-        #playNowBtn { margin-top: 4px; width: 60%; padding: 6px; font-size: 12px; }
 
         .fab-container {
             position: fixed;
@@ -1111,13 +1092,7 @@
                 <button class="btn btn-primary" id="depositAction">💰 إيداع</button>
                 <button class="btn btn-secondary" id="withdrawAction">💸 سحب</button>
             </div>
-            <div class="play-zone">
-                <div class="game-sphere default-icon" id="gameIconContainer">
-                    <img id="gameImage" class="game-image hidden" alt="Game Icon">
-                    <span id="defaultGameIcon">🎮</span>
-                </div>
-                <button class="btn btn-primary animate-pulse" id="playNowBtn">🎲 العب الآن</button>
-            </div>
+
 
             <!-- ============= قسم الألعاب ============= -->
             <div class="games-section">
@@ -2725,9 +2700,7 @@
         
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
-        document.getElementById('playNowBtn')?.addEventListener('click', () => {
-            document.querySelector('.games-section')?.scrollIntoView({ behavior: 'smooth' });
-        });
+
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
