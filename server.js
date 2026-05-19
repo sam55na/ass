@@ -7,7 +7,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import http from 'http';
 import https from 'https';
-
+import crypto from 'crypto'; 
 // ============= تهيئة Firebase =============
 const serviceAccount = {
   type: "service_account",
@@ -263,6 +263,274 @@ const requireAdmin = async (req, res, next) => {
     res.status(401).json({ error: 'جلسة غير صالحة' });
   }
 };
+
+
+
+// ============= نظام التوكن للمستخدمين مع مهلة النشاط =============
+const crypto = require('crypto');
+
+// تخزين مؤقت للتوكنات النشطة للمستخدمين
+const activeUserTokens = new Map(); // token -> { userId, lastActivity, createdAt }
+
+// تنظيف التوكنات المنتهية كل دقيقة
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of activeUserTokens.entries()) {
+        // حذف التوكنات التي لم ينشط لها 5 دقائق (300000 مللي ثانية)
+        if (now - data.lastActivity > 300000) {
+            activeUserTokens.delete(token);
+            console.log(`🗑️ User token expired due to inactivity: ${token.substring(0, 20)}... (User: ${data.userId})`);
+            
+            // تحديث قاعدة البيانات
+            db.collection('user_tokens').doc(token).update({
+                expiredDueToInactivity: true,
+                expiredAt: new Date(),
+                lastActivity: new Date(data.lastActivity)
+            }).catch(console.error);
+        }
+    }
+}, 60000); // كل دقيقة
+
+// إنشاء توكن جديد للمستخدم
+function generateUserToken(userId) {
+    const timestamp = Date.now();
+    const secret = process.env.USER_TOKEN_SECRET || 'BOOMB_USER_SECRET_KEY_2024';
+    const randomBytes = crypto.randomBytes(32).toString('hex');
+    const data = `${userId}:${timestamp}:${randomBytes}`;
+    const signature = crypto.createHmac('sha256', secret).update(data).digest('hex');
+    const token = Buffer.from(`${data}:${signature}`).toString('base64');
+    
+    return token;
+}
+
+// التحقق من صحة توكن المستخدم وتحديث آخر نشاط
+async function verifyUserToken(token) {
+    try {
+        // التحقق من وجود التوكن في الذاكرة المؤقتة
+        const tokenData = activeUserTokens.get(token);
+        if (!tokenData) {
+            return { valid: false, reason: 'token_not_found' };
+        }
+        
+        // التحقق من انتهاء الصلاحية (5 دقائق)
+        const now = Date.now();
+        if (now - tokenData.lastActivity > 300000) {
+            activeUserTokens.delete(token);
+            return { valid: false, reason: 'token_expired' };
+        }
+        
+        // فك التوكن للتحقق من التوقيع
+        const decoded = Buffer.from(token, 'base64').toString();
+        const parts = decoded.split(':');
+        
+        if (parts.length < 4) return { valid: false, reason: 'invalid_format' };
+        
+        const [userId, timestamp, randomBytes, signature] = parts;
+        const secret = process.env.USER_TOKEN_SECRET || 'BOOMB_USER_SECRET_KEY_2024';
+        const data = `${userId}:${timestamp}:${randomBytes}`;
+        const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('hex');
+        
+        if (signature !== expectedSignature) {
+            return { valid: false, reason: 'invalid_signature' };
+        }
+        
+        // التحقق من أن التوكن ليس أقدم من 5 دقائق
+        const tokenTime = parseInt(timestamp);
+        if (Date.now() - tokenTime > 300000) {
+            activeUserTokens.delete(token);
+            return { valid: false, reason: 'token_age_expired' };
+        }
+        
+        // تحديث آخر نشاط
+        activeUserTokens.set(token, {
+            ...tokenData,
+            lastActivity: Date.now()
+        });
+        
+        // تحديث في قاعدة البيانات
+        await db.collection('user_tokens').doc(token).update({
+            lastActivity: new Date(),
+            lastVerifiedAt: new Date()
+        }).catch(console.error);
+        
+        return { valid: true, userId: userId };
+        
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return { valid: false, reason: 'error' };
+    }
+}
+
+// إنشاء توكن للمستخدم (عند فتح اللعبة من الواجهة الرئيسية)
+app.post('/api/user/create-token', requireAuth, async (req, res) => {
+    try {
+        const { uid } = req.user;
+        
+        // حذف أي توكنات سابقة للمستخدم
+        for (const [existingToken, data] of activeUserTokens.entries()) {
+            if (data.userId === uid) {
+                activeUserTokens.delete(existingToken);
+                await db.collection('user_tokens').doc(existingToken).update({
+                    replacedByNewToken: true,
+                    replacedAt: new Date()
+                }).catch(console.error);
+            }
+        }
+        
+        // إنشاء توكن جديد
+        const token = generateUserToken(uid);
+        
+        // تخزين في الذاكرة المؤقتة
+        activeUserTokens.set(token, {
+            userId: uid,
+            createdAt: Date.now(),
+            lastActivity: Date.now()
+        });
+        
+        // تخزين في قاعدة البيانات للتتبع
+        await db.collection('user_tokens').doc(token).set({
+            userId: uid,
+            createdAt: new Date(),
+            lastActivity: new Date(),
+            active: true
+        });
+        
+        res.json({
+            success: true,
+            token: token,
+            expiresIn: 300 // 5 دقائق
+        });
+        
+    } catch (error) {
+        console.error('Create user token error:', error);
+        res.status(500).json({ error: 'فشل إنشاء جلسة اللعبة' });
+    }
+});
+
+// التحقق من التوكن (أي طلب داخل اللعبة)
+app.post('/api/user/verify-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(401).json({ 
+                valid: false, 
+                error: 'token_missing',
+                message: 'توكن الأمان مفقود' 
+            });
+        }
+        
+        const verification = await verifyUserToken(token);
+        
+        if (!verification.valid) {
+            return res.status(401).json({ 
+                valid: false, 
+                error: verification.reason,
+                message: 'جلسة اللعبة منتهية، يرجى إعادة فتح اللعبة من الواجهة الرئيسية'
+            });
+        }
+        
+        res.json({
+            valid: true,
+            userId: verification.userId,
+            message: 'تم التحقق بنجاح'
+        });
+        
+    } catch (error) {
+        console.error('Verify token error:', error);
+        res.status(500).json({ error: 'فشل التحقق من التوكن' });
+    }
+});
+
+// تجديد نشاط التوكن (keep-alive من داخل اللعبة)
+app.post('/api/user/renew-token', requireAuth, async (req, res) => {
+    try {
+        const { uid } = req.user;
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({ error: 'التوكن مطلوب' });
+        }
+        
+        // التحقق من أن التوكن يخص هذا المستخدم
+        const tokenData = activeUserTokens.get(token);
+        if (!tokenData || tokenData.userId !== uid) {
+            return res.status(403).json({ error: 'توكن غير صالح' });
+        }
+        
+        // تحديث آخر نشاط
+        activeUserTokens.set(token, {
+            ...tokenData,
+            lastActivity: Date.now()
+        });
+        
+        await db.collection('user_tokens').doc(token).update({
+            lastActivity: new Date(),
+            renewedAt: new Date()
+        }).catch(console.error);
+        
+        // حساب الوقت المتبقي
+        const elapsed = Date.now() - tokenData.createdAt;
+        const remaining = Math.max(0, 300 - Math.floor(elapsed / 1000));
+        
+        res.json({
+            success: true,
+            remainingSeconds: remaining
+        });
+        
+    } catch (error) {
+        console.error('Renew token error:', error);
+        res.status(500).json({ error: 'فشل تجديد الجلسة' });
+    }
+});
+
+// إنهاء جلسة المستخدم (عند إغلاق اللعبة)
+app.post('/api/user/end-session', requireAuth, async (req, res) => {
+    try {
+        const { uid } = req.user;
+        const { token } = req.body;
+        
+        if (token && activeUserTokens.has(token)) {
+            activeUserTokens.delete(token);
+            await db.collection('user_tokens').doc(token).update({
+                endedByUser: true,
+                endedAt: new Date()
+            }).catch(console.error);
+        }
+        
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('End session error:', error);
+        res.status(500).json({ error: 'فشل إنهاء الجلسة' });
+    }
+});
+
+// التحقق من صحة التوكن (middleware للعبة)
+async function requireGameToken(req, res, next) {
+    const token = req.headers['x-game-token'] || req.query.token;
+    
+    if (!token) {
+        return res.status(401).json({ 
+            error: 'token_missing',
+            redirectTo: '/' 
+        });
+    }
+    
+    const verification = await verifyUserToken(token);
+    
+    if (!verification.valid) {
+        return res.status(401).json({ 
+            error: 'token_invalid',
+            redirectTo: '/',
+            message: 'انتهت صلاحية الجلسة، يرجى إعادة فتح اللعبة'
+        });
+    }
+    
+    req.userId = verification.userId;
+    req.gameToken = token;
+    next();
+}
 
 // ============= كلاس شام كاش =============
 class ShamCashClient {
