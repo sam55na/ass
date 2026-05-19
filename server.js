@@ -8,7 +8,7 @@ import compression from 'compression';
 import http from 'http';
 import https from 'https';
 
-// ============= تهيئة Firebase مع الإعدادات المثلى للضغط =============
+// ============= تهيئة Firebase =============
 const serviceAccount = {
   type: "service_account",
   project_id: "boomb-fa3e7",
@@ -28,7 +28,6 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-// تحسين Firestore للضغط العالي
 db.settings({ 
   ignoreUndefinedProperties: true,
   cacheSizeBytes: admin.firestore.CACHE_SIZE_UNLIMITED
@@ -54,7 +53,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============= Rate Limiting محسن =============
+// ============= Rate Limiting =============
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 500,
@@ -83,10 +82,14 @@ app.use('/api/admin/', generalLimiter);
 const RESET_PASSWORD = '2613857';
 const ADMIN_EMAIL = 'sam55nam@gmail.com';
 
-// ============= Cache للإعدادات =============
+// ============= Cache =============
 let cachedSettings = null;
 let settingsCacheTime = 0;
 const CACHE_TTL = 30000;
+
+let cachedDashboard = null;
+let dashboardCacheTime = 0;
+const DASHBOARD_CACHE_TTL = 15000;
 
 async function getSettings() {
   const now = Date.now();
@@ -367,7 +370,7 @@ function getRandomSector() {
   return WHEEL_SECTORS[0];
 }
 
-// ============= عمولة الإحالة (محسنة) =============
+// ============= عمولة الإحالة =============
 async function addReferralCommission(userId, depositAmount) {
   try {
     const userDoc = await db.collection('users').doc(userId).get();
@@ -506,7 +509,6 @@ app.post('/api/user/spin-wheel', requireAuth, async (req, res) => {
       });
     }
     
-    // تسجيل غير متزامن
     db.collection('wheel_spins').add({
       userId: uid,
       sector: selectedSector.id,
@@ -850,7 +852,6 @@ app.post('/api/user/deposit', requireAuth, async (req, res) => {
     
     await batch.commit();
     
-    // معالجة العمولة بشكل غير متزامن
     addReferralCommission(uid, finalAmountSYP).catch(err => console.error('Commission failed:', err));
     
     const updatedUser = await userRef.get();
@@ -1031,7 +1032,6 @@ app.get('/api/admin/settings', requireAdmin, async (req, res) => {
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
   try {
     await db.collection('settings').doc('config').update(req.body);
-    // مسح الكاش بعد تحديث الإعدادات
     cachedSettings = null;
     settingsCacheTime = 0;
     res.json({ success: true, message: 'تم تحديث الإعدادات' });
@@ -1069,46 +1069,61 @@ app.get('/api/site-theme', async (req, res) => {
 });
 
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
+  // التحقق من الكاش أولاً
+  const now = Date.now();
+  if (cachedDashboard && (now - dashboardCacheTime) < DASHBOARD_CACHE_TTL) {
+    return res.json({ success: true, stats: cachedDashboard });
+  }
+  
   try {
-    const [usersSnapshot, pendingSnapshot, wheelSpinsSnapshot] = await Promise.all([
-      db.collection('users').get(),
-      db.collection('withdraw_requests').where('status', '==', 'pending').get(),
+    // استخدام count() بدلاً من get() للحصول على الأعداد فقط
+    const [totalUsersSnapshot, pendingSnapshot, wheelSpinsSnapshot] = await Promise.all([
+      db.collection('users').count().get(),
+      db.collection('withdraw_requests').where('status', '==', 'pending').count().get(),
       db.collection('wheel_spins').get()
     ]);
     
-    const users = [];
-    usersSnapshot.forEach(doc => users.push(doc.data()));
+    // الإحصائيات التي تحتاج إلى جمع أرقام - جلب فقط الحقول المطلوبة
+    const balanceSnapshot = await db.collection('users').select('balance', 'totalDeposited', 'totalWithdrawn', 'referralEarnings', 'createdAt').get();
     
-    const totalBalance = users.reduce((s, u) => s + (u.balance || 0), 0);
-    const totalDeposited = users.reduce((s, u) => s + (u.totalDeposited || 0), 0);
-    const totalWithdrawn = users.reduce((s, u) => s + (u.totalWithdrawn || 0), 0);
-    const totalReferralEarnings = users.reduce((s, u) => s + (u.referralEarnings || 0), 0);
-    
+    let totalBalance = 0, totalDeposited = 0, totalWithdrawn = 0, totalReferralEarnings = 0;
+    let newToday = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const newToday = users.filter(u => {
-      if (!u.createdAt) return false;
-      const date = u.createdAt.toDate ? u.createdAt.toDate() : u.createdAt;
-      return date > today;
-    }).length;
+    
+    balanceSnapshot.forEach(doc => {
+      const data = doc.data();
+      totalBalance += data.balance || 0;
+      totalDeposited += data.totalDeposited || 0;
+      totalWithdrawn += data.totalWithdrawn || 0;
+      totalReferralEarnings += data.referralEarnings || 0;
+      
+      if (data.createdAt) {
+        const date = data.createdAt.toDate ? data.createdAt.toDate() : data.createdAt;
+        if (date > today) newToday++;
+      }
+    });
     
     const totalSpins = wheelSpinsSnapshot.size;
     const totalWinnings = wheelSpinsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
     
-    res.json({
-      success: true,
-      stats: {
-        totalUsers: usersSnapshot.size,
-        newToday,
-        totalBalance,
-        totalDeposited,
-        totalWithdrawn,
-        totalReferralEarnings,
-        pendingWithdrawals: pendingSnapshot.size,
-        totalSpins,
-        totalWinnings
-      }
-    });
+    const stats = {
+      totalUsers: totalUsersSnapshot.data().count,
+      newToday,
+      totalBalance,
+      totalDeposited,
+      totalWithdrawn,
+      totalReferralEarnings,
+      pendingWithdrawals: pendingSnapshot.data().count,
+      totalSpins,
+      totalWinnings
+    };
+    
+    // تخزين في الكاش
+    cachedDashboard = stats;
+    dashboardCacheTime = now;
+    
+    res.json({ success: true, stats });
   } catch (error) {
     console.error('Dashboard error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
@@ -1117,11 +1132,13 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
   try {
-    const { status = 'all' } = req.query;
+    const { status = 'all', page = 1, limit = 50 } = req.query;
     let query = db.collection('withdraw_requests').orderBy('createdAt', 'desc');
     if (status !== 'all') query = query.where('status', '==', status);
     
-    const snapshot = await query.get();
+    const startAt = (parseInt(page) - 1) * parseInt(limit);
+    const snapshot = await query.limit(parseInt(limit)).offset(startAt).get();
+    
     const requests = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
@@ -1137,7 +1154,7 @@ app.get('/api/admin/withdraw-requests', requireAdmin, async (req, res) => {
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
       });
     }
-    res.json({ success: true, requests });
+    res.json({ success: true, requests, page: parseInt(page), hasMore: requests.length === parseInt(limit) });
   } catch (error) {
     console.error('Admin withdraws error:', error);
     res.status(500).json({ error: 'خطأ في جلب الطلبات' });
@@ -1180,7 +1197,15 @@ app.post('/api/admin/process-withdraw', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
   try {
-    const snapshot = await db.collection('deposits').orderBy('verifiedAt', 'desc').limit(100).get();
+    const { page = 1, limit = 50 } = req.query;
+    const startAt = (parseInt(page) - 1) * parseInt(limit);
+    
+    const snapshot = await db.collection('deposits')
+      .orderBy('verifiedAt', 'desc')
+      .limit(parseInt(limit))
+      .offset(startAt)
+      .get();
+    
     const deposits = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
@@ -1196,7 +1221,7 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
         verifiedAt: data.verifiedAt?.toDate ? data.verifiedAt.toDate() : new Date(data.verifiedAt)
       });
     }
-    res.json({ success: true, deposits });
+    res.json({ success: true, deposits, page: parseInt(page), hasMore: deposits.length === parseInt(limit) });
   } catch (error) {
     console.error('Admin deposits error:', error);
     res.status(500).json({ error: 'خطأ في جلب الإيداعات' });
@@ -1205,7 +1230,46 @@ app.get('/api/admin/deposits', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
-    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+    const { page = 1, limit = 30, search = '' } = req.query;
+    const startAt = (parseInt(page) - 1) * parseInt(limit);
+    
+    let query = db.collection('users').orderBy('createdAt', 'desc');
+    
+    // دعم البحث الأساسي
+    if (search) {
+      // بحث بسيط - يمكن تحسينه لاحقاً
+      const searchLower = search.toLowerCase();
+      const snapshot = await query.get();
+      const filtered = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.email?.toLowerCase().includes(searchLower) || 
+            data.name?.toLowerCase().includes(searchLower) || 
+            data.uniqueId?.toLowerCase().includes(searchLower)) {
+          filtered.push({ id: doc.id, ...data });
+        }
+      });
+      const paginated = filtered.slice(startAt, startAt + parseInt(limit));
+      const users = paginated.map(data => ({
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        uniqueId: data.uniqueId,
+        balance: data.balance,
+        referralBalance: data.referralBalance || 0,
+        isBanned: data.isBanned || false,
+        referredBy: data.referredBy,
+        referredByName: data.referredByName,
+        referralEarnings: data.referralEarnings || 0,
+        referralsCount: data.referrals?.length || 0,
+        totalSpins: data.totalSpins || 0,
+        totalWinnings: data.totalWinnings || 0
+      }));
+      return res.json({ success: true, users, page: parseInt(page), hasMore: paginated.length === parseInt(limit), total: filtered.length });
+    }
+    
+    const snapshot = await query.limit(parseInt(limit)).offset(startAt).get();
+    
     const users = [];
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -1225,7 +1289,8 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         totalWinnings: data.totalWinnings || 0
       });
     });
-    res.json({ success: true, users });
+    
+    res.json({ success: true, users, page: parseInt(page), hasMore: users.length === parseInt(limit) });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
@@ -1311,14 +1376,13 @@ app.post('/api/admin/reset-database', requireAdmin, async (req, res) => {
 // ============= تشغيل الخادم =============
 const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
-  console.log(`✅ BOOMB Server running on port ${PORT} (high-load optimized)`);
+  console.log(`✅ BOOMB Server running on port ${PORT}`);
   console.log(`📍 Admin: ${ADMIN_EMAIL}`);
   console.log(`🎰 Wheel system ready with 8 sectors`);
-  console.log(`⚡ Cache TTL: ${CACHE_TTL}ms`);
-  console.log(`🔧 Axios keepAlive: enabled`);
+  console.log(`⚡ Settings cache TTL: ${CACHE_TTL}ms`);
+  console.log(`📊 Dashboard cache TTL: ${DASHBOARD_CACHE_TTL}ms`);
 });
 
-// تحسين إيقاف التشغيل النظيف
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, closing server...');
   server.close(() => {
@@ -1334,4 +1398,3 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
-
