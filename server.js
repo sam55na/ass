@@ -267,7 +267,7 @@ const requireAdmin = async (req, res, next) => {
 
 
 // ============= نظام التوكن للمستخدمين مع مهلة النشاط =============
-const crypto = require('crypto');
+
 
 // تخزين مؤقت للتوكنات النشطة للمستخدمين
 const activeUserTokens = new Map(); // token -> { userId, lastActivity, createdAt }
