@@ -62,7 +62,6 @@
         ::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* تأثير اللمعان على الأزرار */
         @keyframes btnShine {
             0% { background-position: -200% center; }
             100% { background-position: 200% center; }
@@ -122,17 +121,10 @@
         @keyframes goldenGlow { 0%, 100% { opacity: 0.5; filter: blur(10px); } 50% { opacity: 0.8; filter: blur(15px); } }
         @keyframes centerPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); } 50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 1); } }
         
-        /* تأثير المروحة الجديد */
         @keyframes fanExpand {
             0% { transform: scale(0) rotate(-180deg); opacity: 0; }
             60% { transform: scale(1.1) rotate(5deg); }
             100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
-        
-        @keyframes fanShrink {
-            0% { transform: scale(1) rotate(0); opacity: 1; }
-            40% { transform: scale(1.1) rotate(5deg); }
-            100% { transform: scale(0) rotate(180deg); opacity: 0; }
         }
         
         .animate-fade { animation: fadeIn 0.5s ease; }
@@ -195,6 +187,325 @@
         .btn-danger { background: linear-gradient(135deg, #8b0000, #cc0000); color: white; }
         .btn-success { background: linear-gradient(135deg, #008000, var(--success)); color: white; }
         .btn-warning { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; }
+
+        /* ============= قسم الألعاب ============= */
+        .games-section {
+            margin-top: 20px;
+            padding: 16px 0;
+        }
+
+        .games-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .section-title-games {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-light);
+            margin: 0;
+        }
+
+        .games-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--surface-light);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .game-card {
+            background: linear-gradient(145deg, var(--surface), var(--surface-light));
+            border-radius: var(--radius-lg);
+            padding: 16px 8px 12px;
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .game-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .game-card.disabled {
+            opacity: 0.6;
+            filter: grayscale(0.3);
+        }
+
+        .game-card.disabled .game-play-btn {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .game-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-lighter);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .game-card:hover .game-icon {
+            transform: scale(1.05);
+        }
+
+        .game-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .game-icon.default-icon {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            font-size: 36px;
+        }
+
+        .game-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 4px;
+        }
+
+        .game-play-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 80%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-play-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .game-play-btn:hover::after {
+            left: 100%;
+        }
+
+        .game-play-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .game-play-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-link-disabled {
+            color: var(--warning);
+            font-size: 11px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* ============= لوحة تحكم الألعاب ============= */
+        .games-admin-panel {
+            padding: 20px;
+        }
+
+        .games-list-admin {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .game-admin-card {
+            background: var(--surface-light);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            transition: var(--transition);
+        }
+
+        .game-admin-card:hover {
+            background: var(--surface-lighter);
+        }
+
+        .game-admin-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        .game-admin-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .game-admin-preview.default-icon {
+            background: var(--primary);
+            font-size: 24px;
+        }
+
+        .game-admin-info {
+            flex: 2;
+            min-width: 150px;
+        }
+
+        .game-admin-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .game-admin-status {
+            display: flex;
+            gap: 10px;
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+        }
+
+        .status-enabled {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-disabled {
+            background: var(--error);
+            color: white;
+        }
+
+        .status-visible {
+            background: var(--info);
+            color: white;
+        }
+
+        .status-hidden {
+            background: #666;
+            color: white;
+        }
+
+        .game-admin-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .game-admin-actions button {
+            background: var(--surface);
+            border: 1px solid var(--primary);
+            color: var(--primary-light);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .game-admin-actions button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .game-edit-modal .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .game-edit-modal .form-row .form-group {
+            flex: 1;
+        }
+
+        @media (max-width: 700px) {
+            .game-admin-card {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .game-admin-actions {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .games-grid {
+                gap: 12px;
+            }
+            .game-icon {
+                width: 55px;
+                height: 55px;
+                font-size: 28px;
+            }
+            .game-name {
+                font-size: 11px;
+            }
+            .game-play-btn {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+        }
 
         .wheel-container {
             display: flex;
@@ -331,7 +642,6 @@
         .game-sphere.default-icon { background: radial-gradient(circle at 35% 35%, var(--primary), var(--primary-dark)); font-size: 48px; }
         #playNowBtn { margin-top: 4px; width: 60%; padding: 6px; font-size: 12px; }
 
-        /* ============= الزر العائم المروحي المطور ============= */
         .fab-container {
             position: fixed;
             bottom: 25px;
@@ -562,7 +872,6 @@
             font-weight: 500; font-size: 13px;
         }
 
-        /* تحسينات لوحة التحكم */
         .admin-header {
             background: linear-gradient(145deg, var(--surface), var(--surface-light));
             padding: 16px 20px;
@@ -809,6 +1118,17 @@
                 </div>
                 <button class="btn btn-primary animate-pulse" id="playNowBtn">🎲 العب الآن</button>
             </div>
+
+            <!-- ============= قسم الألعاب ============= -->
+            <div class="games-section">
+                <div class="games-header">
+                    <h3 class="section-title-games">🎮 جميع الألعاب</h3>
+                    <div class="games-count" id="gamesCount">0 لعبة</div>
+                </div>
+                <div class="games-grid" id="gamesGrid">
+                    <div class="loading-shimmer" style="height:200px;border-radius:var(--radius);"></div>
+                </div>
+            </div>
         </div>
 
         <div id="profileScreen" class="hidden">
@@ -834,23 +1154,23 @@
         </div>
     </div>
 
-    <!-- ============= الزر العائم المروحي المطور ============= -->
+    <!-- ============= الزر العائم المروحي ============= -->
     <div class="fab-container">
         <div class="fab-main" id="fabMain">
-            <span class="fab-icon">✚</span>
+            <span class="fab-icon">♠</span>
         </div>
         <div class="fab-menu" id="fabMenu">
             <div class="fab-item" data-action="stats">
-                <div class="item-label">📊 الإحصائيات</div>
-                <div class="item-icon"><span class="fab-item-icon">📊</span></div>
+                <div class="item-label"> الإحصائيات</div>
+                <div class="item-icon"><span class="fab-item-icon">🟢</span></div>
             </div>
             <div class="fab-item" data-action="wheel">
-                <div class="item-label">🎡 عجلة الحظ</div>
-                <div class="item-icon"><span class="fab-item-icon">🎡</span></div>
+                <div class="item-label"> عجلة الحظ</div>
+                <div class="item-icon"><span class="fab-item-icon">🟢</span></div>
             </div>
             <div class="fab-item" data-action="earn">
-                <div class="item-label">🎁 الإحالات</div>
-                <div class="item-icon"><span class="fab-item-icon">🎁</span></div>
+                <div class="item-label"> الإحالات</div>
+                <div class="item-icon"><span class="fab-item-icon">🟢</span></div>
             </div>
         </div>
     </div>
@@ -955,6 +1275,34 @@
         </div>
     </div>
 
+    <!-- ============= قالب تعديل اللعبة ============= -->
+    <div id="editGameModal" class="modal game-edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>✏️ تعديل اللعبة</span>
+                <span class="close-modal">&times;</span>
+            </div>
+            <input type="hidden" id="editGameId">
+            <div class="form-group">
+                <label>🎮 اسم اللعبة</label>
+                <input type="text" id="editGameName" placeholder="أدخل اسم اللعبة">
+            </div>
+            <div class="form-group">
+                <label>🖼️ رابط أيقونة اللعبة</label>
+                <input type="text" id="editGameIconUrl" placeholder="https://example.com/icon.png">
+                <div class="hint">اتركه فارغاً لاستخدام الأيقونة الافتراضية</div>
+            </div>
+            <div class="form-group">
+                <label>🔗 رابط اللعبة</label>
+                <input type="text" id="editGameUrl" placeholder="https://example.com/game">
+                <div class="hint">إذا كان الرابط فارغاً، سيظهر إشعار "اللعبة متوقفة"</div>
+            </div>
+            <button class="btn btn-primary" onclick="saveGameEdit()" style="width:100%">
+                💾 حفظ التغييرات
+            </button>
+        </div>
+    </div>
+
     <div id="adminApp" class="hidden">
         <div class="admin-container">
             <div class="admin-header">
@@ -981,6 +1329,7 @@
                 <div class="tab active" data-tab="withdraws">💸 طلبات السحب</div>
                 <div class="tab" data-tab="deposits">💰 الإيداعات</div>
                 <div class="tab" data-tab="users">👥 المستخدمين</div>
+                <div class="tab" data-tab="games">🎮 إدارة الألعاب</div>
                 <div class="tab" data-tab="settings">⚙️ إعدادات الدفع</div>
                 <div class="tab" data-tab="wheel-settings">🎡 إعدادات العجلة</div>
                 <div class="tab" data-tab="themes">🎨 الألوان</div>
@@ -1025,6 +1374,17 @@
                     <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
                 </div>
             </div>
+
+            <div id="adminGamesPanel" class="admin-table hidden">
+                <div class="admin-table-header">
+                    <div class="admin-table-title">🎮 إدارة الألعاب (حتى 50 لعبة)</div>
+                </div>
+                <div class="games-admin-panel">
+                    <div id="adminGamesList" style="max-height: 500px; overflow-y: auto;">
+                        <p style="text-align:center;padding:40px">⏳ جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
             
             <div id="adminSettingsPanel" class="admin-table hidden">
                 <div class="admin-table-header">
@@ -1034,7 +1394,7 @@
                     <h3 class="section-title">الحدود العامة</h3>
                     <div class="form-group"><label>الحد الأدنى للإيداع (SYP)</label><input type="number" id="settingMinDeposit"></div>
                     <div class="form-group"><label>الحد الأدنى للسحب (SYP)</label><input type="number" id="settingMinWithdraw"></div>
-                    <div class="form-group"><label>🖼️ رابط صورة اللعبة</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
+                    <div class="form-group"><label>🖼️ رابط صورة اللعبة الرئيسية</label><input type="text" id="settingGameImageUrl" placeholder="أدخل رابط مباشر للصورة"></div>
                     <div class="form-group"><label>📊 نسبة عمولة الإحالة (%)</label><input type="number" id="settingReferralCommission" step="0.5"></div>
                     
                     <h3 class="section-title">🏦 شام كاش (ليرة)</h3>
@@ -1116,7 +1476,7 @@
                 </div>
                 <div style="padding: 20px; text-align: center;">
                     <p style="color:var(--error); margin-bottom:15px">⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</p>
-                    <p style="margin-bottom:20px">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات</p>
+                    <p style="margin-bottom:20px">سيتم حذف جميع المستخدمين والإيداعات والسحوبات والتدويرات والألعاب</p>
                     <button class="btn btn-danger" id="openResetModalBtn" style="width:100%">🗑️ تهيئة قاعدة البيانات</button>
                 </div>
             </div>
@@ -1149,6 +1509,8 @@
         let currentUser = null, userData = null, isAdmin = false;
         let currentMinDeposit = 1000, currentMinWithdraw = 5000, currentUsdToSypRate = 13000, currentReferralCommission = 5;
         let currentWheelSpinCost = 50;
+        let allGames = [];
+        let activeGames = [];
         
         let wheelCanvas = null;
         let ctx = null;
@@ -1192,6 +1554,177 @@
                 if (response.status === 403) { showMessage('غير مصرح بهذه العملية', true); return null; }
                 return response;
             } catch (error) { console.error('API error:', error); showMessage('خطأ في الاتصال بالخادم', true); return null; }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // ============= دوال الألعاب =============
+        async function loadGames() {
+            try {
+                const res = await apiCall('/api/games');
+                if (res?.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        activeGames = data.games;
+                        renderGamesGrid();
+                        document.getElementById('gamesCount').innerHTML = `${activeGames.length} لعبة`;
+                    }
+                }
+            } catch (error) {
+                console.error('Load games error:', error);
+            }
+        }
+
+        function renderGamesGrid() {
+            const grid = document.getElementById('gamesGrid');
+            if (!grid) return;
+            
+            if (!activeGames || activeGames.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;">🎮 لا توجد ألعاب متاحة حالياً</div>';
+                return;
+            }
+            
+            grid.innerHTML = activeGames.map(game => `
+                <div class="game-card ${!game.enabled ? 'disabled' : ''}" data-game-id="${game.id}">
+                    <div class="game-icon ${!game.iconUrl ? 'default-icon' : ''}">
+                        ${game.iconUrl ? `<img src="${game.iconUrl}" alt="${escapeHtml(game.name)}" onerror="this.parentElement.classList.add('default-icon');this.style.display='none';this.parentElement.innerHTML='🎮'">` : '🎮'}
+                    </div>
+                    <div class="game-name" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
+                    <button class="game-play-btn" onclick="window.playGame('${game.id}', '${escapeHtml(game.gameUrl || '')}')" ${!game.enabled ? 'disabled' : ''}>
+                        🎲 ألعب
+                    </button>
+                    ${!game.enabled ? '<small class="game-link-disabled">⚠️ اللعبة متوقفة حالياً</small>' : ''}
+                </div>
+            `).join('');
+        }
+
+        window.playGame = function(gameId, gameUrl) {
+            if (!gameUrl || gameUrl.trim() === '') {
+                showMessage('⚠️ اللعبة متوقفة حالياً، يرجى العودة لاحقاً', true);
+                return;
+            }
+            window.open(gameUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        // ============= دوال لوحة تحكم الألعاب للأدمن =============
+        async function loadAdminGames() {
+            const res = await apiCall('/api/admin/games');
+            if (res?.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    allGames = data.games;
+                    renderAdminGamesList();
+                }
+            }
+        }
+
+        function renderAdminGamesList() {
+            const container = document.getElementById('adminGamesList');
+            if (!container) return;
+            
+            if (!allGames.length) {
+                container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد ألعاب</p>';
+                return;
+            }
+            
+            container.innerHTML = allGames.map((game, index) => `
+                <div class="game-admin-card" data-game-id="${game.id}">
+                    <div class="game-admin-preview ${!game.iconUrl ? 'default-icon' : ''}">
+                        ${game.iconUrl ? `<img src="${game.iconUrl}" alt="${escapeHtml(game.name)}" onerror="this.parentElement.classList.add('default-icon');this.style.display='none';this.parentElement.innerHTML='🎮'">` : '🎮'}
+                    </div>
+                    <div class="game-admin-info">
+                        <div class="game-admin-name">${escapeHtml(game.name)}</div>
+                        <div class="game-admin-status">
+                            <span class="status-badge ${game.enabled ? 'status-enabled' : 'status-disabled'}">${game.enabled ? 'مفعلة' : 'معطلة'}</span>
+                            <span class="status-badge ${game.visible !== false ? 'status-visible' : 'status-hidden'}">${game.visible !== false ? 'ظاهرة' : 'مخفية'}</span>
+                            <span>🔢 ترتيب: ${game.order || index + 1}</span>
+                        </div>
+                        ${game.gameUrl ? `<small style="color:var(--primary-light);display:block;margin-top:4px;">🔗 رابط: ${game.gameUrl.substring(0, 40)}${game.gameUrl.length > 40 ? '...' : ''}</small>` : '<small style="color:var(--warning);">⚠️ لا يوجد رابط للعبة</small>'}
+                    </div>
+                    <div class="game-admin-actions">
+                        <button onclick="window.openEditGameModal('${game.id}')">✏️ تعديل</button>
+                        <button onclick="window.toggleGameEnabled('${game.id}', ${!game.enabled})">${game.enabled ? '🔴 تعطيل' : '🟢 تفعيل'}</button>
+                        <button onclick="window.toggleGameVisibility('${game.id}', ${game.visible !== false ? 'false' : 'true'})">${game.visible !== false ? '🙈 إخفاء' : '👁️ إظهار'}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.toggleGameEnabled = async function(gameId, enable) {
+            const res = await apiCall(`/api/admin/games/${gameId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ enabled: enable })
+            });
+            if (res?.ok) {
+                showMessage(`تم ${enable ? 'تفعيل' : 'تعطيل'} اللعبة بنجاح`);
+                await loadAdminGames();
+                await loadGames();
+            } else {
+                showMessage('فشل تحديث حالة اللعبة', true);
+            }
+        }
+
+        window.toggleGameVisibility = async function(gameId, show) {
+            const res = await apiCall(`/api/admin/games/${gameId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ visible: show })
+            });
+            if (res?.ok) {
+                showMessage(`تم ${show ? 'إظهار' : 'إخفاء'} اللعبة بنجاح`);
+                await loadAdminGames();
+                await loadGames();
+            } else {
+                showMessage('فشل تحديث حالة الظهور', true);
+            }
+        }
+
+        window.openEditGameModal = function(gameId) {
+            const game = allGames.find(g => g.id === gameId);
+            if (!game) return;
+            
+            const modal = document.getElementById('editGameModal');
+            if (!modal) return;
+            
+            document.getElementById('editGameId').value = game.id;
+            document.getElementById('editGameName').value = game.name || '';
+            document.getElementById('editGameIconUrl').value = game.iconUrl || '';
+            document.getElementById('editGameUrl').value = game.gameUrl || '';
+            
+            modal.style.display = 'flex';
+        }
+
+        window.saveGameEdit = async function() {
+            const gameId = document.getElementById('editGameId').value;
+            const name = document.getElementById('editGameName').value;
+            const iconUrl = document.getElementById('editGameIconUrl').value;
+            const gameUrl = document.getElementById('editGameUrl').value;
+            
+            if (!name.trim()) {
+                showMessage('الرجاء إدخال اسم اللعبة', true);
+                return;
+            }
+            
+            const res = await apiCall(`/api/admin/games/${gameId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name, iconUrl, gameUrl })
+            });
+            
+            if (res?.ok) {
+                showMessage('تم تحديث اللعبة بنجاح');
+                document.getElementById('editGameModal').style.display = 'none';
+                await loadAdminGames();
+                await loadGames();
+            } else {
+                showMessage('فشل تحديث اللعبة', true);
+            }
         }
 
         function drawWheel() {
@@ -1798,27 +2331,28 @@
                 if (!data.requests?.length) { 
                     container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا توجد طلبات سحب</p>'; 
                     return; 
-                } 
-                container.innerHTML = `<table>
-                    <thead>
-                        <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                        ${data.requests.map(r => `
-                            <tr>
-                                <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
-                                <td><span class="badge badge-info">${r.amount.toLocaleString()} SYP</span></td>
-                                <td style="direction:ltr; text-align:left; font-size:11px;">${r.address}</td>
-                                <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td>
-                                <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
-                                <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>`; 
-            } 
-        }
+        } 
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr><th>👤 المستخدم</th><th>💰 المبلغ</th><th>📍 العنوان</th><th>⏳ الحالة</th><th>📅 التاريخ</th><th>⚙️ الإجراءات</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.requests.map(r => `
+                                <tr>
+                                    <td><strong>${r.userName || r.userEmail || r.userId}</strong></td>
+                                    <td><span class="badge badge-info">${r.amount.toLocaleString()} SYP</span></td>
+                                    <td style="direction:ltr; text-align:left; font-size:11px;">${r.address}</td>
+                                    <td>${r.status === 'pending' ? '<span class="badge badge-warning">⏳ قيد المراجعة</span>' : (r.status === 'approved' ? '<span class="badge badge-success">✅ مقبول</span>' : '<span class="badge badge-danger">❌ مرفوض</span>')}</td>
+                                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '-'}</td>
+                                    <td>${r.status === 'pending' ? `<button class="admin-btn admin-btn-small" onclick="window.approveWithdraw('${r.id}')">✅ قبول</button> <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.rejectWithdraw('${r.id}')">❌ رفض</button>` : '<span class="badge badge-info">✓ تمت المعالجة</span>'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+        `; 
+    } 
+}
 
         async function loadAdminDeposits() { 
             const res = await apiCall('/api/admin/deposits'); 
@@ -1860,7 +2394,7 @@
                         container.innerHTML = '<p style="text-align:center;padding:40px">📭 لا يوجد مستخدمين</p>'; 
                         return; 
                     } 
-                    container.innerHTML = `</td>
+                    container.innerHTML = `<table>
                         <thead>
                             <tr><th>📧 البريد</th><th>👤 الاسم</th><th>🔑 الكود</th><th>💰 الرصيد</th><th>🎁 إحالات</th><th>👥 الإحالات</th><th>🎁 المحيل</th><th>🎡 تدوير</th><th>⚙️</th>
                             </tr>
@@ -2040,12 +2574,14 @@
             loadAdminDeposits(); 
             loadAdminUsers(); 
             loadAdminSettings(); 
+            loadAdminGames();
         }
         
         function showUserInterface() { 
             document.getElementById('adminApp').classList.add('hidden'); 
             document.getElementById('userApp').classList.remove('hidden'); 
             document.querySelector('.fab-container').style.display = 'block';
+            loadGames();
         }
 
         async function handleGoogleSignIn() { 
@@ -2064,6 +2600,7 @@
                 await loadDepositSettings(); 
                 await loadEarnPageInfo(); 
                 await loadThemeFromServer(); 
+                await loadGames();
                 document.getElementById('loader').style.display = 'none'; 
                 if (isAdmin) showAdminInterface(); 
                 else showUserInterface(); 
@@ -2091,7 +2628,6 @@
             }
         }
 
-        // ============= الزر العائم المروحي =============
         function initFloatingMenu() {
             const fabMain = document.getElementById('fabMain');
             const fabMenu = document.getElementById('fabMenu');
@@ -2141,6 +2677,7 @@
                 await loadDepositSettings(); 
                 await loadEarnPageInfo(); 
                 await loadThemeFromServer(); 
+                await loadGames();
                 loader.style.display = 'none'; 
                 if (isAdmin) showAdminInterface(); 
                 else showUserInterface(); 
@@ -2188,7 +2725,9 @@
         
         document.getElementById('submitDepositBtn')?.addEventListener('click', deposit);
         document.getElementById('submitWithdrawBtn')?.addEventListener('click', withdraw);
-        document.getElementById('playNowBtn')?.addEventListener('click', () => showMessage('🎮 نظام اللعب قريباً'));
+        document.getElementById('playNowBtn')?.addEventListener('click', () => {
+            document.querySelector('.games-section')?.scrollIntoView({ behavior: 'smooth' });
+        });
         document.getElementById('logoutMainBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
         document.getElementById('switchToUserView')?.addEventListener('click', showUserInterface);
         document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => { await signOut(auth); location.reload(); });
@@ -2240,7 +2779,7 @@
                             <td>
                                 <button class="admin-btn admin-btn-small" onclick="window.editBalance('${u.id}', ${u.balance})">✏️</button>
                                 <button class="admin-btn admin-btn-small" style="background:#cc0000;" onclick="window.toggleBan('${u.id}')">${u.isBanned ? '🔓' : '🔒'}</button>
-                            </td>
+                             </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -2260,14 +2799,18 @@
         });
 
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
+            tab.addEventListener('click', async () => {
                 const target = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('#adminWithdrawsPanel,#adminDepositsPanel,#adminUsersPanel,#adminGamesPanel,#adminSettingsPanel,#adminWheelSettingsPanel,#adminThemesPanel,#adminResetPanel').forEach(p => p.classList.add('hidden'));
                 if (target === 'withdraws') document.getElementById('adminWithdrawsPanel').classList.remove('hidden');
                 if (target === 'deposits') document.getElementById('adminDepositsPanel').classList.remove('hidden');
                 if (target === 'users') document.getElementById('adminUsersPanel').classList.remove('hidden');
+                if (target === 'games') {
+                    document.getElementById('adminGamesPanel').classList.remove('hidden');
+                    await loadAdminGames();
+                }
                 if (target === 'settings') document.getElementById('adminSettingsPanel').classList.remove('hidden');
                 if (target === 'wheel-settings') document.getElementById('adminWheelSettingsPanel').classList.remove('hidden');
                 if (target === 'themes') document.getElementById('adminThemesPanel').classList.remove('hidden');
@@ -2332,8 +2875,8 @@
         console.log('✅ BOOMB App initialized successfully');
         console.log('🎰 Golden and Blue shiny wheel ready!');
         console.log('🪄 Floating fan menu with labels added!');
+        console.log('🎮 Games system ready with 50 games!');
         console.log('✨ Buttons have shine effect!');
-        console.log('🎮 Game system ready!');
     </script>
 </body>
 </html>
